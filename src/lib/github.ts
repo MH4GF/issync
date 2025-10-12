@@ -1,5 +1,5 @@
 import { Octokit } from '@octokit/rest'
-import type { GitHubIssueInfo, CommentData } from '../types/index.js'
+import type { CommentData, GitHubIssueInfo } from '../types/index.js'
 
 export class GitHubClient {
   private octokit: Octokit
@@ -11,9 +11,7 @@ export class GitHubClient {
   }
 
   parseIssueUrl(url: string): GitHubIssueInfo {
-    const match = url.match(
-      /github\.com\/([^/]+)\/([^/]+)\/issues\/(\d+)/
-    )
+    const match = url.match(/github\.com\/([^/]+)\/([^/]+)\/issues\/(\d+)/)
     if (!match) {
       throw new Error('Invalid GitHub Issue URL')
     }
@@ -26,11 +24,7 @@ export class GitHubClient {
     }
   }
 
-  async getComment(
-    owner: string,
-    repo: string,
-    comment_id: number
-  ): Promise<CommentData> {
+  async getComment(owner: string, repo: string, comment_id: number): Promise<CommentData> {
     const { data } = await this.octokit.rest.issues.getComment({
       owner,
       repo,
@@ -48,7 +42,7 @@ export class GitHubClient {
     owner: string,
     repo: string,
     issue_number: number,
-    body: string
+    body: string,
   ): Promise<CommentData> {
     const { data } = await this.octokit.rest.issues.createComment({
       owner,
@@ -68,7 +62,7 @@ export class GitHubClient {
     owner: string,
     repo: string,
     comment_id: number,
-    body: string
+    body: string,
   ): Promise<CommentData> {
     const { data } = await this.octokit.rest.issues.updateComment({
       owner,

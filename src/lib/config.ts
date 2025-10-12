@@ -1,4 +1,4 @@
-import { readFileSync, writeFileSync, existsSync, mkdirSync } from 'fs'
+import { existsSync, mkdirSync, readFileSync, writeFileSync } from 'node:fs'
 import yaml from 'js-yaml'
 import type { IssyncConfig } from '../types/index.js'
 

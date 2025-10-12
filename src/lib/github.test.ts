@@ -1,4 +1,4 @@
-import { describe, test, expect } from 'bun:test'
+import { describe, expect, test } from 'bun:test'
 import { GitHubClient } from './github'
 
 describe('GitHubClient', () => {
@@ -62,9 +62,7 @@ describe('GitHubClient', () => {
       const urlWithoutIssueNumber = 'https://github.com/owner/repo'
 
       // Act & Assert: Issue 番号がない URL は拒否
-      expect(() => client.parseIssueUrl(urlWithoutIssueNumber)).toThrow(
-        'Invalid GitHub Issue URL'
-      )
+      expect(() => client.parseIssueUrl(urlWithoutIssueNumber)).toThrow('Invalid GitHub Issue URL')
     })
 
     test('Pull Request URL の場合はエラーを投げる', () => {
@@ -73,9 +71,7 @@ describe('GitHubClient', () => {
       const pullRequestUrl = 'https://github.com/owner/repo/pulls/123'
 
       // Act & Assert: PR URL は Issue URL ではない
-      expect(() => client.parseIssueUrl(pullRequestUrl)).toThrow(
-        'Invalid GitHub Issue URL'
-      )
+      expect(() => client.parseIssueUrl(pullRequestUrl)).toThrow('Invalid GitHub Issue URL')
     })
 
     test('GitHub 以外の URL の場合はエラーを投げる', () => {
@@ -84,9 +80,7 @@ describe('GitHubClient', () => {
       const nonGitHubUrl = 'https://example.com/issues/123'
 
       // Act & Assert: GitHub 以外のドメインは拒否
-      expect(() => client.parseIssueUrl(nonGitHubUrl)).toThrow(
-        'Invalid GitHub Issue URL'
-      )
+      expect(() => client.parseIssueUrl(nonGitHubUrl)).toThrow('Invalid GitHub Issue URL')
     })
 
     test('不正な形式の場合はエラーを投げる', () => {
@@ -95,9 +89,7 @@ describe('GitHubClient', () => {
       const invalidFormat = 'not-a-url'
 
       // Act & Assert: URL 形式でない場合は拒否
-      expect(() => client.parseIssueUrl(invalidFormat)).toThrow(
-        'Invalid GitHub Issue URL'
-      )
+      expect(() => client.parseIssueUrl(invalidFormat)).toThrow('Invalid GitHub Issue URL')
     })
   })
 })

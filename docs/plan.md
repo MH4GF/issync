@@ -169,6 +169,22 @@ issync は、GitHub Issue のコメントとローカルファイル間でテキ
   - `state.yml` に状態を保存
   - ユーザーに `.gitignore` への追加を推奨（自動化は Phase 2 で検討）
 
+**2025-10-12: Formatter/Linter - Biome 採用**
+
+- **採用**: **Biome** (formatter + linter)
+- **理由**:
+  - **高速**: Rust 製、ESLint + Prettier より圧倒的に速い
+  - **ゼロ設定**: デフォルト設定で即座に使える
+  - **統合**: フォーマットとリントを単一ツールで実行
+  - **Bun エコシステムとの相性**: Bun ランタイムと同様にパフォーマンス重視
+- **比較検討した候補**: ESLint + Prettier
+  - ESLint + Prettier: 成熟しているが設定が複雑で遅い
+  - Biome: モダンで高速、MVP に最適
+- **セットアップ内容**:
+  - `@biomejs/biome` をインストール
+  - `biome.json` で設定
+  - `package.json` にスクリプト追加 (`format`, `lint`, `check`)
+
 ## 成果と振り返り
 
 **2025-10-12: 初期セットアップ完了**
