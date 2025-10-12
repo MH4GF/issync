@@ -58,12 +58,27 @@ program
 
 program
   .command('watch')
-  .description('Watch for changes and sync automatically')
+  .description('Watch for changes and sync automatically (foreground process)')
   .option('-i, --interval <seconds>', 'Polling interval in seconds', '10')
-  .option('-d, --daemon', 'Run as daemon in background')
-  .action((options: { interval: string; daemon?: boolean }) => {
-    console.log('watch command:', options)
-    // TODO: implement
+  .action(async (options: { interval: string }) => {
+    const { watch } = await import('./commands/watch.js')
+    const interval = Number.parseInt(options.interval, 10)
+
+    const MIN_INTERVAL_SECONDS = 1
+    const MAX_INTERVAL_SECONDS = 3600 // 1 hour
+
+    if (
+      Number.isNaN(interval) ||
+      interval < MIN_INTERVAL_SECONDS ||
+      interval > MAX_INTERVAL_SECONDS
+    ) {
+      console.error(
+        `Error: interval must be between ${MIN_INTERVAL_SECONDS} and ${MAX_INTERVAL_SECONDS} seconds`,
+      )
+      console.error('Recommended: 10-60 seconds (GitHub API rate limit: 5000 req/hour)')
+      process.exit(1)
+    }
+    await watch({ interval })
   })
 
 program
