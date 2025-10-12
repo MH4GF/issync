@@ -19,14 +19,24 @@
     "rules": {
       "recommended": true,
       "suspicious": {
-        "noExplicitAny": "off"
+        "noExplicitAny": "off",
+        "noAssignInExpressions": "error"
       },
       "complexity": {
-        "noForEach": "error"
+        "noForEach": "error",
+        "noExcessiveCognitiveComplexity": {
+          "level": "error",
+          "options": {
+            "maxAllowedComplexity": 15
+          }
+        }
       },
       "style": {
         "useTemplate": "error",
         "useExponentiationOperator": "error"
+      },
+      "correctness": {
+        "noUnusedVariables": "error"
       }
     }
   },
