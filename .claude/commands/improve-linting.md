@@ -54,13 +54,30 @@ Fix any issues found:
 
 ### 5. Document Decision
 
-Update `docs/plan.md` with a new decision log entry:
-- Date and title of the improvement
-- Context: What code review feedback triggered this?
-- Decision: What rules were added and why?
-- Consequences: What does this prevent? Any trade-offs?
+**Choose recording level based on importance:**
 
-Update `CLAUDE.md` if workflow has changed:
+**Tier 1: Architectural decisions** (design philosophy, SSoT selection, language choice)
+- Record in detail in `docs/plan.md` decision log (background, rationale, trade-offs)
+- Use this sparingly - only for decisions that affect core architecture
+
+**Tier 2: Tactical decisions** (lint rule additions, tool introductions)
+- Record **1-2 lines** in `docs/plan.md` decision log:
+  ```
+  **YYYY-MM-DD: [Title]**
+  - [Rule name] added (reason: prevents XXX from code review feedback)
+  ```
+- Use this for most linting improvements
+
+**Tier 3: Operational changes** (command additions, bug fixes)
+- Record briefly in `docs/plan.md` "発見と気づき" section (1-2 paragraphs)
+
+**Recording principles:**
+- ❌ Don't include pseudo-code, directory structure diagrams (code speaks for itself)
+- ❌ Don't write implementation details (check `src/` for that)
+- ✅ Focus on **Why** (why this decision was made)
+- ✅ Minimum information needed for future self to understand
+
+**Update `CLAUDE.md` if workflow has changed:**
 - Add new npm scripts if created
 - Update "Development Commands" section
 - Document any new patterns or conventions
@@ -85,13 +102,19 @@ Provide a summary showing:
 2. User fixes the issues manually
 3. User runs this command
 4. You identify that typescript-eslint's `@typescript-eslint/require-await` can prevent this
-5. You add the rule, run checks, update docs, verify tests pass
+5. You add the rule, run checks
+6. You document in plan.md (Tier 2 - one line):
+   ```
+   **2025-10-12: lint - require-await 追加**
+   - @typescript-eslint/require-await 追加（コードレビュー指摘の予防）
+   ```
+7. Verify tests pass
 
 ## Important Notes
 
 - **Don't guess**: Use context7 to verify rules exist and understand their purpose
 - **Be surgical**: Only add rules that address actual issues from code review
-- **Document thoroughly**: Future developers need to understand the "why"
+- **Document concisely**: Record the "why" in 1-2 lines (Tier 2) - avoid implementation details
 - **Verify everything**: All tests must pass, both linters must be green
 
 Follow the dual-linter strategy:
