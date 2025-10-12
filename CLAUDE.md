@@ -1,0 +1,182 @@
+# CLAUDE.md
+
+This file provides guidance to Claude Code (claude.ai/code) when working with code in this repository.
+
+## Project Overview
+
+**issync** is a CLI tool that syncs text between GitHub Issue comments and local files. It enables AI-driven development by allowing AI agents to maintain living documentation (like plan.md) in GitHub Issues as a single source of truth, while multiple local sessions can read and write to the same document concurrently.
+
+**Core Design Philosophy:**
+- **AI Agent Transparency**: AI coding agents (Claude Code, Devin, etc.) should not need to know issync exists. They use normal Read()/Edit() operations on files.
+- **Background Sync**: `watch` mode runs in the background, automatically syncing remote ↔ local changes.
+- **Conflict Detection via Edit() Failures**: When issync pulls remote changes, Claude Code's Edit() tool naturally fails (old_string not found), triggering a re-read and retry.
+- **Optimistic Locking**: Hash-based conflict detection on the push side prevents overwriting remote changes.
+
+See `docs/plan.md` for detailed architecture decisions, progress tracking, and development phases.
+
+## Development Commands
+
+```bash
+# Install dependencies
+bun install
+
+# Run CLI in development
+bun run dev --help
+bun run dev init <issue-url>
+
+# Testing (Bun Test - zero config, Jest-compatible)
+bun test                  # Run all tests
+bun test --watch          # Watch mode
+bun test <file>           # Run specific test file
+
+# Type checking
+bun run type-check
+
+# Build for distribution
+bun run build
+```
+
+## Architecture
+
+### Command Flow
+1. **init**: Parse GitHub Issue URL → Create .issync.yml config → Optional initial pull
+2. **pull**: Fetch remote comment → Calculate hash → Write to local file → Update config
+3. **push**: Read local file → Verify remote hash (optimistic lock) → Update comment → Update config
+4. **watch**: Background daemon that polls remote + watches local file changes → Auto pull/push
+5. **stop**: Stop watch daemon by PID
+6. **status**: Show sync state from .issync.yml
+
+### Core Components
+
+**`src/cli.ts`**: CLI entry point using commander.js. All commands are skeleton implementations (TODO).
+
+**`src/lib/github.ts`**: GitHub API client wrapping Octokit.
+- `parseIssueUrl()`: Extract owner/repo/issue_number from GitHub URL
+- `getComment()`, `createComment()`, `updateComment()`: CRUD operations on Issue comments
+
+**`src/lib/config.ts`**: Manages `.issync.yml` configuration file.
+- `loadConfig()`, `saveConfig()`, `configExists()`: YAML read/write operations
+
+**`src/lib/hash.ts`**: SHA-256 hash calculation for optimistic locking.
+
+**`src/types/index.ts`**: Core TypeScript interfaces:
+- `IssyncConfig`: .issync.yml structure (issue_url, comment_id, local_file, last_synced_hash, etc.)
+- `GitHubIssueInfo`: Parsed Issue metadata (owner, repo, issue_number)
+- `CommentData`: GitHub comment response (id, body, updated_at)
+
+### Configuration File (.issync.yml)
+
+```yaml
+issue_url: https://github.com/owner/repo/issues/123
+comment_id: 123456789               # Set after first sync
+local_file: docs/plan.md
+last_synced_hash: abc123def         # Remote content hash for optimistic locking
+last_synced_at: 2025-10-12T10:30:00Z
+poll_interval: 10                   # Seconds between remote polls
+merge_strategy: section-based       # Future: smart merge (Phase 2)
+watch_daemon_pid: 12345             # PID of watch process (if running)
+```
+
+## Testing Strategy
+
+**Framework**: Bun Test (built-in, zero dependencies)
+- Jest-compatible API (`describe`, `test`, `expect`)
+- TypeScript native (no transpilation)
+- Fast execution (~150ms for 8 tests)
+
+**TDD Workflow**: Write tests first, then implement features.
+
+**Test Placement**: Co-locate tests with source files (e.g., `hash.ts` → `hash.test.ts`)
+
+### Testing Principles (Vladimir Khorikov)
+
+Follow the **four pillars of a good test**:
+
+1. **Protection against regressions**: Tests should catch bugs when code changes
+2. **Resistance to refactoring**: Tests should not fail when refactoring (testing behavior, not implementation)
+3. **Fast feedback**: Tests should run quickly
+4. **Maintainability**: Tests should be easy to read and maintain
+
+**Key Guidelines:**
+
+- **Prefer integration tests over unit tests with mocks**: Test real behavior with real dependencies when possible
+  - ✅ Test `GitHubClient` with real Octokit (or use recorded fixtures)
+  - ✅ Test `config.ts` with real file system operations
+  - ❌ Avoid excessive mocking that couples tests to implementation
+
+- **Mock only external dependencies**: Mock network calls, file system in CI, or slow operations
+  - GitHub API calls → Mock in some tests, use test fixtures
+  - File system → Use temp directories, mock only when necessary
+  - Time/Date → Mock when testing time-based logic
+
+- **AAA Pattern**: Structure tests as Arrange, Act, Assert
+  ```typescript
+  test('should parse GitHub Issue URL', () => {
+    // Arrange
+    const client = new GitHubClient()
+    const url = 'https://github.com/owner/repo/issues/123'
+
+    // Act
+    const result = client.parseIssueUrl(url)
+
+    // Assert
+    expect(result).toEqual({ owner: 'owner', repo: 'repo', issue_number: 123 })
+  })
+  ```
+
+- **Test behavior, not implementation**: Focus on inputs and outputs, not internal state
+  - ✅ Test that `push` updates remote comment with correct content
+  - ❌ Don't test that `push` calls `calculateHash()` internally
+
+- **One assertion per test** (when practical): Each test should verify one behavior
+
+## Authentication
+
+GitHub API access requires a token:
+- Set `GITHUB_TOKEN` environment variable
+- Or pass token to `GitHubClient` constructor
+- Required scopes: `repo` (for private repos) or `public_repo` (for public repos)
+
+## Key Implementation Notes
+
+### Optimistic Locking (Push)
+1. Read local file content
+2. Calculate hash
+3. Fetch remote comment
+4. Compare `last_synced_hash` from config with current remote hash
+5. If mismatch → conflict (abort or merge)
+6. If match → PATCH comment, update config with new hash
+
+### Watch Mode Implementation
+- **Remote polling**: setInterval to fetch comment every `poll_interval` seconds
+- **Local file watching**: Use `chokidar` to detect file changes
+- **Daemon process**: Fork/spawn background process, store PID in config
+- **Rate limiting**: GitHub API has 5000 req/hour limit (360 req/hour at 10s intervals per watch process)
+
+### Phase 1 (MVP) Scope
+Focus on basic sync commands (init, pull, push) and simple watch mode. Skip advanced features:
+- ❌ Section-based markdown merging (Phase 2)
+- ❌ Conflict resolution UI (Phase 2)
+- ❌ Advanced error handling/retry logic (Phase 3)
+
+## Current Development Status
+
+**Completed:**
+- Project setup (Bun + TypeScript)
+- CLI framework skeleton (all commands stubbed)
+- GitHub API client (URL parsing, CRUD operations)
+- Config management (.issync.yml)
+- Hash utilities
+- Test infrastructure (Bun Test)
+
+**Next Steps:**
+- Implement `init` command (TDD)
+- Implement `pull` command (TDD)
+- Implement `push` command with optimistic locking (TDD)
+- Implement `watch` mode (polling + file watching)
+
+## Important Files
+
+- `docs/plan.md`: Living development plan (progress, decisions, architecture)
+- `src/types/index.ts`: Core data structures
+- `.issync.yml`: Per-project configuration (git-ignored by default)

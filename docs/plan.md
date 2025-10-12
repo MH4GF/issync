@@ -17,9 +17,11 @@ issync は、GitHub Issue のコメントとローカルファイル間でテキ
 - [x] リポジトリ作成と初期化
 - [x] 言語/ランタイムの選択: **Bun + TypeScript**
 - [x] プロジェクト構造の定義
-- [x] 基本的な CLI フレームワークの実装
-- [ ] GitHub API クライアントの実装
-- [ ] .issync.yml スキーマの実装
+- [x] 基本的な CLI フレームワークの実装 (commander.js)
+- [x] GitHub API クライアントの実装 (Octokit)
+- [x] .issync.yml スキーマの実装 (型定義 + config 管理)
+- [x] テストフレームワークのセットアップ (Bun Test)
+- [x] 基本ライブラリのテスト作成 (hash, github URL parse)
 - [ ] init コマンドの実装
 - [ ] pull コマンドの実装
 - [ ] push コマンドの実装(楽観ロック含む)
@@ -28,7 +30,7 @@ issync は、GitHub Issue のコメントとローカルファイル間でテキ
 - [ ] watch モードの実装(デーモン化)
 - [ ] セクションベースのマージ戦略の実装
 - [ ] コンフリクトの適切な処理
-- [ ] テストの追加
+- [ ] 包括的なテストの追加
 - [ ] ドキュメント作成
 
 ## 発見と気づき
@@ -38,6 +40,12 @@ issync は、GitHub Issue のコメントとローカルファイル間でテキ
 - Edit() は文字列置換に失敗すると(= ファイルが更新されていると)エラーになる
 - この仕組みをそのまま活用すれば、AIエージェント側でコンフリクト検出が自然に起きる
 - issync は透過的にバックグラウンドで動作し、AIエージェントは存在を意識しなくて済む
+
+**2025-10-12: Bun Test によるゼロ設定テスト環境**
+- Bun Test は追加の依存関係なしで動作する
+- Jest 互換 API でテストが書ける
+- TypeScript をそのままテストできる(トランスパイル不要)
+- 実行速度が非常に速い (8 tests in 156ms)
 
 ## 決定ログ
 
@@ -91,7 +99,47 @@ issync は、GitHub Issue のコメントとローカルファイル間でテキ
   - Go: 単一バイナリ配布は優秀だが、開発速度で劣る
   - Rust: MVP には過剰、学習コストが高い
 
+**2025-10-12: テストフレームワーク - Bun Test**
+- 採用: **Bun Test** (組み込み)
+- 理由:
+  - **ゼロ設定**: 追加の依存関係不要、すぐに使える
+  - **高速**: Jest より圧倒的に速い
+  - **Jest 互換 API**: describe, test, expect など同じAPI
+  - **TypeScript ネイティブ**: そのまま .ts ファイルをテスト可能
+- 比較検討した候補: Vitest, Jest
+  - Vitest: 良い選択肢だが、Bun Test で十分
+  - Jest: エコシステムは豊富だが、設定が複雑で遅い
+- TDD で開発を進める
+
 ## 成果と振り返り
+
+**2025-10-12: 初期セットアップ完了**
+- **実装した内容**:
+  - Bun プロジェクトの初期化 (package.json, tsconfig.json)
+  - CLI フレームワーク (commander.js) の骨組み実装
+    - 全コマンド (init, pull, push, watch, stop, status) のスケルトン
+  - GitHub API クライアント (Octokit) の実装
+    - Issue URL パース機能
+    - コメントの CRUD 操作
+  - 設定管理 (.issync.yml) の実装
+  - ハッシュ計算ユーティリティ
+  - 型定義 (IssyncConfig, GitHubIssueInfo, CommentData)
+  - Bun Test のセットアップ
+  - 基本ライブラリのテスト作成 (8 tests, all passing)
+- **構成**:
+  ```
+  src/
+  ├── cli.ts              # CLI エントリーポイント
+  ├── lib/
+  │   ├── config.ts       # 設定管理
+  │   ├── github.ts       # GitHub API クライアント
+  │   ├── github.test.ts
+  │   ├── hash.ts         # ハッシュ計算
+  │   └── hash.test.ts
+  └── types/
+      └── index.ts        # 型定義
+  ```
+- **次のステップ**: TDD で init コマンドを実装
 
 ## コンテキストと方向性
 
