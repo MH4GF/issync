@@ -133,34 +133,11 @@ issync は、GitHub Issue のコメントとローカルファイル間でテキ
   - push 前に GitHub 側の comment hash を検証
   - 既に更新されていたら pull → マージ → 再 push or 手動解決
 
-**2025-10-12: 言語選択 - Bun + TypeScript**
+**2025-10-12: 言語・ツールスタック**
 
-- 採用: **Bun + TypeScript**
-- 理由:
-  - **開発速度**: TypeScript で素早く MVP を実装できる
-  - **GitHub API**: Octokit が最も成熟している
-  - **ファイル監視**: chokidar など npm エコシステムを活用
-  - **配布**: npm パッケージとして公開(`npm install -g issync`)
-  - **ターゲットユーザー**: 開発者は Node.js/Bun を既に持っている
-- 配布戦略:
-  - Phase 1: npm パッケージ(ランタイム必要)
-  - Phase 2: 必要に応じて単一バイナリ化 or Go への移行を検討
-- 比較検討した候補: Go, Rust
-  - Go: 単一バイナリ配布は優秀だが、開発速度で劣る
-  - Rust: MVP には過剰、学習コストが高い
-
-**2025-10-12: テストフレームワーク - Bun Test**
-
-- 採用: **Bun Test** (組み込み)
-- 理由:
-  - **ゼロ設定**: 追加の依存関係不要、すぐに使える
-  - **高速**: Jest より圧倒的に速い
-  - **Jest 互換 API**: describe, test, expect など同じ API
-  - **TypeScript ネイティブ**: そのまま .ts ファイルをテスト可能
-- 比較検討した候補: Vitest, Jest
-  - Vitest: 良い選択肢だが、Bun Test で十分
-  - Jest: エコシステムは豊富だが、設定が複雑で遅い
-- TDD で開発を進める
+- **採用**: Bun + TypeScript, Bun Test
+- **理由**: MVP の高速実装を優先。Octokit (GitHub API) と chokidar (ファイル監視) の成熟したエコシステムを活用。Bun Test はゼロ設定で Jest 互換。
+- **配布**: npm パッケージ (Phase 1)、将来的に単一バイナリ化を検討
 
 **2025-10-12: MVP スコープの明確化 - ドッグフーディング優先**
 
@@ -246,92 +223,21 @@ issync は、GitHub Issue のコメントとローカルファイル間でテキ
   - CLAUDE.md は AI エージェントが最初に読むため、効果的
 - **Phase 2 での改善**: セクションベースマージで pull のリスク軽減
 
-**2025-10-12: コードレビュー後のリンティング設定強化 (初回)**
+**2025-10-12: コードレビュー後のリンティング設定強化**
 
-- **背景**: コードレビューで指摘された問題の多くは既存ルールでカバー済みだが、明示的にルール設定を追加
-- **追加ルール**:
+- **最終的な追加ルール**:
   - **Biome**:
-    - `noUnusedVariables: error` (correctness カテゴリ、明示的に error に設定)
-    - `noAssignInExpressions: error` (suspicious カテゴリ、条件式内の代入を防止)
-  - **typescript-eslint**: 既存設定で十分 (`require-await`, `no-floating-promises`, `no-misused-promises`)
-- **対処した問題**:
-  - 未使用変数 (`_isOperationInFlight`) → `noUnusedVariables` で検出
-  - 条件式内の誤った代入 → `noAssignInExpressions` で防止
-- **検証結果**:
-  - 全テスト合格 (24 tests)
-  - Biome と ESLint の両方でエラーなし
-- **理由**:
-  - コードレビューで手動修正した問題を将来自動検出
-  - レースコンディションやファイル存在確認は静的解析では検出困難（設計レベルの問題）
-  - 既存の型システムとリンティングルールの組み合わせで十分な品質担保が可能
-
-**2025-10-12: コードレビュー後のリンティング設定強化 (2回目: watch 実装後)**
-
-- **背景**: watch コマンド実装のコードレビューで、Promise の型安全性に関する問題が指摘された
-- **追加ルール**:
+    - `noUnusedVariables: error` - 未使用変数の検出
+    - `noAssignInExpressions: error` - 条件式内の誤った代入を防止
+    - `noExcessiveCognitiveComplexity: error (maxAllowedComplexity: 15)` - 複雑度が高いコードを検出
   - **typescript-eslint**:
-    - `@typescript-eslint/await-thenable`: 'error' - Promise 以外を await しないことを強制
-    - `@typescript-eslint/return-await`: ['error', 'in-try-catch'] - try-catch での return await を強制
-- **理由**:
-  - `await-thenable`: 非 Promise 値への誤った await を防止（型安全性の向上）
-  - `return-await`: try-catch ブロック内で Promise を正しく処理し、catch ブロックが動作することを保証
-  - これらのルールは try-catch 内の Promise の扱いに関するバグを防ぐ
-- **対処した問題**:
-  - テストコードで不要な async キーワードを削除 (mockImplementation)
-  - Bun Test の `expect().rejects` が thenable-like を返す問題に対処 (ESLint コメントで無効化)
-- **検証結果**:
-  - 全テスト合格 (28 pass, 4 skip, 0 fail)
-  - TypeScript 型チェック、Biome、ESLint 全てクリア
-- **影響**:
-  - Promise 処理の型安全性が向上
-  - try-catch でのエラーハンドリングが確実に動作することを静的解析で保証
-
-**2025-10-12: watch リファクタリング後のリンティング設定レビュー (3回目)**
-
-- **背景**: watch コマンドのリファクタリング (クラスベース設計、レースコンディション修正) のコードレビューで、リンティングで検出可能な問題を調査
-- **分析結果**:
-  - **グローバル変数によるテスト不可能性** → 設計レベルの問題（静的解析では防止困難）
-  - **レースコンディション（ポーリング）** → 設計レベルの問題（静的解析では防止困難）
-  - **マジックナンバー** → Biome の `noMagicNumbers` (nursery) で検出可能だが、以下の理由で追加しない:
-    - 既に手動で定数化完了
-    - nursery グループ（実験的ルール）でまだ安定していない
-    - テストコードで `setTimeout(100)` などの値を誤検出する可能性
-    - コードレビューで十分発見可能（費用対効果が低い）
-  - **スキップされたテスト** → テスト戦略の問題（静的解析では防止困難）
-- **結論**: 既存のリンティング設定（Biome + typescript-eslint）で十分
-  - 今回のリファクタリングで対応した問題は主に設計レベル
-  - Promise 処理、async/await、型安全性は既存ルールでカバー済み
-  - マジックナンバーは手動レビューで対応可能
-- **今後の方針**:
-  - 設計レベルの問題はコードレビュープロセスで対応
+    - `@typescript-eslint/await-thenable: error` - Promise 以外を await しないことを強制
+    - `@typescript-eslint/return-await: ['error', 'in-try-catch']` - try-catch での return await を強制
+- **検討したが追加しなかったルール**:
+  - `noMagicNumbers` (Biome nursery) - 実験的ルールでまだ不安定、手動レビューで対応可能
+- **方針**:
+  - 設計レベルの問題（レースコンディション、テスト不可能性）は静的解析では検出困難、コードレビュープロセスで対応
   - リンティングルールは実際に問題が発生した時に追加（YAGNI原則）
-  - 新しいルールを追加する際は false positive のリスクを慎重に評価
-
-**2025-10-12: watch 最終リファクタリング後のリンティング設定強化 (4回目: 認知的複雑度)**
-
-- **背景**: watch コマンドの最終リファクタリング (fail-fast、バックオフロジック分離、メモリリーク防止) のコードレビューで、認知的複雑度の問題を発見
-- **追加ルール**:
-  - **Biome**:
-    - `noExcessiveCognitiveComplexity`: error (maxAllowedComplexity: 15)
-- **検出された問題**:
-  - ポーリングループ（watch.ts:167）の認知的複雑度が18で制限の15を超えていた
-  - ループ内で複数の条件分岐、try-catch、エラーハンドリングが複雑に組み合わさっていた
-- **リファクタリング内容**:
-  - ポーリングループを2つのメソッドに分割:
-    - `pollOnce()`: 単一ポーリングの実行（バックオフチェック、pull、エラーハンドリング）
-    - `runPollingLoop()`: ループ制御（sleep、abort チェック、pollOnce 呼び出し）
-  - 各メソッドの複雑度が15以下に削減され、Biome エラーが解消
-- **検証結果**:
-  - 全テスト合格 (8/8 tests passed)
-  - Biome、ESLint、TypeScript 型チェック全てクリア
-  - リファクタリングによりコードの可読性と保守性が向上
-- **理由**:
-  - 認知的複雑度が高いコードは理解しにくく、バグの温床になる
-  - コードレビューで手動発見した複雑度の問題を将来自動検出
-  - リファクタリングにより単一責任の原則に従った設計に改善
-- **影響**:
-  - 今後、複雑度が高いコードが早期に検出され、適切なリファクタリングが促される
-  - `withLock()` のような複数の責任を持つメソッドも将来的に検出可能
 
 **2025-10-12: Knip 導入 - 不要コード検出**
 
@@ -413,164 +319,14 @@ issync は、GitHub Issue のコメントとローカルファイル間でテキ
 
 ## 成果と振り返り
 
-**2025-10-12: 初期セットアップ完了**
+**Phase 1 MVP 完了 (2025-10-12)**
+- **実装完了**: init, pull, push, watch コマンドの TDD 実装。Issue #1 でドッグフーディング開始 (docs/plan.md 465行を同期)。
+- **品質改善**: コードレビューで 8 件の改善 (トークン検証、パス検証、エラーハンドリング、型安全性)。24 テスト全て合格。
+- **発見**: watch 起動前の編集でデータロス発生 (45 行消失、git checkout で復元)。CLAUDE.md に運用ガイドライン追加し、Phase 2 でセクションベースマージを実装予定。
 
-- **実装した内容**:
-  - Bun プロジェクトの初期化 (package.json, tsconfig.json)
-  - CLI フレームワーク (commander.js) の骨組み実装
-    - 全コマンド (init, pull, push, watch, stop, status) のスケルトン
-  - GitHub API クライアント (Octokit) の実装
-    - Issue URL パース機能
-    - コメントの CRUD 操作
-  - 設定管理 (.issync.yml) の実装
-  - ハッシュ計算ユーティリティ
-  - 型定義 (IssyncConfig, GitHubIssueInfo, CommentData)
-  - Bun Test のセットアップ
-  - 基本ライブラリのテスト作成 (8 tests, all passing)
-- **構成**:
-  ```
-  src/
-  ├── cli.ts              # CLI エントリーポイント
-  ├── lib/
-  │   ├── config.ts       # 設定管理
-  │   ├── github.ts       # GitHub API クライアント
-  │   ├── github.test.ts
-  │   ├── hash.ts         # ハッシュ計算
-  │   └── hash.test.ts
-  └── types/
-      └── index.ts        # 型定義
-  ```
-- **次のステップ**: TDD で init コマンドを実装
-
-**2025-10-12: MVP スコープの明確化とドッグフーディング計画**
-
-- **実施内容**:
-  - 進捗状況を Phase 1/2/3 に分割
-  - MVP スコープを明確化 (watch のデーモン化を Phase 2 に移動)
-  - 決定ログに「MVP スコープの明確化」を追加
-  - 作業計画を Phase 別に整理
-  - 具体的なステップを MVP に絞って簡略化
-  - コマンド例を MVP 範囲に合わせて更新
-  - .issync.yml スキーマを Phase 別に整理
-- **方針**:
-  - **Phase 1 ゴール**: docs/plan.md を GitHub Issue と同期してドッグフーディング開始
-  - watch mode はフォアグラウンドプロセスで OK (Ctrl+C で停止)
-  - 楽観ロックはシンプルに (hash 不一致時はエラーのみ)
-  - 自動マージやデーモン化は Phase 2 以降
-- **理由**: 早期にドッグフーディングを開始し、実際の使用感から学ぶ
-- **次のステップ**: init コマンドの TDD 実装開始
-
-**2025-10-12: Phase 1 コア機能の実装完了とコードレビュー**
-
-- **実装した内容** (TDD アプローチ):
-  - **init コマンド**: Issue URL からプロジェクトを初期化
-    - `.issync/` ディレクトリと `state.yml` を作成
-    - カスタムエラークラス `AlreadyInitializedError` を実装
-    - 5つのテストケース、全て合格
-  - **push コマンド**: ローカルファイルをリモートに同期
-    - 楽観的ロック (hash ベース) を実装
-    - comment_id がない場合は新規作成、ある場合は更新
-    - `OptimisticLockError` カスタムエラーを実装
-  - **pull コマンド**: リモートからローカルに同期
-    - GitHub Issue コメント取得 → ローカルファイル書き込み
-    - hash と timestamp を状態ファイルに保存
-  - **ドッグフーディング**: Issue #1 を作成し、docs/plan.md (465行) を同期成功
-- **コードレビューと品質改善** (8件の改善完了):
-  1. ✅ 未実装のスキップテスト削除 (`pull.test.ts`)
-  2. ✅ GitHubトークン検証追加 (正規表現で `ghp_*` / `ghs_*` 形式をチェック)
-  3. ✅ CLIの重複エラーハンドリング抽出 (`_handleCommand` ヘルパー関数を作成、~40行削減)
-  4. ✅ ファイルパス検証を push/pull に追加:
-     - パストラバーサル攻撃の検出
-     - ファイル存在確認 (push)
-     - 親ディレクトリ自動作成 (pull)
-     - カスタムエラークラス追加 (`InvalidFilePathError`, `FileNotFoundError`)
-  5. ✅ `parseIssueUrl` の正規表現を堅牢化:
-     - オプショナルなプロトコル (http/https)
-     - オプショナルな www サブドメイン
-     - owner/repo 名のバリデーション (英数字、アンダースコア、ハイフン、ドット)
-     - オプショナルな .git サフィックス
-     - クエリパラメータとフラグメントのサポート
-  6. ✅ `getStatePath` に明示的な戻り値の型を追加
-  7. ✅ `init` 関数から不要な async を削除 (同期関数に変更)
-     - テストケースも同期版に更新 (全5テスト合格)
-  8. ✅ 楽観的ロックの制限事項をドキュメント化:
-     - TOCTOU (Time-of-check to time-of-use) レースコンディションの説明
-     - 3つの解決策の提示
-     - MVP での受容基準を明記
-- **テスト結果**: 24テスト全て合格 (4ファイル、50 expect() コール、47ms)
-- **技術的な成果**:
-  - セキュリティ: パストラバーサル防止、トークン検証
-  - 保守性: コード重複削減、明示的な型付け
-  - 堅牢性: 入力バリデーション強化、エラーハンドリング改善
-  - ドキュメント: 技術的制約の明文化
-- **次のステップ**: watch モードの実装 (リモートポーリング + ローカルファイル監視)
-
-**2025-10-12: watch モードの実装完了 (Phase 1 MVP 達成)**
-
-- **実装した内容**:
-  - **watch コマンド**: フォアグラウンドプロセスで自動同期
-    - リモートポーリング (setInterval, デフォルト10秒間隔)
-    - ローカルファイル監視 (chokidar)
-    - Graceful shutdown (SIGINT/SIGTERM ハンドリング)
-  - **chokidar 統合**:
-    - `awaitWriteFinish` でファイル書き込み完了を待機
-    - 初期読み込みをスキップ (`ignoreInitial: true`)
-    - エラーハンドリング
-  - **既存コマンドの再利用**: pull/push コマンドを watch 内で呼び出し
-  - **ESLint 設定の改善**: dist ディレクトリを除外、Flat Config 対応
-- **技術的な工夫**:
-  - Promise を void 返す関数に渡す際は `void` キーワードを使用
-  - async/await の不要な使用を回避 (`@typescript-eslint/require-await`)
-  - chokidar の型定義を正しく import (`type FSWatcher`)
-- **テスト結果**: 24テスト全て合格、型チェック・ESLint・Biome 全てクリア
-- **Phase 1 MVP 達成**: init, pull, push, watch の全コア機能が実装完了
-- **発見した課題**: 初回ドッグフーディング時に pull による上書き問題を発見
-  - watch モードの pull が古いリモートバージョンでローカルを上書き
-  - 楽観的ロックの TOCTOU 問題が実際に発生
-  - 手動で git checkout による復元が必要だった
-  - Phase 2 でセクションベースマージが重要であることを確認
-- **次のステップ**: 実際のドッグフーディングで継続使用し、フィードバックを収集
-
-**2025-10-12: CLAUDE.md への運用ガイドライン追加**
-
-- **実施内容**:
-  - CLAUDE.md に新セクション「Using issync in Development Sessions」を追加
-  - watch モード起動を最優先とする必須ワークフローを明記
-  - データロス防止のための重要な注意事項を追加
-  - 実際のデータロス事例（45行消失）を具体例として記載
-  - GITHUB_TOKEN 設定を含む具体的なコマンド例を提供
-- **背景**:
-  - docs/plan.md の「発見と気づき」で特定された、watch起動前の編集によるデータロス問題
-  - MVP版のpullは無条件上書きのため、リモートが古いと必ずデータロスが起きる
-  - 実際の開発で45行の進捗が消失し、git checkoutで復元した経験
-- **追加した警告**:
-  - "CRITICAL: Always start watch mode BEFORE editing any synced files"
-  - セッション開始時の3ステップワークフロー（トークン設定 → watch起動 → 編集開始）
-  - データロスが起きる仕組みの説明（pull = 無条件上書き）
-  - 実例に基づく「Lesson: Always start watch FIRST, edit SECOND」
-- **効果**:
-  - AI エージェント（Claude Code）が最初にCLAUDE.mdを読むため、正しいワークフローを確実に認識
-  - 同じデータロス問題の再発を防止
-  - Phase 2 実装までの運用ルールとして機能
-- **次のステップ**: 実際の開発で運用し、このガイドラインの有効性を検証
-
-**2025-10-12: GitHub token format 検証の改善 (Phase 2 開始)**
-
-- **実装した内容** (TDD アプローチ):
-  - **トークン検証のテスト追加**: GitHubClient のコンストラクタのテストを追加
-    - `ghp_` (Personal Access Token) のテスト
-    - `ghs_` (Server Token) のテスト
-    - `gho_` (Fine-grained Personal Access Token) のテスト
-    - 無効なトークンフォーマットの警告テスト
-    - トークンなしのエラーテスト
-  - **正規表現の修正**: `/^gh[ps]_/` → `/^gh[pso]_/` に変更
-  - **エラーメッセージの更新**: `gho_` フォーマットを含めるように変更
-- **テスト結果**: 12テスト全て合格、型チェック・Biome 全てクリア
-- **技術的な成果**:
-  - TDD アプローチで実装（Red → Green → Refactor）
-  - Fine-grained Personal Access Token (`gho_`) のサポート追加
-  - Bun Test の `spyOn` を使用した console.warn のモック
-- **次のステップ**: watch モードのデーモン化 (--daemon, PID 管理)
+**Phase 2 開始 (2025-10-12)**
+- **gho_ トークンサポート追加**: Fine-grained Personal Access Token (`gho_`) のサポート。TDD で実装、12 テスト合格。
+- **次のステップ**: watch の pull-push ループバグ修正、起動時安全性チェック、デーモン化。
 
 ## コンテキストと方向性
 
@@ -695,27 +451,10 @@ issync status                  # 同期状態確認
 **状態ファイルフォーマット (`.issync/state.yml`):**
 
 ```yaml
-# Phase 1 (MVP) - 最小限の状態管理
 issue_url: https://github.com/owner/repo/issues/123
 comment_id: 123456789 # 最初の push で自動設定
 local_file: docs/plan.md
 last_synced_hash: abc123def # リモートの最終 hash (楽観ロック用)
-```
-
-**Phase 2 で追加予定:**
-
-```yaml
-# デバッグ用フィールド
-# last_synced_at: 2025-10-12T10:30:00Z
-
-# コマンド引数で対応可能
-# poll_interval: 10  # --interval で指定
-
-# デーモン化関連
-# watch_daemon_pid: 12345
-
-# 高度なマージ戦略
-# merge_strategy: section-based
 ```
 
 **`.gitignore` への追加推奨:**
