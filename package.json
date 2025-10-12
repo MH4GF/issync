@@ -1,0 +1,40 @@
+{
+  "name": "issync",
+  "version": "0.1.0",
+  "description": "CLI tool to sync text between GitHub Issue comments and local files",
+  "type": "module",
+  "bin": {
+    "issync": "./dist/cli.js"
+  },
+  "scripts": {
+    "build": "bun build ./src/cli.ts --outdir ./dist --target node",
+    "dev": "bun run ./src/cli.ts",
+    "type-check": "tsc --noEmit"
+  },
+  "keywords": [
+    "github",
+    "issue",
+    "sync",
+    "cli",
+    "ai",
+    "documentation"
+  ],
+  "author": "MH4GF",
+  "license": "MIT",
+  "dependencies": {
+    "@octokit/rest": "^21.0.2",
+    "chokidar": "^4.0.1",
+    "commander": "^12.1.0",
+    "js-yaml": "^4.1.0"
+  },
+  "devDependencies": {
+    "@types/bun": "latest",
+    "@types/js-yaml": "^4.0.9"
+  },
+  "peerDependencies": {
+    "typescript": "^5.0.0"
+  },
+  "engines": {
+    "node": ">=18.0.0"
+  }
+}
