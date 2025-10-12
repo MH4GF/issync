@@ -34,7 +34,7 @@ issync は、GitHub Issue のコメントとローカルファイル間でテキ
 
 **Phase 2 (スマートマージとデーモン化):**
 
-- [ ] GitHub token format 検証の改善 (gho_ フォーマットのサポート)
+- [x] GitHub token format 検証の改善 (gho_ フォーマットのサポート)
 - [ ] watch モードのデーモン化 (--daemon, PID 管理)
 - [ ] stop コマンドの実装
 - [ ] セクションベースのマージ戦略の実装
@@ -333,6 +333,23 @@ issync は、GitHub Issue のコメントとローカルファイル間でテキ
   - 手動実行: `bun run knip` で現状を確認
   - 自動修正: `bun run knip:fix` で削除可能なコードを自動削除
 
+**2025-10-12: GitHub token format 検証の改善 - gho_ サポート**
+
+- **背景**: GitHub が新しい fine-grained personal access token を導入、フォーマットは `gho_` で始まる
+- **実装内容**:
+  - トークン検証の正規表現を `/^gh[ps]_/` から `/^gh[pso]_/` に変更
+  - エラーメッセージに `gho_` フォーマットを追加
+  - TDD アプローチで実装（テスト先行、実装、確認）
+- **サポートするトークンフォーマット**:
+  - `ghp_*`: Personal Access Token (Classic)
+  - `ghs_*`: Server Token
+  - `gho_*`: Fine-grained Personal Access Token (新規サポート)
+- **テスト内容**:
+  - 各トークンフォーマットが警告なく受け入れられることを確認
+  - 無効なトークンフォーマットで警告が出ることを確認
+  - トークンなしでエラーがスローされることを確認
+- **理由**: 新しい GitHub トークンフォーマットへの対応により、ユーザーが最新のトークンを使用可能に
+
 ## 成果と振り返り
 
 **2025-10-12: 初期セットアップ完了**
@@ -475,6 +492,24 @@ issync は、GitHub Issue のコメントとローカルファイル間でテキ
   - 同じデータロス問題の再発を防止
   - Phase 2 実装までの運用ルールとして機能
 - **次のステップ**: 実際の開発で運用し、このガイドラインの有効性を検証
+
+**2025-10-12: GitHub token format 検証の改善 (Phase 2 開始)**
+
+- **実装した内容** (TDD アプローチ):
+  - **トークン検証のテスト追加**: GitHubClient のコンストラクタのテストを追加
+    - `ghp_` (Personal Access Token) のテスト
+    - `ghs_` (Server Token) のテスト
+    - `gho_` (Fine-grained Personal Access Token) のテスト
+    - 無効なトークンフォーマットの警告テスト
+    - トークンなしのエラーテスト
+  - **正規表現の修正**: `/^gh[ps]_/` → `/^gh[pso]_/` に変更
+  - **エラーメッセージの更新**: `gho_` フォーマットを含めるように変更
+- **テスト結果**: 12テスト全て合格、型チェック・Biome 全てクリア
+- **技術的な成果**:
+  - TDD アプローチで実装（Red → Green → Refactor）
+  - Fine-grained Personal Access Token (`gho_`) のサポート追加
+  - Bun Test の `spyOn` を使用した console.warn のモック
+- **次のステップ**: watch モードのデーモン化 (--daemon, PID 管理)
 
 ## コンテキストと方向性
 

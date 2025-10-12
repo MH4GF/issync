@@ -36,10 +36,10 @@ export class GitHubClient {
       throw new GitHubTokenMissingError()
     }
 
-    // Validate token format (GitHub tokens start with ghp_ or ghs_)
-    if (!/^gh[ps]_[a-zA-Z0-9]{36,}$/.test(authToken)) {
+    // Validate token format (GitHub tokens start with ghp_, ghs_, or gho_)
+    if (!/^gh[pso]_[a-zA-Z0-9]{36,}$/.test(authToken)) {
       console.warn(
-        'Warning: GitHub token format appears invalid. Expected format: ghp_... or ghs_...',
+        'Warning: GitHub token format appears invalid. Expected format: ghp_..., ghs_..., or gho_...',
       )
     }
 

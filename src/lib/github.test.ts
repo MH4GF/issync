@@ -1,5 +1,5 @@
-import { describe, expect, test } from 'bun:test'
-import { parseIssueUrl } from './github'
+import { describe, expect, spyOn, test } from 'bun:test'
+import { GitHubClient, parseIssueUrl } from './github'
 
 describe('parseIssueUrl', () => {
   test('can parse standard GitHub Issue URL', () => {
@@ -46,5 +46,46 @@ describe('parseIssueUrl', () => {
 
   test('throws error for invalid format', () => {
     expect(() => parseIssueUrl('not a url')).toThrow()
+  })
+})
+
+describe('GitHubClient constructor', () => {
+  const VALID_TOKEN_LENGTH = 36
+
+  describe.each([
+    { prefix: 'ghp', description: 'Personal Access Token' },
+    { prefix: 'ghs', description: 'Server Token' },
+    { prefix: 'gho', description: 'Fine-grained Personal Access Token' },
+  ])('$prefix_ token ($description)', ({ prefix }) => {
+    test('accepts valid token without warning', () => {
+      const consoleWarnSpy = spyOn(console, 'warn')
+      const validToken = `${prefix}_${'a'.repeat(VALID_TOKEN_LENGTH)}`
+
+      new GitHubClient(validToken)
+
+      expect(consoleWarnSpy).not.toHaveBeenCalled()
+      consoleWarnSpy.mockRestore()
+    })
+  })
+
+  test('shows warning for invalid token format', () => {
+    const consoleWarnSpy = spyOn(console, 'warn')
+    const invalidToken = 'invalid_token'
+
+    new GitHubClient(invalidToken)
+
+    expect(consoleWarnSpy).toHaveBeenCalledWith(
+      expect.stringContaining('GitHub token format appears invalid'),
+    )
+    consoleWarnSpy.mockRestore()
+  })
+
+  test('throws error when token is missing', () => {
+    const originalEnv = process.env.GITHUB_TOKEN
+    delete process.env.GITHUB_TOKEN
+
+    expect(() => new GitHubClient()).toThrow('GitHub token required')
+
+    process.env.GITHUB_TOKEN = originalEnv
   })
 })
