@@ -140,6 +140,49 @@ GitHub API access requires a token:
 - Or pass token to `GitHubClient` constructor
 - Required scopes: `repo` (for private repos) or `public_repo` (for public repos)
 
+## Using issync in Development Sessions
+
+**CRITICAL: Always start watch mode BEFORE editing any synced files**
+
+The MVP version of `pull` performs unconditional overwrites. If you start editing a file before launching watch mode, and the remote is out of date, you WILL lose local changes when watch mode starts and pulls the old remote version.
+
+### Required Workflow (Session Start)
+
+```bash
+# 1. Set GitHub token (if not already set)
+export GITHUB_TOKEN=ghp_your_token_here
+
+# 2. FIRST: Start watch mode (do this BEFORE any edits)
+issync watch
+
+# 3. THEN: Begin editing files
+# Claude Code or other AI agents can now safely read/edit the file
+```
+
+### Important Notes
+
+- **Never edit before watch starts**: If you edit a file and then start watch, your changes may be overwritten by an outdated remote version
+- **Keep watch running**: Leave watch mode running in a separate terminal throughout your session
+- **Stop with Ctrl+C**: When done, stop watch mode with Ctrl+C
+
+### Why This Matters
+
+The MVP's pull operation is a simple overwrite (no merge logic). This means:
+- If remote is behind local → Starting watch will overwrite local with old content
+- **Data loss can occur** if the workflow is not followed
+- Phase 2 will implement section-based merging to reduce this risk
+
+### Real-World Example (Actual Data Loss)
+
+In our own development, we lost 45 lines of progress because:
+1. We edited docs/plan.md locally without watch running
+2. Remote Issue comment was still at an old version
+3. We started watch mode
+4. Pull immediately overwrote local with the old remote version
+5. Had to restore from git checkout
+
+**Lesson**: Always start watch FIRST, edit SECOND.
+
 ## Key Implementation Notes
 
 ### Optimistic Locking (Push)
