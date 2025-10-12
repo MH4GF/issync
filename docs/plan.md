@@ -442,7 +442,7 @@ last_synced_hash: abc123def # リモートの最終 hash (楽観ロック用)
 - 403/429 レスポンスの処理が必要
 - **楽観ロックの実装**:
   - GET /repos/{owner}/{repo}/issues/comments/{comment_id} でコメント取得
-  - body の hash を計算し、.issync.yml に保存
+  - body の hash を計算し、`state.yml` に保存
   - PATCH で更新する前に再度 GET して hash を比較
   - hash が一致しなければコンフリクト(pull → マージ → 再試行)
 - Issue comment の更新は PATCH /repos/{owner}/{repo}/issues/comments/{comment_id}

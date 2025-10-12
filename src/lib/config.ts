@@ -1,23 +1,29 @@
-import { readFileSync, writeFileSync, existsSync } from 'fs'
+import { readFileSync, writeFileSync, existsSync, mkdirSync } from 'fs'
 import yaml from 'js-yaml'
 import type { IssyncConfig } from '../types/index.js'
 
-const CONFIG_FILE = '.issync.yml'
+const STATE_DIR = '.issync'
+const STATE_FILE = '.issync/state.yml'
 
 export function loadConfig(): IssyncConfig {
-  if (!existsSync(CONFIG_FILE)) {
-    throw new Error('.issync.yml not found. Run `issync init` first.')
+  if (!existsSync(STATE_FILE)) {
+    throw new Error('.issync/state.yml not found. Run `issync init` first.')
   }
 
-  const content = readFileSync(CONFIG_FILE, 'utf-8')
+  const content = readFileSync(STATE_FILE, 'utf-8')
   return yaml.load(content) as IssyncConfig
 }
 
 export function saveConfig(config: IssyncConfig): void {
+  // ディレクトリがなければ作成
+  if (!existsSync(STATE_DIR)) {
+    mkdirSync(STATE_DIR, { recursive: true })
+  }
+
   const content = yaml.dump(config)
-  writeFileSync(CONFIG_FILE, content, 'utf-8')
+  writeFileSync(STATE_FILE, content, 'utf-8')
 }
 
 export function configExists(): boolean {
-  return existsSync(CONFIG_FILE)
+  return existsSync(STATE_FILE)
 }
