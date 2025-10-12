@@ -23,7 +23,8 @@ issync は、GitHub Issue のコメントとローカルファイル間でテキ
 - [x] .issync.yml スキーマの実装 (型定義 + config 管理)
 - [x] テストフレームワークのセットアップ (Bun Test)
 - [x] 基本ライブラリのテスト作成 (hash, github URL parse)
-      **Phase 1 (MVP - ドッグフーディングまで):**
+
+**Phase 1 (MVP - ドッグフーディングまで):**
 - [ ] init コマンドの実装 (TDD)
 - [ ] push コマンドの実装 (楽観ロック含む、TDD)
 - [ ] pull コマンドの実装 (TDD)
@@ -146,6 +147,28 @@ issync は、GitHub Issue のコメントとローカルファイル間でテキ
   - ❌ 高度なレート制限処理
 - **理由**: 早期にドッグフーディングを開始し、実際の使用感を確認する
 
+**2025-10-12: 状態管理に `.issync/` ディレクトリを採用**
+
+- **採用**: `.issync/state.yml` で状態を管理
+- **理由**:
+  - **設定 vs 状態の明確な分離**: ルートの `.issync.yml` は設定ファイルと誤認される
+  - **`.git/` との類似性**: 開発者に馴染み深いパターン（ローカル状態管理）
+  - **gitignore の自然さ**: `.issync/` → 「状態管理。gitignore に追加」と直感的
+  - **将来の拡張性**: 複数ファイル対応時に `.issync/plan.state.yml` などに拡張可能
+- **ディレクトリ構造**:
+  ```
+  project-root/
+    .issync/
+      state.yml       # 状態ファイル（gitignore）
+    .gitignore        # .issync/ を追加推奨
+    docs/
+      plan.md
+  ```
+- **init コマンドの動作**:
+  - `.issync/` ディレクトリを作成
+  - `state.yml` に状態を保存
+  - ユーザーに `.gitignore` への追加を推奨（自動化は Phase 2 で検討）
+
 ## 成果と振り返り
 
 **2025-10-12: 初期セットアップ完了**
@@ -222,7 +245,7 @@ Feler の手法: plans.md を生きたドキュメントとして使い、AI エ
 
 **実装するコマンド:**
 
-1. **init**: Issue URL → .issync.yml 生成
+1. **init**: Issue URL → `.issync/state.yml` 生成
 2. **push**: ローカル → リモート (楽観ロック: hash 不一致時はエラー)
 3. **pull**: リモート → ローカル (無条件上書き)
 4. **watch**: フォアグラウンドプロセスで自動同期
@@ -268,17 +291,19 @@ Feler の手法: plans.md を生きたドキュメントとして使い、AI エ
 4. ✅ .issync.yml スキーマ作成
 5. **init コマンド実装 (TDD)**
    - Issue URL パース
-   - .issync.yml 生成
+   - `.issync/` ディレクトリ作成
+   - `state.yml` 生成
    - バリデーション (URL, ファイル存在確認)
+   - gitignore 追加の推奨メッセージ表示
 6. **push コマンド実装 (TDD)**
    - ローカルファイル読み込み
    - 初回: comment 作成
    - 2 回目以降: 楽観ロック (hash 比較) → comment 更新
-   - .issync.yml 更新
+   - `state.yml` 更新
 7. **pull コマンド実装 (TDD)**
    - リモート comment 取得
    - ローカルファイル書き込み (無条件上書き)
-   - .issync.yml 更新
+   - `state.yml` 更新
 8. **watch モード実装**
    - chokidar でファイル監視
    - setInterval でリモートポーリング
@@ -340,7 +365,7 @@ Feler の手法: plans.md を生きたドキュメントとして使い、AI エ
 **主要コマンド (Phase 1 MVP):**
 
 ```bash
-# 初期化: Issue URL を .issync.yml に保存
+# 初期化: .issync/ ディレクトリと state.yml を作成
 issync init <issue-url> [--file path/to/file]
 
 # 手動同期
@@ -377,20 +402,37 @@ issync watch
 # Ctrl+C で watch を停止
 ```
 
-**設定フォーマット(.issync.yml):**
+**状態ファイルフォーマット (`.issync/state.yml`):**
 
 ```yaml
-# Phase 1 (MVP)
+# Phase 1 (MVP) - 最小限の状態管理
 issue_url: https://github.com/owner/repo/issues/123
 comment_id: 123456789 # 最初の push で自動設定
 local_file: docs/plan.md
 last_synced_hash: abc123def # リモートの最終 hash (楽観ロック用)
-last_synced_at: 2025-10-12T10:30:00Z
-poll_interval: 10 # watch mode のポーリング間隔 (秒)
+```
 
-# Phase 2 で追加予定
-# merge_strategy: section-based     # セクションベースマージ
-# watch_daemon_pid: 12345           # デーモンのプロセス ID
+**Phase 2 で追加予定:**
+
+```yaml
+# デバッグ用フィールド
+# last_synced_at: 2025-10-12T10:30:00Z
+
+# コマンド引数で対応可能
+# poll_interval: 10  # --interval で指定
+
+# デーモン化関連
+# watch_daemon_pid: 12345
+
+# 高度なマージ戦略
+# merge_strategy: section-based
+```
+
+**`.gitignore` への追加推奨:**
+
+```gitignore
+# issync ローカル状態
+.issync/
 ```
 
 **GitHub API 考慮事項:**
