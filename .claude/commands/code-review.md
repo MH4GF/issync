@@ -1,123 +1,167 @@
 ---
-description: Comprehensive code review with deep analysis using extended thinking
-argument-hint: [pr-number | file-path | (empty for staged)]
+description: 拡張思考を用いた包括的なコードレビュー
+argument-hint: [PR番号 | ファイルパス | (空欄でステージング済み)]
 ---
 
-You are an expert code reviewer with deep understanding of software architecture, testing principles, and code quality. Use **extended thinking** to analyze the code thoroughly before providing feedback.
+あなたはソフトウェアアーキテクチャ、テスト原則、コード品質について深い理解を持つエキスパートコードレビュアーです。フィードバックを提供する前に、**拡張思考**を使ってコードを徹底的に分析してください。
 
-## Review Mode Detection
+## レビューモードの検出
 
-Determine the review mode based on arguments:
-- If `$ARGUMENTS` is a number → **PR Review Mode**: Use `!gh pr view $ARGUMENTS` and `!gh pr diff $ARGUMENTS`
-- If `$ARGUMENTS` is empty → **Staged Changes Mode**: Use `!git diff --cached`
-- If `$ARGUMENTS` is a file path → **File Review Mode**: Use `!git diff $ARGUMENTS`
+引数に基づいてレビューモードを判定します：
+- `$ARGUMENTS` が数値の場合 → **PRレビューモード**: `!gh pr view $ARGUMENTS` と `!gh pr diff $ARGUMENTS` を使用
+- `$ARGUMENTS` が空の場合 → **ステージング変更モード**: `!git diff --cached` を使用
+- `$ARGUMENTS` がファイルパスの場合 → **ファイルレビューモード**: `!git diff $ARGUMENTS` を使用
 
-## Project Context
+## プロジェクトのコンテキスト
 
-This is the **issync** project - a CLI tool for syncing GitHub Issue comments with local files:
-- **Stack**: Bun runtime, TypeScript, commander.js for CLI
-- **Testing**: Bun Test (Jest-compatible), TDD workflow
-- **Philosophy**: AI agent transparency, background sync, optimistic locking
+これは **issync** プロジェクトです - GitHub Issueのコメントとローカルファイルを同期するCLIツール：
+- **スタック**: Bunランタイム、TypeScript、commander.jsでCLI実装
+- **テスト**: Bun Test (Jest互換)、TDDワークフロー
+- **哲学**: AIエージェントの透明性、バックグラウンド同期、楽観的ロック
 
-## Review Criteria
+## レビュー基準
 
-### Core Principles (from CLAUDE.md)
-- **Less is More**: Keep implementations small and obvious
-- **Let code speak**: If multi-paragraph comments are needed, refactor
-- **Simple > Clever**: Clear code beats clever code every time
-- **Delete ruthlessly**: Remove anything that doesn't add clear value
+### コア原則 (CLAUDE.mdより)
+- **Less is More（少ない方が良い）**: 実装は小さく明白に保つ
+- **コードに語らせる**: 複数段落のコメントが必要なら、意図が明白になるまでリファクタリング
+- **シンプル > 賢い**: 明確なコードは賢いコードに勝る
+- **無慈悲に削除**: 明確な価値を追加しないものはすべて削除
 
-### TypeScript Best Practices
-- Type safety (avoid `any`, use proper interfaces)
-- Proper error handling (typed errors, Result types)
-- Clear function signatures
-- Appropriate use of TypeScript features
+### TypeScriptのベストプラクティス
+- 型安全性（`any`を避け、適切なインターフェースを使用）
+- 適切なエラーハンドリング（型付きエラー、Result型）
+- 明確な関数シグネチャ
+- TypeScript機能の適切な使用
 
-### Testing Quality (Khorikov's Four Pillars)
-When reviewing tests, evaluate against:
-1. **Protection against regressions**: Does it catch real bugs?
-2. **Resistance to refactoring**: Tests behavior, not implementation?
-3. **Fast feedback**: Quick execution time?
-4. **Maintainability**: Easy to read and understand?
+### テスト品質 (Khorivkovの4つの柱)
+テストをレビューする際は、以下に対して評価します：
+1. **リグレッションに対する保護**: 実際のバグを捕捉できるか？
+2. **リファクタリングへの耐性**: 実装ではなく振る舞いをテストしているか？
+3. **高速なフィードバック**: 実行時間は速いか？
+4. **保守性**: 読みやすく理解しやすいか？
 
-Additional testing criteria:
-- **AAA Pattern**: Arrange, Act, Assert clearly separated
-- **Integration over unit**: Prefer real dependencies over mocks
-- **Mock only externals**: Network, slow operations, time/date
-- **Behavior over implementation**: Test inputs/outputs, not internals
-- **One assertion per test** (when practical)
+追加のテスト基準：
+- **AAAパターン**: Arrange、Act、Assertが明確に分離されている
+- **統合テスト優先**: モックよりも実際の依存関係を優先
+- **外部のみモック**: ネットワーク、低速な操作、時刻/日付のみモック
+- **実装より振る舞い**: 内部ではなく、入出力をテスト
+- **1テスト1アサーション**（実用的な場合）
 
-### Bun-Specific
-- Use Bun native APIs where appropriate
-- Leverage Bun's fast file I/O
-- TypeScript without transpilation
+### Bun固有
+- 適切な場所でBunネイティブAPIを使用
+- Bunの高速ファイルI/Oを活用
+- トランスパイルなしでTypeScript
 
-## Analysis Process (Use Extended Thinking)
+## 分析プロセス（拡張思考を使用）
 
-Think deeply about:
-1. **Architecture**: Does this fit the overall design? Any architectural concerns?
-2. **Edge Cases**: What could go wrong? What inputs might break this?
-3. **Performance**: Any inefficiencies? Better algorithms available?
-4. **Maintainability**: Will this be easy to understand in 6 months?
-5. **Security**: Any vulnerabilities? Input validation needed?
-6. **Testing**: Are tests comprehensive? Do they follow Khorikov's principles?
-7. **Simplicity**: Can this be simpler? Any unnecessary complexity?
+以下について深く考察します：
+1. **アーキテクチャ**: これは全体設計に適合しているか？アーキテクチャ上の懸念はないか？
+2. **エッジケース**: 何が問題になる可能性があるか？どのような入力がこれを壊すか？
+3. **パフォーマンス**: 非効率性はないか？より良いアルゴリズムはあるか？
+4. **保守性**: 6ヶ月後も理解しやすいか？
+5. **セキュリティ**: 脆弱性はないか？入力検証が必要か？
+6. **テスト**: テストは包括的か？Khorivkovの原則に従っているか？
+7. **シンプルさ**: これはもっとシンプルにできるか？不要な複雑さはないか？
 
-## Output Format
+## 出力フォーマット
 
-Provide a structured review with these sections:
+**言語設定**: レビューの出力は **すべて日本語** で行ってください。
 
-### 📋 Overview
-- Brief summary of what the changes do
-- Overall assessment (Looks good / Needs work / Has issues)
+以下のセクションで構造化されたレビューを提供してください：
 
-### 🏗️ Architecture & Design
-- High-level design decisions
-- Alignment with project architecture
-- Potential architectural concerns
+### 📋 概要
+- 変更内容の簡単な要約
+- 全体的な評価（問題なし / 改善が必要 / 問題あり）
 
-### ✨ Code Quality
-- Style and readability
-- TypeScript usage
-- Adherence to "Less is More" principles
-- Specific improvements
+### 🏗️ アーキテクチャとデザイン
+- 高レベルの設計決定
+- プロジェクトアーキテクチャとの整合性
+- 潜在的なアーキテクチャ上の懸念
 
-### 🧪 Testing Strategy (if tests are included)
-- Evaluation against Khorikov's four pillars
-- Test coverage assessment
-- AAA pattern usage
-- Mocking strategy (appropriate?)
-- Suggestions for test improvements
+### ✨ コード品質
+- スタイルと可読性
+- TypeScriptの使用方法
+- "Less is More" 原則への準拠
+- 具体的な改善点
 
-### 💡 Specific Suggestions
-Format each suggestion as:
+### 🧪 テスト戦略（テストが含まれる場合）
+- Khorivkovの4つの柱に対する評価
+- テストカバレッジの評価
+- AAAパターンの使用
+- モック戦略（適切か？）
+- テスト改善の提案
+
+### 💡 具体的な提案
+各提案を以下の形式で記述：
 ```
-[Priority: High/Medium/Low]
-**Location**: file.ts:line_number
-**Issue**: Description of the issue
-**Suggestion**: Specific improvement with code example if applicable
-**Rationale**: Why this matters
+[優先度: 高/中/低]
+**場所**: file.ts:line_number
+**問題**: 問題の説明
+**提案**: 該当する場合はコード例を含む具体的な改善策
+**理由**: これが重要な理由
 ```
 
-### 🔒 Security & Performance
-- Security vulnerabilities
-- Performance bottlenecks
-- Rate limiting considerations (for GitHub API)
-- Resource management
+### 🔒 セキュリティとパフォーマンス
+- セキュリティ脆弱性
+- パフォーマンスのボトルネック
+- レート制限の考慮事項（GitHub API用）
+- リソース管理
 
-### ✅ Summary
-- Key strengths
-- Critical issues (if any)
-- Action items prioritized
+### ✅ まとめ
+- 主な強み
+- クリティカルな問題（もしあれば）
+- 優先順位付けされたアクション項目
 
 ---
 
-**Instructions**:
-1. Gather the code to review using the detected mode
-2. Use extended thinking to analyze thoroughly
-3. Apply all review criteria from this project context
-4. Provide actionable, specific feedback with examples
-5. Be constructive but honest - point out real issues
-6. Consider both current functionality and future maintainability
+**手順**:
+1. 検出されたモードを使用してレビューするコードを収集
+2. 拡張思考を使用して徹底的に分析
+3. このプロジェクトコンテキストからのすべてのレビュー基準を適用
+4. 例を含む実行可能で具体的なフィードバックを提供
+5. 建設的でありながら正直に - 実際の問題を指摘
+6. 現在の機能性と将来の保守性の両方を考慮
+
+## レビュー完了後のアクション
+
+レビューレポートを提供した後、**自動的に修正作業を開始してください**：
+
+### 1. 修正タスクの作成
+- TodoWriteツールを使用して、レビューで指摘したすべての問題を修正タスクとして登録
+- 優先度（高/中/低）を明確に設定
+- 各タスクには具体的な修正内容を記載
+
+### 2. 修正作業の実施
+以下の順序で修正を進めます：
+- **優先度High**: クリティカルな問題から着手
+- **優先度Medium**: 重要だが緊急ではない問題
+- **優先度Low**: 細かい改善点
+
+各修正について：
+- タスクを `in_progress` に変更してから作業開始
+- 該当ファイルを編集（Editツール使用）
+- 修正完了後、タスクを `completed` にマーク
+- 次のタスクに進む
+
+### 3. テストの実行
+修正作業中は適宜テストを実行：
+- テストファイルがある場合: `bun test` で検証
+- リンターエラーの修正後: `bun run biome check` または該当するlintコマンドを実行
+- ビルドエラーの修正後: `bun run build` で確認
+
+### 4. 修正の方針
+- **段階的な修正**: 1つの問題を完全に修正してから次へ
+- **明確な説明**: 各修正で何を変更したかを簡潔に説明
+- **テストの維持**: 既存のテストが壊れないよう注意
+- **破壊的変更の場合**: 特に慎重に対応し、必要に応じてユーザーに確認
+  - 例: 公開APIの変更、関数シグネチャの変更、既存テストの削除、データ構造の変更
+
+### 5. 修正完了後の報告
+すべての修正タスクが完了したら：
+- 修正内容の要約を提供
+- テスト結果を共有
+- 残っている課題や今後の改善提案があれば言及
+
+---
 
 Review: $ARGUMENTS
