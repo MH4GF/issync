@@ -5,7 +5,7 @@ import { ConfigNotFoundError } from '../lib/errors.js'
 import { pull } from './pull.js'
 import { OptimisticLockError, push } from './push.js'
 
-export interface WatchOptions {
+interface WatchOptions {
   interval?: number // polling interval in seconds
 }
 

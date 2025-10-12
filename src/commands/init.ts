@@ -2,12 +2,12 @@ import { configExists, saveConfig } from '../lib/config.js'
 import { parseIssueUrl } from '../lib/github.js'
 import type { IssyncConfig } from '../types/index.js'
 
-export interface InitOptions {
+interface InitOptions {
   file?: string
   cwd?: string
 }
 
-export class AlreadyInitializedError extends Error {
+class AlreadyInitializedError extends Error {
   constructor() {
     super('Project is already initialized. .issync/state.yml already exists.')
     this.name = 'AlreadyInitializedError'

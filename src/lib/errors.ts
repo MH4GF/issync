@@ -1,4 +1,4 @@
-export class IssyncError extends Error {
+class IssyncError extends Error {
   constructor(message: string) {
     super(message)
     this.name = 'IssyncError'

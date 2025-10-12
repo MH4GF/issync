@@ -34,6 +34,7 @@ issync は、GitHub Issue のコメントとローカルファイル間でテキ
 
 **Phase 2 (スマートマージとデーモン化):**
 
+- [ ] GitHub token format 検証の改善 (gho_ フォーマットのサポート)
 - [ ] watch モードのデーモン化 (--daemon, PID 管理)
 - [ ] stop コマンドの実装
 - [ ] セクションベースのマージ戦略の実装
@@ -451,6 +452,29 @@ issync は、GitHub Issue のコメントとローカルファイル間でテキ
   - 手動で git checkout による復元が必要だった
   - Phase 2 でセクションベースマージが重要であることを確認
 - **次のステップ**: 実際のドッグフーディングで継続使用し、フィードバックを収集
+
+**2025-10-12: CLAUDE.md への運用ガイドライン追加**
+
+- **実施内容**:
+  - CLAUDE.md に新セクション「Using issync in Development Sessions」を追加
+  - watch モード起動を最優先とする必須ワークフローを明記
+  - データロス防止のための重要な注意事項を追加
+  - 実際のデータロス事例（45行消失）を具体例として記載
+  - GITHUB_TOKEN 設定を含む具体的なコマンド例を提供
+- **背景**:
+  - docs/plan.md の「発見と気づき」で特定された、watch起動前の編集によるデータロス問題
+  - MVP版のpullは無条件上書きのため、リモートが古いと必ずデータロスが起きる
+  - 実際の開発で45行の進捗が消失し、git checkoutで復元した経験
+- **追加した警告**:
+  - "CRITICAL: Always start watch mode BEFORE editing any synced files"
+  - セッション開始時の3ステップワークフロー（トークン設定 → watch起動 → 編集開始）
+  - データロスが起きる仕組みの説明（pull = 無条件上書き）
+  - 実例に基づく「Lesson: Always start watch FIRST, edit SECOND」
+- **効果**:
+  - AI エージェント（Claude Code）が最初にCLAUDE.mdを読むため、正しいワークフローを確実に認識
+  - 同じデータロス問題の再発を防止
+  - Phase 2 実装までの運用ルールとして機能
+- **次のステップ**: 実際の開発で運用し、このガイドラインの有効性を検証
 
 ## コンテキストと方向性
 
