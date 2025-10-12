@@ -36,6 +36,9 @@ bun run type-check
 bun run build
 ```
 
+**Development Workflow:**
+At the start of each session, run `bun test --watch` in the background. This provides continuous feedback as you write code and ensures tests are always passing. The watch mode is fast (~150ms) and won't slow down development.
+
 ## Architecture
 
 ### Command Flow
