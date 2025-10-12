@@ -4,8 +4,9 @@ export interface IssyncConfig {
   local_file: string
   last_synced_hash?: string
   last_synced_at?: string
-  poll_interval: number
-  merge_strategy: 'section-based' | 'simple'
+  // Phase 2: watch mode configuration
+  poll_interval?: number
+  merge_strategy?: 'section-based' | 'simple'
   watch_daemon_pid?: number
 }
 

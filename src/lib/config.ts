@@ -4,7 +4,7 @@ import yaml from 'js-yaml'
 import type { IssyncConfig } from '../types/index.js'
 import { ConfigNotFoundError } from './errors.js'
 
-function getStatePath(cwd = process.cwd()) {
+function getStatePath(cwd = process.cwd()): { stateDir: string; stateFile: string } {
   return {
     stateDir: path.join(cwd, '.issync'),
     stateFile: path.join(cwd, '.issync', 'state.yml'),

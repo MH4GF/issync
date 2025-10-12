@@ -27,3 +27,17 @@ export class GitHubTokenMissingError extends IssyncError {
     this.name = 'GitHubTokenMissingError'
   }
 }
+
+export class InvalidFilePathError extends IssyncError {
+  constructor(path: string, reason: string) {
+    super(`Invalid file path "${path}": ${reason}`)
+    this.name = 'InvalidFilePathError'
+  }
+}
+
+export class FileNotFoundError extends IssyncError {
+  constructor(path: string) {
+    super(`File not found: ${path}`)
+    this.name = 'FileNotFoundError'
+  }
+}

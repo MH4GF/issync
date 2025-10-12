@@ -3,7 +3,18 @@ import type { CommentData, GitHubIssueInfo } from '../types/index.js'
 import { GitHubTokenMissingError, InvalidIssueUrlError } from './errors.js'
 
 export function parseIssueUrl(url: string): GitHubIssueInfo {
-  const match = url.match(/github\.com\/([^/]+)\/([^/]+)\/issues\/(\d+)/)
+  // Robust regex that handles:
+  // - Optional protocol (http:// or https://)
+  // - Optional www subdomain
+  // - github.com domain
+  // - Owner/repo validation (alphanumeric, underscores, hyphens, dots)
+  // - Optional .git suffix
+  // - Issue number
+  // - Optional trailing slash, query params, or fragments
+  const match = url.match(
+    /^(?:https?:\/\/)?(?:www\.)?github\.com\/([a-zA-Z0-9_-]+)\/([a-zA-Z0-9_.-]+?)(?:\.git)?\/issues\/(\d+)(?:[/?#].*)?$/,
+  )
+
   if (!match) {
     throw new InvalidIssueUrlError(url)
   }
@@ -24,6 +35,14 @@ export class GitHubClient {
     if (!authToken) {
       throw new GitHubTokenMissingError()
     }
+
+    // Validate token format (GitHub tokens start with ghp_ or ghs_)
+    if (!/^gh[ps]_[a-zA-Z0-9]{36,}$/.test(authToken)) {
+      console.warn(
+        'Warning: GitHub token format appears invalid. Expected format: ghp_... or ghs_...',
+      )
+    }
+
     this.octokit = new Octokit({
       auth: authToken,
     })

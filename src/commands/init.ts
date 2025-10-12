@@ -14,7 +14,7 @@ export class AlreadyInitializedError extends Error {
   }
 }
 
-export async function init(issueUrl: string, options: InitOptions = {}): Promise<void> {
+export function init(issueUrl: string, options: InitOptions = {}): void {
   const { file = 'docs/plan.md', cwd } = options
 
   // Validate Issue URL by parsing it

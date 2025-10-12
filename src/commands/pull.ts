@@ -1,6 +1,8 @@
-import { writeFile } from 'node:fs/promises'
+import { existsSync } from 'node:fs'
+import { mkdir, writeFile } from 'node:fs/promises'
 import path from 'node:path'
 import { loadConfig, saveConfig } from '../lib/config.js'
+import { InvalidFilePathError } from '../lib/errors.js'
 import { GitHubClient, parseIssueUrl } from '../lib/github.js'
 import { calculateHash } from '../lib/hash.js'
 
@@ -21,6 +23,22 @@ export async function pull(options: PullOptions = {}): Promise<void> {
     )
   }
 
+  // Validate file path
+  const filePath = path.join(cwd || process.cwd(), config.local_file)
+
+  // Check for path traversal
+  const resolvedPath = path.resolve(cwd || process.cwd(), config.local_file)
+  const basePath = path.resolve(cwd || process.cwd())
+  if (!resolvedPath.startsWith(basePath)) {
+    throw new InvalidFilePathError(config.local_file, 'path traversal detected')
+  }
+
+  // Ensure parent directory exists
+  const parentDir = path.dirname(filePath)
+  if (!existsSync(parentDir)) {
+    await mkdir(parentDir, { recursive: true })
+  }
+
   // Parse issue URL
   const issueInfo = parseIssueUrl(config.issue_url)
 
@@ -32,7 +50,6 @@ export async function pull(options: PullOptions = {}): Promise<void> {
   const remoteHash = calculateHash(comment.body)
 
   // Write to local file
-  const filePath = path.join(cwd || process.cwd(), config.local_file)
   await writeFile(filePath, comment.body, 'utf-8')
 
   // Update config with new hash

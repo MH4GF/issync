@@ -4,6 +4,25 @@ import { Command } from 'commander'
 
 const program = new Command()
 
+async function _handleCommand(
+  commandFn: () => Promise<void>,
+  successMessage?: string,
+): Promise<void> {
+  try {
+    await commandFn()
+    if (successMessage) {
+      console.log(successMessage)
+    }
+  } catch (error) {
+    if (error instanceof Error) {
+      console.error(`Error: ${error.message}`)
+    } else {
+      console.error('Unknown error occurred')
+    }
+    process.exit(1)
+  }
+}
+
 program
   .name('issync')
   .description('CLI tool to sync text between GitHub Issue comments and local files')
@@ -15,20 +34,10 @@ program
   .option('-f, --file <path>', 'Local file path', 'docs/plan.md')
   .action(async (issueUrl: string, options: { file: string }) => {
     const { init } = await import('./commands/init.js')
-    try {
-      await init(issueUrl, { file: options.file })
-      console.log('✓ Initialized issync')
-      console.log(`  Issue: ${issueUrl}`)
-      console.log(`  File:  ${options.file}`)
-      console.log('\nRecommended: Add .issync/ to your .gitignore')
-    } catch (error) {
-      if (error instanceof Error) {
-        console.error(`Error: ${error.message}`)
-      } else {
-        console.error('Unknown error occurred')
-      }
-      process.exit(1)
-    }
+    await _handleCommand(
+      async () => init(issueUrl, { file: options.file }),
+      `✓ Initialized issync\n  Issue: ${issueUrl}\n  File:  ${options.file}\n\nRecommended: Add .issync/ to your .gitignore`,
+    )
   })
 
 program
@@ -36,17 +45,7 @@ program
   .description('Pull remote changes from GitHub Issue to local file')
   .action(async () => {
     const { pull } = await import('./commands/pull.js')
-    try {
-      await pull()
-      console.log('✓ Pulled changes from remote')
-    } catch (error) {
-      if (error instanceof Error) {
-        console.error(`Error: ${error.message}`)
-      } else {
-        console.error('Unknown error occurred')
-      }
-      process.exit(1)
-    }
+    await _handleCommand(async () => pull(), '✓ Pulled changes from remote')
   })
 
 program
@@ -54,17 +53,7 @@ program
   .description('Push local changes to GitHub Issue comment')
   .action(async () => {
     const { push } = await import('./commands/push.js')
-    try {
-      await push()
-      console.log('✓ Pushed changes to remote')
-    } catch (error) {
-      if (error instanceof Error) {
-        console.error(`Error: ${error.message}`)
-      } else {
-        console.error('Unknown error occurred')
-      }
-      process.exit(1)
-    }
+    await _handleCommand(async () => push(), '✓ Pushed changes to remote')
   })
 
 program
