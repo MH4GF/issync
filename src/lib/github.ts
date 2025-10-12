@@ -2,6 +2,20 @@ import { Octokit } from '@octokit/rest'
 import type { CommentData, GitHubIssueInfo } from '../types/index.js'
 import { GitHubTokenMissingError, InvalidIssueUrlError } from './errors.js'
 
+export function parseIssueUrl(url: string): GitHubIssueInfo {
+  const match = url.match(/github\.com\/([^/]+)\/([^/]+)\/issues\/(\d+)/)
+  if (!match) {
+    throw new InvalidIssueUrlError(url)
+  }
+
+  const [, owner, repo, issue_number] = match
+  return {
+    owner,
+    repo,
+    issue_number: Number.parseInt(issue_number, 10),
+  }
+}
+
 export class GitHubClient {
   private octokit: Octokit
 
@@ -16,17 +30,7 @@ export class GitHubClient {
   }
 
   parseIssueUrl(url: string): GitHubIssueInfo {
-    const match = url.match(/github\.com\/([^/]+)\/([^/]+)\/issues\/(\d+)/)
-    if (!match) {
-      throw new InvalidIssueUrlError(url)
-    }
-
-    const [, owner, repo, issue_number] = match
-    return {
-      owner,
-      repo,
-      issue_number: Number.parseInt(issue_number, 10),
-    }
+    return parseIssueUrl(url)
   }
 
   async getComment(owner: string, repo: string, comment_id: number): Promise<CommentData> {

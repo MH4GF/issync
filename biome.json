@@ -20,6 +20,13 @@
       "recommended": true,
       "suspicious": {
         "noExplicitAny": "off"
+      },
+      "complexity": {
+        "noForEach": "error"
+      },
+      "style": {
+        "useTemplate": "error",
+        "useExponentiationOperator": "error"
       }
     }
   },

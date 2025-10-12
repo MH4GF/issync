@@ -14,24 +14,57 @@ program
   .description('Initialize issync with a GitHub Issue URL')
   .option('-f, --file <path>', 'Local file path', 'docs/plan.md')
   .action(async (issueUrl: string, options: { file: string }) => {
-    console.log('init command:', issueUrl, options)
-    // TODO: implement
+    const { init } = await import('./commands/init.js')
+    try {
+      await init(issueUrl, { file: options.file })
+      console.log('✓ Initialized issync')
+      console.log(`  Issue: ${issueUrl}`)
+      console.log(`  File:  ${options.file}`)
+      console.log('\nRecommended: Add .issync/ to your .gitignore')
+    } catch (error) {
+      if (error instanceof Error) {
+        console.error(`Error: ${error.message}`)
+      } else {
+        console.error('Unknown error occurred')
+      }
+      process.exit(1)
+    }
   })
 
 program
   .command('pull')
   .description('Pull remote changes from GitHub Issue to local file')
   .action(async () => {
-    console.log('pull command')
-    // TODO: implement
+    const { pull } = await import('./commands/pull.js')
+    try {
+      await pull()
+      console.log('✓ Pulled changes from remote')
+    } catch (error) {
+      if (error instanceof Error) {
+        console.error(`Error: ${error.message}`)
+      } else {
+        console.error('Unknown error occurred')
+      }
+      process.exit(1)
+    }
   })
 
 program
   .command('push')
   .description('Push local changes to GitHub Issue comment')
   .action(async () => {
-    console.log('push command')
-    // TODO: implement
+    const { push } = await import('./commands/push.js')
+    try {
+      await push()
+      console.log('✓ Pushed changes to remote')
+    } catch (error) {
+      if (error instanceof Error) {
+        console.error(`Error: ${error.message}`)
+      } else {
+        console.error('Unknown error occurred')
+      }
+      process.exit(1)
+    }
   })
 
 program
