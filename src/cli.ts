@@ -5,7 +5,7 @@ import { Command } from 'commander'
 const program = new Command()
 
 async function _handleCommand(
-  commandFn: () => Promise<void>,
+  commandFn: (() => void) | (() => Promise<void>),
   successMessage?: string,
 ): Promise<void> {
   try {
@@ -35,7 +35,7 @@ program
   .action(async (issueUrl: string, options: { file: string }) => {
     const { init } = await import('./commands/init.js')
     await _handleCommand(
-      async () => init(issueUrl, { file: options.file }),
+      () => init(issueUrl, { file: options.file }),
       `✓ Initialized issync\n  Issue: ${issueUrl}\n  File:  ${options.file}\n\nRecommended: Add .issync/ to your .gitignore`,
     )
   })
@@ -61,7 +61,7 @@ program
   .description('Watch for changes and sync automatically')
   .option('-i, --interval <seconds>', 'Polling interval in seconds', '10')
   .option('-d, --daemon', 'Run as daemon in background')
-  .action(async (options: { interval: string; daemon?: boolean }) => {
+  .action((options: { interval: string; daemon?: boolean }) => {
     console.log('watch command:', options)
     // TODO: implement
   })
@@ -69,7 +69,7 @@ program
 program
   .command('stop')
   .description('Stop the watch daemon')
-  .action(async () => {
+  .action(() => {
     console.log('stop command')
     // TODO: implement
   })
@@ -77,7 +77,7 @@ program
 program
   .command('status')
   .description('Show sync status')
-  .action(async () => {
+  .action(() => {
     console.log('status command')
     // TODO: implement
   })

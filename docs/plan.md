@@ -186,6 +186,22 @@ issync は、GitHub Issue のコメントとローカルファイル間でテキ
   - `biome.json` で設定
   - `package.json` にスクリプト追加 (`format`, `lint`, `check`)
 
+**2025-10-12: TypeScript ESLint の追加導入**
+
+- **追加採用**: **typescript-eslint** (Biome と併用)
+- **理由**:
+  - **Biome で検出できないルール**: 不要な `async` キーワード検出 (`@typescript-eslint/require-await`)
+  - **型情報を活用したリント**: `no-floating-promises`, `no-misused-promises` など
+  - **コードレビュー指摘の予防**: 静的解析で事前に品質問題を検出
+- **Biome との役割分担**:
+  - **Biome**: フォーマット + 基本的なリント (高速、日常的に使用)
+  - **typescript-eslint**: 型情報ベースの高度なリント (CI/プッシュ前)
+- **セットアップ内容**:
+  - `eslint`, `typescript-eslint` をインストール
+  - `eslint.config.mjs` で Flat Config を使用
+  - `recommended` + `require-await` ルールを有効化
+  - `package.json` にスクリプト追加 (`lint:eslint`)
+
 ## 成果と振り返り
 
 **2025-10-12: 初期セットアップ完了**

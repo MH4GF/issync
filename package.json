@@ -16,8 +16,10 @@
     "format:check": "biome format .",
     "lint": "biome lint --write .",
     "lint:check": "biome lint .",
+    "lint:eslint": "eslint .",
+    "lint:fix": "eslint . --fix",
     "check": "biome check --write .",
-    "check:ci": "biome check ."
+    "check:ci": "biome check . & eslint . & wait"
   },
   "keywords": [
     "github",
@@ -37,8 +39,11 @@
   },
   "devDependencies": {
     "@biomejs/biome": "^2.2.5",
+    "@eslint/js": "^9.37.0",
     "@types/bun": "latest",
-    "@types/js-yaml": "^4.0.9"
+    "@types/js-yaml": "^4.0.9",
+    "eslint": "^9.37.0",
+    "typescript-eslint": "^8.46.0"
   },
   "peerDependencies": {
     "typescript": "^5.0.0"
