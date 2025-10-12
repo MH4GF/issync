@@ -149,15 +149,17 @@ The MVP version of `pull` performs unconditional overwrites. If you start editin
 ### Required Workflow (Session Start)
 
 ```bash
-# 1. Set GitHub token (if not already set)
-export GITHUB_TOKEN=ghp_your_token_here
+# 1. Set GitHub token using gh CLI
+export GITHUB_TOKEN=$(gh auth token)
 
 # 2. FIRST: Start watch mode (do this BEFORE any edits)
-issync watch
+bun run dev watch
 
 # 3. THEN: Begin editing files
 # Claude Code or other AI agents can now safely read/edit the file
 ```
+
+**Note**: We use `gh auth token` to automatically get your GitHub token from the GitHub CLI. Make sure you're logged in with `gh auth login` first.
 
 ### Important Notes
 

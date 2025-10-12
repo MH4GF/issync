@@ -35,6 +35,9 @@ issync は、GitHub Issue のコメントとローカルファイル間でテキ
 **Phase 2 (スマートマージとデーモン化):**
 
 - [x] GitHub token format 検証の改善 (gho_ フォーマットのサポート)
+- [ ] watch の pull-push ループバグ修正 (pull によるファイル変更を無視)
+- [ ] watch 起動時の安全性チェック (3-way comparison でコンフリクト検出)
+- [ ] docs/plan.md を git 管理から除外（issync 管理のみに移行）
 - [ ] watch モードのデーモン化 (--daemon, PID 管理)
 - [ ] stop コマンドの実装
 - [ ] セクションベースのマージ戦略の実装
@@ -72,6 +75,22 @@ issync は、GitHub Issue のコメントとローカルファイル間でテキ
 - **根本原因**: MVP 版の pull は無条件上書きするため、リモートが最新でないと必ずデータロスが起きる
 - **運用での対処**: CLAUDE.md に使用手順を明記し、watch 起動を最初のステップとして定義
 - **Phase 2 での解決**: セクションベースマージ実装により、pull での上書きリスクを軽減
+
+**2025-10-12: watch モードの無限ループバグ発見**
+
+- **発見**: watch モードで pull-push の無限ループが発生
+- **問題の詳細**:
+  - リモートポーリングで pull を実行 → ローカルファイルを書き込み
+  - chokidar がファイル変更を検知 → push を実行
+  - 10秒後に再びポーリング → pull を実行（リモートと完全に同じでも書き込み）
+  - 再び chokidar が変更検知 → push を実行
+  - **結果**: 10秒ごとに pull → push が永久に繰り返される
+- **根本原因**: pull 時のファイル書き込みを chokidar が検知し、push がトリガーされる
+- **影響**:
+  - GitHub API のレート制限を無駄に消費（360 req/hour → 720 req/hour）
+  - Edit() ツールでのファイル編集が失敗しやすくなる（常にファイルが変更されているため）
+  - 実際にファイル編集中に複数回 "File has been modified" エラーが発生
+- **Phase 2 での修正**: pull 操作中は chokidar の監視を一時停止、または pull によるファイル変更を無視する仕組みを実装
 
 ## 決定ログ
 
@@ -350,6 +369,48 @@ issync は、GitHub Issue のコメントとローカルファイル間でテキ
   - トークンなしでエラーがスローされることを確認
 - **理由**: 新しい GitHub トークンフォーマットへの対応により、ユーザーが最新のトークンを使用可能に
 
+**2025-10-12: watch 起動時の安全性チェック (Phase 2)**
+
+- **背景**: CLAUDE.md にワークフローを記載しても、AI エージェントが watch 起動を忘れるリスクは残る
+- **採用**: watch 起動時に 3-way comparison でコンフリクト検出を実装
+- **実装方針**:
+  ```typescript
+  // 疑似コード
+  const local = readFile('docs/plan.md')
+  const remote = await fetchRemote()
+  const lastSynced = state.last_synced_hash
+
+  const localHash = hash(local)
+  const remoteHash = hash(remote)
+
+  // 3-way comparison
+  if (localHash !== lastSynced && remoteHash !== lastSynced) {
+    // 両方が変更されている = コンフリクト
+    console.error("❌ Cannot start watch: CONFLICT DETECTED")
+    console.error("Both local and remote have changes since last sync")
+    console.error("Options: 1. diff 2. pull --force 3. push --force")
+    process.exit(1)
+  }
+
+  // どちらか一方のみが変更されている場合は自動同期
+  if (localHash !== lastSynced) await push()
+  else if (remoteHash !== lastSynced) await pull()
+
+  startPolling()
+  startFileWatcher()
+  ```
+- **メリット**:
+  - データロスを事前に防止（watch 起動前に検出）
+  - ユーザーに明示的な選択肢を提示（diff, pull --force, push --force）
+  - 一方のみが変更されている場合は自動同期して watch 開始
+- **Phase 1 との関係**:
+  - Phase 1 (CLAUDE.md での運用ガイドライン) は AI エージェントへの教育
+  - Phase 2 (起動時チェック) はシステムレベルでの強制
+  - 両方を組み合わせることで多層防御を実現
+- **他の検討案**:
+  - ❌ Pre-commit hook: コミット時点ではファイル編集後なので遅すぎる
+  - ❌ 内部 git 管理: リモートが必要で複雑すぎる、Phase 1 & 2 で十分な価値
+
 ## 成果と振り返り
 
 **2025-10-12: 初期セットアップ完了**
@@ -574,49 +635,6 @@ Feler の手法: plans.md を生きたドキュメントとして使い、AI エ
 - リリース自動化
 - npm パッケージ公開
 
-## 具体的なステップ (Phase 1 MVP)
-
-### 実装順序
-
-1. ✅ 言語/ランタイム決定 (Bun + TypeScript)
-2. ✅ CLI 構造セットアップ (commander.js)
-3. ✅ GitHub API クライアント実装 (Octokit)
-4. ✅ .issync.yml スキーマ作成
-5. **init コマンド実装 (TDD)**
-   - Issue URL パース
-   - `.issync/` ディレクトリ作成
-   - `state.yml` 生成
-   - バリデーション (URL, ファイル存在確認)
-   - gitignore 追加の推奨メッセージ表示
-6. **push コマンド実装 (TDD)**
-   - ローカルファイル読み込み
-   - 初回: comment 作成
-   - 2 回目以降: 楽観ロック (hash 比較) → comment 更新
-   - `state.yml` 更新
-7. **pull コマンド実装 (TDD)**
-   - リモート comment 取得
-   - ローカルファイル書き込み (無条件上書き)
-   - `state.yml` 更新
-8. **watch モード実装**
-   - chokidar でファイル監視
-   - setInterval でリモートポーリング
-   - フォアグラウンドプロセス (Ctrl+C で停止)
-9. **ドッグフーディング開始**
-   - GitHub Issue #1 作成
-   - docs/plan.md を同期
-   - 実際の開発で使用
-
-### TDD ワークフロー
-
-```bash
-# 各ステップで:
-1. bun test --watch を起動 (バックグラウンド)
-2. テストを書く (Red)
-3. 実装する (Green)
-4. リファクタリング (Refactor)
-5. 次のステップへ
-```
-
 ## 検証と受け入れ基準
 
 **受け入れ基準:**
@@ -655,44 +673,23 @@ Feler の手法: plans.md を生きたドキュメントとして使い、AI エ
 
 ## 成果物とメモ
 
-**主要コマンド (Phase 1 MVP):**
+**コマンドリファレンス:**
 
 ```bash
-# 初期化: .issync/ ディレクトリと state.yml を作成
+# 初期化
 issync init <issue-url> [--file path/to/file]
 
 # 手動同期
 issync pull                    # リモート → ローカル
 issync push [-m "message"]     # ローカル → リモート
 
-# 自動同期 (フォアグラウンド)
-issync watch [--interval 10]  # リモートを10秒ごとにポーリング + ローカル変更を自動push
-                               # Ctrl+C で停止
-```
+# 自動同期 (MVP: フォアグラウンド)
+issync watch [--interval 10]   # Ctrl+C で停止
 
-**Phase 2 で追加予定:**
-
-```bash
-issync watch --daemon          # デーモンとして起動
-issync stop                    # watch mode を停止
-issync status                  # 同期状態、watch mode の状態
-```
-
-**典型的な使用フロー (MVP):**
-
-```bash
-# セッション開始時
-issync init https://github.com/owner/repo/issues/123 --file docs/plan.md
-issync push  # 初回pushでcommentを作成
-
-# ターミナル1: watch mode起動 (フォアグラウンド)
-issync watch
-
-# ターミナル2: AIエージェント(Claude Code)がファイルを操作
-# → issync が透過的に自動同期
-
-# セッション終了時
-# Ctrl+C で watch を停止
+# Phase 2 予定: デーモン化
+issync watch --daemon          # バックグラウンド実行
+issync stop                    # デーモン停止
+issync status                  # 同期状態確認
 ```
 
 **状態ファイルフォーマット (`.issync/state.yml`):**
