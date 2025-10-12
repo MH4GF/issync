@@ -35,7 +35,7 @@ issync は、GitHub Issue のコメントとローカルファイル間でテキ
 **Phase 2 (スマートマージとデーモン化):**
 
 - [x] GitHub token format 検証の改善 (gho_ フォーマットのサポート)
-- [ ] watch の pull-push ループバグ修正 (pull によるファイル変更を無視)
+- [x] watch の pull-push ループバグ修正 (grace period で pull 直後の push をスキップ)
 - [ ] watch 起動時の安全性チェック (3-way comparison でコンフリクト検出)
 - [ ] docs/plan.md を git 管理から除外（issync 管理のみに移行）
 - [ ] watch モードのデーモン化 (--daemon, PID 管理)
@@ -275,6 +275,21 @@ issync は、GitHub Issue のコメントとローカルファイル間でテキ
   - トークンなしでエラーがスローされることを確認
 - **理由**: 新しい GitHub トークンフォーマットへの対応により、ユーザーが最新のトークンを使用可能に
 
+**2025-10-12: コードレビュー後のリンティング設定検証**
+
+- **背景**: Grace period 境界値テスト、ログメッセージ改善、定数ドキュメント化などのコードレビュー指摘事項を修正後、リンティング設定の改善余地を調査
+- **調査結果**: **既存のリンティング設定が完璧に機能していることを確認**
+  - **Biome** の `noUnusedVariables` が未使用変数（`_CHOKIDAR_STABILITY_MS`）を正しく検出
+  - **typescript-eslint** の `@typescript-eslint/await-thenable` が Bun Test の `expect().rejects` を検証
+- **実施した改善**:
+  1. **ESLint設定のコメント改善**: `await-thenable` ルールの目的を明確化（Bun Test の `.resolves`/`.rejects` は thenable を返すため await が必要）
+  2. **テストコード内のコメント追加**: ESLint disable コメントに詳細な理由を記載（Bun Test の型定義の制限により誤検知が発生）
+- **判断**: 新規ルールの追加は不要
+  - 未使用変数検出は Biome で対応済み
+  - Magic number 防止はコードレビューで対応可能
+  - テスト境界値の不足は既存ルールでは検出困難（レビュープロセスで対応）
+- **方針**: YAGNI 原則に従い、実際に問題が発生した際にルールを追加
+
 **2025-10-12: watch 起動時の安全性チェック (Phase 2)**
 
 - **背景**: CLAUDE.md にワークフローを記載しても、AI エージェントが watch 起動を忘れるリスクは残る
@@ -326,7 +341,8 @@ issync は、GitHub Issue のコメントとローカルファイル間でテキ
 
 **Phase 2 開始 (2025-10-12)**
 - **gho_ トークンサポート追加**: Fine-grained Personal Access Token (`gho_`) のサポート。TDD で実装、12 テスト合格。
-- **次のステップ**: watch の pull-push ループバグ修正、起動時安全性チェック、デーモン化。
+- **watch pull-push ループバグ修正完了**: Grace period パターン (1000ms) を実装し、pull 直後のファイル変更による不要な push をスキップ。実際の watch ログで動作確認 (Ignoring file change 519ms ago)。これにより GitHub API レート制限の無駄な消費を半減 (720 req/hour → 360 req/hour)。32 テスト全て合格。
+- **次のステップ**: 起動時安全性チェック、デーモン化。
 
 ## コンテキストと方向性
 

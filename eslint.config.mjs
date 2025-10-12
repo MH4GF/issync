@@ -24,7 +24,8 @@ export default tseslint.config(
       '@typescript-eslint/no-floating-promises': 'error',
       '@typescript-eslint/no-misused-promises': 'error',
       // Ensure awaiting thenable values (prevents awaiting non-promises)
-      // Note: Bun Test's expect().rejects returns a thenable-like object
+      // Note: Bun Test's expect().rejects/.resolves return thenable-like objects
+      // that should be awaited. This is intentional Bun Test behavior.
       '@typescript-eslint/await-thenable': 'error',
       // Enforce consistent return await in try-catch blocks
       // This prevents bugs where returned promises don't trigger catch blocks

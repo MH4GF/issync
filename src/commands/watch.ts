@@ -15,6 +15,18 @@ const BACKOFF_BASE_MS = 1000
 const BACKOFF_MAX_MS = 60000
 const FILE_STABILITY_THRESHOLD_MS = 500
 const FILE_POLL_INTERVAL_MS = 100
+/**
+ * Grace period to ignore file changes after pull completion.
+ * This prevents pull-push loops where chokidar detects file changes
+ * made by pull() itself.
+ *
+ * Value rationale:
+ * - chokidar's awaitWriteFinish uses 500ms stability threshold
+ * - Adding 500ms buffer for OS I/O delays
+ * - Total: 1000ms provides safe margin while being short enough
+ *   to not significantly delay legitimate user edits
+ */
+const PULL_GRACE_PERIOD_MS = 1000
 
 /**
  * Manages a watch session that syncs local files with remote GitHub Issue comments
@@ -27,6 +39,7 @@ class WatchSession {
   private nextAllowedPollTime = 0
   private shutdownResolve: (() => void) | null = null
   private pollingAbortController: AbortController | null = null
+  private lastPullCompletedAt = 0
 
   constructor(
     private readonly filePath: string,
@@ -150,6 +163,7 @@ class WatchSession {
     try {
       await this.withLock(async () => {
         await pull()
+        this.lastPullCompletedAt = Date.now() // Record pull completion time
         console.log(`[${new Date().toISOString()}] ✓ Pulled changes from remote`)
       })
     } catch (error) {
@@ -185,6 +199,7 @@ class WatchSession {
     // Initial pull (synchronous, throws on error)
     try {
       await pull()
+      this.lastPullCompletedAt = Date.now() // Record initial pull completion time
       console.log('✓ Initial pull completed')
     } catch (error) {
       if (error instanceof ConfigNotFoundError) {
@@ -227,6 +242,18 @@ class WatchSession {
   }
 
   private async handleFileChange(): Promise<void> {
+    // Skip if this change is likely from a recent pull (prevents pull-push loop)
+    const timeSinceLastPull = Date.now() - this.lastPullCompletedAt
+    if (timeSinceLastPull < PULL_GRACE_PERIOD_MS) {
+      const remainingMs = PULL_GRACE_PERIOD_MS - timeSinceLastPull
+      console.log(
+        `[${new Date().toISOString()}] ⚠️  File change detected ${timeSinceLastPull}ms after pull (within grace period). ` +
+          `This is likely from the pull operation and will be ignored. ` +
+          `If you just edited the file, please save again in ${Math.ceil(remainingMs / 1000)}s.`,
+      )
+      return
+    }
+
     console.log(`[${new Date().toISOString()}] File changed, pushing...`)
 
     try {
