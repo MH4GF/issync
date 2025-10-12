@@ -3,17 +3,17 @@ import { GitHubClient } from './github'
 
 describe('GitHubClient', () => {
   describe('parseIssueUrl', () => {
-    // init コマンドで Issue URL を解析し、owner/repo/issue_number を取得する
-    // この情報は GitHub API 呼び出しに必要
-    test('標準的な GitHub Issue URL をパースできる', () => {
+    // The init command parses Issue URLs to extract owner/repo/issue_number
+    // This information is required for GitHub API calls
+    test('can parse standard GitHub Issue URL', () => {
       // Arrange
-      const client = new GitHubClient()
+      const client = new GitHubClient('dummy-token')
       const url = 'https://github.com/MH4GF/issync/issues/123'
 
       // Act
       const result = client.parseIssueUrl(url)
 
-      // Assert: 正しい owner, repo, issue_number を抽出
+      // Assert: Extracts correct owner, repo, issue_number
       expect(result).toEqual({
         owner: 'MH4GF',
         repo: 'issync',
@@ -21,10 +21,10 @@ describe('GitHubClient', () => {
       })
     })
 
-    // ユーザーが http:// でURLをコピーした場合も動作する
-    test('http プロトコルの URL もパースできる', () => {
+    // Should work even if user copies URL with http://
+    test('can parse URL with http protocol', () => {
       // Arrange
-      const client = new GitHubClient()
+      const client = new GitHubClient('dummy-token')
       const url = 'http://github.com/owner/repo/issues/456'
 
       // Act
@@ -38,16 +38,16 @@ describe('GitHubClient', () => {
       })
     })
 
-    // ユーザーがクエリパラメータ付きでURLをコピーした場合も動作する
-    test('クエリパラメータ付きの URL もパースできる', () => {
+    // Should work even if user copies URL with query parameters
+    test('can parse URL with query parameters', () => {
       // Arrange
-      const client = new GitHubClient()
+      const client = new GitHubClient('dummy-token')
       const url = 'https://github.com/facebook/react/issues/12345?foo=bar'
 
       // Act
       const result = client.parseIssueUrl(url)
 
-      // Assert: クエリパラメータは無視される
+      // Assert: Query parameters are ignored
       expect(result).toEqual({
         owner: 'facebook',
         repo: 'react',
@@ -55,40 +55,40 @@ describe('GitHubClient', () => {
       })
     })
 
-    // 不正な URL に対して明確なエラーを返す（ユーザーフレンドリー）
-    test('Issue URL ではない場合はエラーを投げる', () => {
+    // Returns clear error for invalid URLs (user-friendly)
+    test('throws error if not an Issue URL', () => {
       // Arrange
-      const client = new GitHubClient()
+      const client = new GitHubClient('dummy-token')
       const urlWithoutIssueNumber = 'https://github.com/owner/repo'
 
-      // Act & Assert: Issue 番号がない URL は拒否
+      // Act & Assert: Rejects URL without issue number
       expect(() => client.parseIssueUrl(urlWithoutIssueNumber)).toThrow('Invalid GitHub Issue URL')
     })
 
-    test('Pull Request URL の場合はエラーを投げる', () => {
+    test('throws error for Pull Request URL', () => {
       // Arrange
-      const client = new GitHubClient()
+      const client = new GitHubClient('dummy-token')
       const pullRequestUrl = 'https://github.com/owner/repo/pulls/123'
 
-      // Act & Assert: PR URL は Issue URL ではない
+      // Act & Assert: PR URL is not an Issue URL
       expect(() => client.parseIssueUrl(pullRequestUrl)).toThrow('Invalid GitHub Issue URL')
     })
 
-    test('GitHub 以外の URL の場合はエラーを投げる', () => {
+    test('throws error for non-GitHub URL', () => {
       // Arrange
-      const client = new GitHubClient()
+      const client = new GitHubClient('dummy-token')
       const nonGitHubUrl = 'https://example.com/issues/123'
 
-      // Act & Assert: GitHub 以外のドメインは拒否
+      // Act & Assert: Rejects domains other than GitHub
       expect(() => client.parseIssueUrl(nonGitHubUrl)).toThrow('Invalid GitHub Issue URL')
     })
 
-    test('不正な形式の場合はエラーを投げる', () => {
+    test('throws error for invalid format', () => {
       // Arrange
-      const client = new GitHubClient()
+      const client = new GitHubClient('dummy-token')
       const invalidFormat = 'not-a-url'
 
-      // Act & Assert: URL 形式でない場合は拒否
+      // Act & Assert: Rejects non-URL formats
       expect(() => client.parseIssueUrl(invalidFormat)).toThrow('Invalid GitHub Issue URL')
     })
   })

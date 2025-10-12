@@ -2,8 +2,8 @@ import { describe, expect, test } from 'bun:test'
 import { calculateHash } from './hash'
 
 describe('calculateHash', () => {
-  // 楽観ロックでは、同じコンテンツは常に同じハッシュを生成する必要がある
-  test('同じ入力に対して一貫したハッシュを返す', () => {
+  // For optimistic locking, the same content must always generate the same hash
+  test('returns consistent hash for the same input', () => {
     // Arrange
     const content = 'Hello, World!'
 
@@ -11,12 +11,12 @@ describe('calculateHash', () => {
     const hash1 = calculateHash(content)
     const hash2 = calculateHash(content)
 
-    // Assert: 楽観ロックの正確性のために一貫性が重要
+    // Assert: Consistency is critical for optimistic locking accuracy
     expect(hash1).toBe(hash2)
   })
 
-  // 楽観ロックでは、異なるコンテンツは異なるハッシュを生成する必要がある
-  test('異なる入力に対して異なるハッシュを返す', () => {
+  // For optimistic locking, different content must generate different hashes
+  test('returns different hashes for different inputs', () => {
     // Arrange
     const content1 = 'Hello'
     const content2 = 'World'
@@ -25,26 +25,26 @@ describe('calculateHash', () => {
     const hash1 = calculateHash(content1)
     const hash2 = calculateHash(content2)
 
-    // Assert: 衝突回避は楽観ロックの信頼性に不可欠
+    // Assert: Collision avoidance is essential for optimistic locking reliability
     expect(hash1).not.toBe(hash2)
   })
 
-  // エッジケース: 空のドキュメントでも同期できる必要がある
-  test('空文字列でもハッシュを計算できる', () => {
+  // Edge case: Empty documents should also be syncable
+  test('can calculate hash for empty string', () => {
     // Arrange
     const content = ''
 
     // Act
     const hash = calculateHash(content)
 
-    // Assert: クラッシュせずに有効なハッシュ値を返す
+    // Assert: Should return a valid hash value without crashing
     expect(hash).toBeTruthy()
     expect(typeof hash).toBe('string')
   })
 
-  // 大きなコンテンツでも正常に動作する
-  test('長い文字列でもハッシュを計算できる', () => {
-    // Arrange: 実際のドキュメントサイズをシミュレート
+  // Should work correctly even with large content
+  test('can calculate hash for long strings', () => {
+    // Arrange: Simulate actual document size
     const content = 'a'.repeat(10000)
 
     // Act

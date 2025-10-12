@@ -1,13 +1,14 @@
 import { existsSync, mkdirSync, readFileSync, writeFileSync } from 'node:fs'
 import yaml from 'js-yaml'
 import type { IssyncConfig } from '../types/index.js'
+import { ConfigNotFoundError } from './errors.js'
 
 const STATE_DIR = '.issync'
 const STATE_FILE = '.issync/state.yml'
 
 export function loadConfig(): IssyncConfig {
   if (!existsSync(STATE_FILE)) {
-    throw new Error('.issync/state.yml not found. Run `issync init` first.')
+    throw new ConfigNotFoundError()
   }
 
   const content = readFileSync(STATE_FILE, 'utf-8')
@@ -15,7 +16,7 @@ export function loadConfig(): IssyncConfig {
 }
 
 export function saveConfig(config: IssyncConfig): void {
-  // ディレクトリがなければ作成
+  // Create directory if it doesn't exist
   if (!existsSync(STATE_DIR)) {
     mkdirSync(STATE_DIR, { recursive: true })
   }

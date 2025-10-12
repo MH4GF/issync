@@ -29,9 +29,8 @@ program
 program
   .command('push')
   .description('Push local changes to GitHub Issue comment')
-  .option('-m, --message <message>', 'Commit message')
-  .action(async (options: { message?: string }) => {
-    console.log('push command:', options)
+  .action(async () => {
+    console.log('push command')
     // TODO: implement
   })
 
