@@ -1,7 +1,6 @@
 import type { KnipConfig } from 'knip'
 
 const config: KnipConfig = {
-  entry: ['src/cli.ts'],
   project: ['src/**/*.ts'],
   ignore: ['dist/**', '.issync/**'],
   ignoreDependencies: [],

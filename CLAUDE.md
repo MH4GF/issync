@@ -32,6 +32,11 @@ bun test <file>           # Run specific test file
 # Type checking
 bun run type-check
 
+# Code quality checks
+bun run check               # Biome linter and formatter
+bun run knip                # Check for unused dependencies and exports
+bun run knip:fix            # Auto-fix knip issues where possible
+
 # Build for distribution
 bun run build
 ```

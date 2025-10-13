@@ -1,12 +1,34 @@
-import { existsSync } from 'node:fs'
+import { existsSync, readFileSync } from 'node:fs'
+import path from 'node:path'
 import chokidar, { type FSWatcher } from 'chokidar'
 import { loadConfig } from '../lib/config.js'
-import { ConfigNotFoundError } from '../lib/errors.js'
+import { ConfigNotFoundError, InvalidFilePathError } from '../lib/errors.js'
+import { GitHubClient, parseIssueUrl } from '../lib/github.js'
+import { calculateHash } from '../lib/hash.js'
+import type { IssyncConfig } from '../types/index.js'
 import { pull } from './pull.js'
 import { OptimisticLockError, push } from './push.js'
 
+/**
+ * Error thrown when both local and remote have changes since last sync
+ */
+class ConflictError extends Error {
+  constructor() {
+    super(
+      '❌ Cannot start watch: CONFLICT DETECTED\n' +
+        'Both local and remote have changes since last sync.\n' +
+        'Please manually resolve the conflict:\n' +
+        '  1. Review differences: Compare local file with remote\n' +
+        '  2. Force pull: issync pull (discards local changes)\n' +
+        '  3. Force push: issync push (overwrites remote)\n',
+    )
+    this.name = 'ConflictError'
+  }
+}
+
 interface WatchOptions {
   interval?: number // polling interval in seconds
+  cwd?: string
 }
 
 // Constants
@@ -28,6 +50,84 @@ const FILE_POLL_INTERVAL_MS = 100
  */
 const PULL_GRACE_PERIOD_MS = 1000
 
+function resolveLocalFilePath(localFile: string, cwd: string): string {
+  const basePath = path.resolve(cwd)
+  const resolvedPath = path.resolve(basePath, localFile)
+
+  if (!resolvedPath.startsWith(basePath)) {
+    throw new InvalidFilePathError(localFile, 'path traversal detected')
+  }
+
+  return resolvedPath
+}
+
+/**
+ * Perform 3-way comparison to detect conflicts before starting watch
+ * Returns true if safety check passed (watch can start)
+ * Exported for testing
+ */
+export async function _performSafetyCheck(
+  config: IssyncConfig,
+  cwd = process.cwd(),
+  resolvedFilePath?: string,
+): Promise<void> {
+  if (!config.comment_id) {
+    throw new Error(
+      'No comment_id found in config. Please run "issync push" first to create a comment.',
+    )
+  }
+
+  const lastSyncedHash = config.last_synced_hash
+  const localFilePath = resolvedFilePath ?? resolveLocalFilePath(config.local_file, cwd)
+
+  if (!lastSyncedHash) {
+    console.log(
+      '⚠️  No sync history found. Pulling from remote to establish baseline before starting watch...',
+    )
+    await pull({ cwd })
+    console.log('✓ Baseline established from remote')
+    return
+  }
+
+  // Read local file
+  if (!existsSync(localFilePath)) {
+    console.log('⚠️  Local file missing. Pulling from remote to restore before starting watch...')
+    await pull({ cwd })
+    console.log('✓ Local file restored from remote')
+    return
+  }
+  const localContent = readFileSync(localFilePath, 'utf-8')
+  const localHash = calculateHash(localContent)
+
+  // Fetch remote content
+  const client = new GitHubClient()
+  const { owner, repo } = parseIssueUrl(config.issue_url)
+  const comment = await client.getComment(owner, repo, config.comment_id)
+  const remoteHash = calculateHash(comment.body)
+
+  // 3-way comparison
+  const localChanged = localHash !== lastSyncedHash
+  const remoteChanged = remoteHash !== lastSyncedHash
+
+  if (localChanged && remoteChanged) {
+    // Both sides changed → Conflict
+    throw new ConflictError()
+  }
+
+  if (localChanged) {
+    // Only local changed → Auto push
+    console.log('⚠️  Local changes detected. Pushing to remote before starting watch...')
+    await push({ cwd })
+    console.log('✓ Local changes pushed')
+  } else if (remoteChanged) {
+    // Only remote changed → Auto pull
+    console.log('⚠️  Remote changes detected. Pulling from remote before starting watch...')
+    await pull({ cwd })
+    console.log('✓ Remote changes pulled')
+  }
+  // else: Neither changed → No-op, proceed to watch
+}
+
 /**
  * Manages a watch session that syncs local files with remote GitHub Issue comments
  */
@@ -44,6 +144,8 @@ class WatchSession {
   constructor(
     private readonly filePath: string,
     private readonly intervalMs: number,
+    private readonly cwd: string,
+    readonly _skipInitialPull: boolean = false,
   ) {}
 
   /**
@@ -162,7 +264,7 @@ class WatchSession {
 
     try {
       await this.withLock(async () => {
-        await pull()
+        await pull({ cwd: this.cwd })
         this.lastPullCompletedAt = Date.now() // Record pull completion time
         console.log(`[${new Date().toISOString()}] ✓ Pulled changes from remote`)
       })
@@ -196,22 +298,28 @@ class WatchSession {
     this.pollingAbortController = new AbortController()
     const signal = this.pollingAbortController.signal
 
-    // Initial pull (synchronous, throws on error)
-    try {
-      await pull()
-      this.lastPullCompletedAt = Date.now() // Record initial pull completion time
-      console.log('✓ Initial pull completed')
-    } catch (error) {
-      if (error instanceof ConfigNotFoundError) {
-        console.error('Config not found. Please run "issync init" first.')
+    // Initial pull (synchronous, throws on error) - skip if already synced by safety check
+    if (!this._skipInitialPull) {
+      try {
+        await pull({ cwd: this.cwd })
+        this.lastPullCompletedAt = Date.now() // Record initial pull completion time
+        console.log('✓ Initial pull completed')
+      } catch (error) {
+        if (error instanceof ConfigNotFoundError) {
+          console.error('Config not found. Please run "issync init" first.')
+          throw error
+        }
+        if (error instanceof Error) {
+          console.error(`Initial pull failed: ${error.message}`)
+          console.error('Cannot start watch mode - please ensure remote is accessible')
+          throw error
+        }
         throw error
       }
-      if (error instanceof Error) {
-        console.error(`Initial pull failed: ${error.message}`)
-        console.error('Cannot start watch mode - please ensure remote is accessible')
-        throw error
-      }
-      throw error
+    } else {
+      // Safety check already synced, just update timestamp
+      this.lastPullCompletedAt = Date.now()
+      console.log('✓ Already synced by safety check')
     }
 
     // Run polling loop in background
@@ -258,7 +366,7 @@ class WatchSession {
 
     try {
       await this.withLock(async () => {
-        await push()
+        await push({ cwd: this.cwd })
         console.log(`[${new Date().toISOString()}] ✓ Pushed changes to remote`)
       })
     } catch (error) {
@@ -293,10 +401,31 @@ class WatchSession {
 }
 
 export async function watch(options: WatchOptions = {}): Promise<void> {
-  const config = loadConfig()
+  const cwd = options.cwd ?? process.cwd()
+  const config = loadConfig(cwd)
   const intervalSeconds = options.interval ?? DEFAULT_POLL_INTERVAL_SECONDS
   const intervalMs = intervalSeconds * 1000
 
-  const session = new WatchSession(config.local_file, intervalMs)
+  const resolvedFilePath = resolveLocalFilePath(config.local_file, cwd)
+
+  // Perform safety check before starting watch
+  try {
+    await _performSafetyCheck(config, cwd, resolvedFilePath)
+  } catch (error) {
+    if (error instanceof ConfigNotFoundError) {
+      console.error('Config not found. Please run "issync init" first.')
+    } else if (error instanceof InvalidFilePathError) {
+      console.error(error.message)
+    } else if (error instanceof ConflictError) {
+      // Let conflict message surface as-is
+    } else if (error instanceof Error) {
+      console.error(`Initial sync failed: ${error.message}`)
+      console.error('Cannot start watch mode - please ensure remote is accessible')
+    }
+    throw error
+  }
+
+  // Skip initial pull since safety check already synced
+  const session = new WatchSession(resolvedFilePath, intervalMs, cwd, true)
   await session.start()
 }
