@@ -1,14 +1,18 @@
 import { existsSync } from 'node:fs'
 import { readFile } from 'node:fs/promises'
 import path from 'node:path'
-import { loadConfig, saveConfig } from '../lib/config.js'
-import { FileNotFoundError, InvalidFilePathError } from '../lib/errors.js'
+import type { SyncSelector } from '../lib/config.js'
+import { loadConfig, saveConfig, selectSync } from '../lib/config.js'
+import { FileNotFoundError } from '../lib/errors.js'
 import { GitHubClient, parseIssueUrl } from '../lib/github.js'
 import { calculateHash } from '../lib/hash.js'
+import { resolvePathWithinBase } from '../lib/path.js'
 
 export interface PushOptions {
   cwd?: string
   token?: string
+  file?: string
+  issue?: string
 }
 
 export class OptimisticLockError extends Error {
@@ -19,36 +23,36 @@ export class OptimisticLockError extends Error {
 }
 
 export async function push(options: PushOptions = {}): Promise<void> {
-  const { cwd, token } = options
+  const { cwd, token, file, issue } = options
+  const baseDir = cwd ?? process.cwd()
 
   // Load config
-  const config = loadConfig(cwd)
+  const state = loadConfig(cwd)
+  const selector: SyncSelector = {
+    file,
+    issueUrl: issue,
+  }
+  const { sync } = selectSync(state, selector, baseDir)
 
   // Validate and read local file
-  const filePath = path.join(cwd || process.cwd(), config.local_file)
-
-  // Check for path traversal
-  const resolvedPath = path.resolve(cwd || process.cwd(), config.local_file)
-  const basePath = path.resolve(cwd || process.cwd())
-  if (!resolvedPath.startsWith(basePath)) {
-    throw new InvalidFilePathError(config.local_file, 'path traversal detected')
-  }
+  const basePath = path.resolve(baseDir)
+  const resolvedPath = resolvePathWithinBase(basePath, sync.local_file, sync.local_file)
 
   // Check if file exists
-  if (!existsSync(filePath)) {
-    throw new FileNotFoundError(filePath)
+  if (!existsSync(resolvedPath)) {
+    throw new FileNotFoundError(resolvedPath)
   }
 
-  const localContent = await readFile(filePath, 'utf-8')
+  const localContent = await readFile(resolvedPath, 'utf-8')
   const localHash = calculateHash(localContent)
 
   // Parse issue URL
-  const issueInfo = parseIssueUrl(config.issue_url)
+  const issueInfo = parseIssueUrl(sync.issue_url)
 
   // Initialize GitHub client
   const client = new GitHubClient(token)
 
-  if (config.comment_id) {
+  if (sync.comment_id) {
     // Update existing comment with optimistic locking
     // LIMITATION: This implementation has a TOCTOU (Time-of-check to time-of-use) race condition.
     // Between fetching the remote comment and updating it, another process could modify the comment,
@@ -62,20 +66,16 @@ export async function push(options: PushOptions = {}): Promise<void> {
     // - Users can manually recover by running `issync pull` if they detect a conflict
 
     // Fetch current remote comment
-    const remoteComment = await client.getComment(
-      issueInfo.owner,
-      issueInfo.repo,
-      config.comment_id,
-    )
+    const remoteComment = await client.getComment(issueInfo.owner, issueInfo.repo, sync.comment_id)
     const remoteHash = calculateHash(remoteComment.body)
 
     // Check if remote has been updated since last sync
-    if (config.last_synced_hash && remoteHash !== config.last_synced_hash) {
+    if (sync.last_synced_hash && remoteHash !== sync.last_synced_hash) {
       throw new OptimisticLockError()
     }
 
     // Update comment
-    await client.updateComment(issueInfo.owner, issueInfo.repo, config.comment_id, localContent)
+    await client.updateComment(issueInfo.owner, issueInfo.repo, sync.comment_id, localContent)
   } else {
     // Create new comment
     const comment = await client.createComment(
@@ -84,11 +84,11 @@ export async function push(options: PushOptions = {}): Promise<void> {
       issueInfo.issue_number,
       localContent,
     )
-    config.comment_id = comment.id
+    sync.comment_id = comment.id
   }
 
   // Update config
-  config.last_synced_hash = localHash
-  config.last_synced_at = new Date().toISOString()
-  saveConfig(config, cwd)
+  sync.last_synced_hash = localHash
+  sync.last_synced_at = new Date().toISOString()
+  saveConfig(state, cwd)
 }

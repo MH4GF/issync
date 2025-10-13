@@ -1,9 +1,10 @@
 import { afterEach, beforeEach, describe, expect, test } from 'bun:test'
-import { existsSync, mkdtempSync, rmSync } from 'node:fs'
+import { existsSync, mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from 'node:fs'
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
-import type { IssyncConfig } from '../types/index.js'
-import { configExists, loadConfig, saveConfig } from './config'
+import type { IssyncState, IssyncSync } from '../types/index.js'
+import { configExists, loadConfig, saveConfig, selectSync } from './config'
+import { AmbiguousSyncError, SyncNotFoundError } from './errors'
 
 describe('config', () => {
   let testDir: string
@@ -37,13 +38,17 @@ describe('config', () => {
 
     test('returns true when state file exists', () => {
       // Arrange: Create a minimal config
-      const config: IssyncConfig = {
-        issue_url: 'https://github.com/owner/repo/issues/1',
-        local_file: 'docs/plan.md',
-        poll_interval: 10,
-        merge_strategy: 'simple',
+      const state: IssyncState = {
+        syncs: [
+          {
+            issue_url: 'https://github.com/owner/repo/issues/1',
+            local_file: 'docs/plan.md',
+            poll_interval: 10,
+            merge_strategy: 'simple',
+          },
+        ],
       }
-      saveConfig(config)
+      saveConfig(state)
 
       // Act
       const result = configExists()
@@ -56,15 +61,19 @@ describe('config', () => {
   describe('saveConfig', () => {
     test('creates .issync directory if it does not exist', () => {
       // Arrange
-      const config: IssyncConfig = {
-        issue_url: 'https://github.com/owner/repo/issues/1',
-        local_file: 'docs/plan.md',
-        poll_interval: 10,
-        merge_strategy: 'simple',
+      const state: IssyncState = {
+        syncs: [
+          {
+            issue_url: 'https://github.com/owner/repo/issues/1',
+            local_file: 'docs/plan.md',
+            poll_interval: 10,
+            merge_strategy: 'simple',
+          },
+        ],
       }
 
       // Act
-      saveConfig(config)
+      saveConfig(state)
 
       // Assert: Directory should be created
       expect(existsSync('.issync')).toBe(true)
@@ -73,7 +82,7 @@ describe('config', () => {
 
     test('saves config to state file', () => {
       // Arrange
-      const config: IssyncConfig = {
+      const sync: IssyncSync = {
         issue_url: 'https://github.com/owner/repo/issues/1',
         comment_id: 123456789,
         local_file: 'docs/plan.md',
@@ -85,7 +94,7 @@ describe('config', () => {
       }
 
       // Act
-      saveConfig(config)
+      saveConfig({ syncs: [sync] })
 
       // Assert: Config file should exist and be readable
       expect(configExists()).toBe(true)
@@ -93,33 +102,42 @@ describe('config', () => {
 
     test('overwrites existing config file', () => {
       // Arrange: Save initial config
-      const initialConfig: IssyncConfig = {
-        issue_url: 'https://github.com/owner/repo/issues/1',
-        local_file: 'docs/plan.md',
-        poll_interval: 10,
-        merge_strategy: 'simple',
+      const initialState: IssyncState = {
+        syncs: [
+          {
+            issue_url: 'https://github.com/owner/repo/issues/1',
+            local_file: 'docs/plan.md',
+            poll_interval: 10,
+            merge_strategy: 'simple',
+          },
+        ],
       }
-      saveConfig(initialConfig)
+      saveConfig(initialState)
 
       // Act: Save updated config
-      const updatedConfig: IssyncConfig = {
-        issue_url: 'https://github.com/owner/repo/issues/2',
-        comment_id: 987654321,
-        local_file: 'docs/updated.md',
-        last_synced_hash: 'xyz789abc',
-        last_synced_at: '2025-10-12T11:00:00Z',
-        poll_interval: 20,
-        merge_strategy: 'section-based',
-        watch_daemon_pid: 54321,
+      const updatedState: IssyncState = {
+        syncs: [
+          {
+            issue_url: 'https://github.com/owner/repo/issues/2',
+            comment_id: 987654321,
+            local_file: 'docs/updated.md',
+            last_synced_hash: 'xyz789abc',
+            last_synced_at: '2025-10-12T11:00:00Z',
+            poll_interval: 20,
+            merge_strategy: 'section-based',
+            watch_daemon_pid: 54321,
+          },
+        ],
       }
-      saveConfig(updatedConfig)
+      saveConfig(updatedState)
 
       // Assert: Should be able to load updated config
-      const loadedConfig = loadConfig()
-      expect(loadedConfig.issue_url).toBe('https://github.com/owner/repo/issues/2')
-      expect(loadedConfig.comment_id).toBe(987654321)
-      expect(loadedConfig.local_file).toBe('docs/updated.md')
-      expect(loadedConfig.poll_interval).toBe(20)
+      const loadedState = loadConfig()
+      expect(loadedState.syncs).toHaveLength(1)
+      expect(loadedState.syncs[0]?.issue_url).toBe('https://github.com/owner/repo/issues/2')
+      expect(loadedState.syncs[0]?.comment_id).toBe(987654321)
+      expect(loadedState.syncs[0]?.local_file).toBe('docs/updated.md')
+      expect(loadedState.syncs[0]?.poll_interval).toBe(20)
     })
   })
 
@@ -131,7 +149,7 @@ describe('config', () => {
 
     test('loads config from state file', () => {
       // Arrange: Save a config first
-      const config: IssyncConfig = {
+      const sync: IssyncSync = {
         issue_url: 'https://github.com/owner/repo/issues/1',
         comment_id: 123456789,
         local_file: 'docs/plan.md',
@@ -141,46 +159,137 @@ describe('config', () => {
         merge_strategy: 'section-based',
         watch_daemon_pid: 12345,
       }
-      saveConfig(config)
+      saveConfig({ syncs: [sync] })
 
       // Act
-      const loadedConfig = loadConfig()
+      const loadedState = loadConfig()
 
       // Assert: All fields should be preserved
-      expect(loadedConfig.issue_url).toBe('https://github.com/owner/repo/issues/1')
-      expect(loadedConfig.comment_id).toBe(123456789)
-      expect(loadedConfig.local_file).toBe('docs/plan.md')
-      expect(loadedConfig.last_synced_hash).toBe('abc123def')
-      expect(loadedConfig.last_synced_at).toBe('2025-10-12T10:30:00Z')
-      expect(loadedConfig.poll_interval).toBe(10)
-      expect(loadedConfig.merge_strategy).toBe('section-based')
-      expect(loadedConfig.watch_daemon_pid).toBe(12345)
+      expect(loadedState.syncs).toHaveLength(1)
+      const loadedSync = loadedState.syncs[0]
+      expect(loadedSync?.issue_url).toBe('https://github.com/owner/repo/issues/1')
+      expect(loadedSync?.comment_id).toBe(123456789)
+      expect(loadedSync?.local_file).toBe('docs/plan.md')
+      expect(loadedSync?.last_synced_hash).toBe('abc123def')
+      expect(loadedSync?.last_synced_at).toBe('2025-10-12T10:30:00Z')
+      expect(loadedSync?.poll_interval).toBe(10)
+      expect(loadedSync?.merge_strategy).toBe('section-based')
+      expect(loadedSync?.watch_daemon_pid).toBe(12345)
     })
 
     test('loads config with only required fields', () => {
       // Arrange: Minimal config with only required fields
-      const config: IssyncConfig = {
+      const sync: IssyncSync = {
         issue_url: 'https://github.com/owner/repo/issues/1',
         local_file: 'docs/plan.md',
         poll_interval: 10,
         merge_strategy: 'simple',
       }
-      saveConfig(config)
+      saveConfig({ syncs: [sync] })
 
       // Act
-      const loadedConfig = loadConfig()
+      const loadedState = loadConfig()
 
       // Assert: Required fields should be present
-      expect(loadedConfig.issue_url).toBe('https://github.com/owner/repo/issues/1')
-      expect(loadedConfig.local_file).toBe('docs/plan.md')
-      expect(loadedConfig.poll_interval).toBe(10)
-      expect(loadedConfig.merge_strategy).toBe('simple')
+      expect(loadedState.syncs).toHaveLength(1)
+      const loadedSync = loadedState.syncs[0]
+      expect(loadedSync?.issue_url).toBe('https://github.com/owner/repo/issues/1')
+      expect(loadedSync?.local_file).toBe('docs/plan.md')
+      expect(loadedSync?.poll_interval).toBe(10)
+      expect(loadedSync?.merge_strategy).toBe('simple')
 
       // Assert: Optional fields should be undefined
-      expect(loadedConfig.comment_id).toBeUndefined()
-      expect(loadedConfig.last_synced_hash).toBeUndefined()
-      expect(loadedConfig.last_synced_at).toBeUndefined()
-      expect(loadedConfig.watch_daemon_pid).toBeUndefined()
+      expect(loadedSync?.comment_id).toBeUndefined()
+      expect(loadedSync?.last_synced_hash).toBeUndefined()
+      expect(loadedSync?.last_synced_at).toBeUndefined()
+      expect(loadedSync?.watch_daemon_pid).toBeUndefined()
+    })
+
+    test('migrates legacy single-config format to sync array', () => {
+      const legacyContent = [
+        'issue_url: https://github.com/owner/repo/issues/1',
+        'local_file: docs/plan.md',
+        'comment_id: 123',
+      ].join('\n')
+
+      mkdirSync('.issync', { recursive: true })
+      writeFileSync('.issync/state.yml', legacyContent, 'utf-8')
+
+      const loadedState = loadConfig()
+
+      expect(loadedState.syncs).toHaveLength(1)
+      const sync = loadedState.syncs[0]
+      expect(sync?.issue_url).toBe('https://github.com/owner/repo/issues/1')
+      expect(sync?.local_file).toBe('docs/plan.md')
+      expect(sync?.comment_id).toBe(123)
+
+      const migratedContent = readFileSync('.issync/state.yml', 'utf-8')
+      expect(migratedContent).toContain('syncs:')
+    })
+  })
+
+  describe('selectSync', () => {
+    test('returns sole sync when no selector provided', () => {
+      const state: IssyncState = {
+        syncs: [
+          {
+            issue_url: 'https://github.com/owner/repo/issues/1',
+            local_file: 'docs/plan.md',
+          },
+        ],
+      }
+
+      const { sync } = selectSync(state, {}, testDir)
+      expect(sync.issue_url).toBe('https://github.com/owner/repo/issues/1')
+    })
+
+    test('throws AmbiguousSyncError when multiple syncs without selector', () => {
+      const state: IssyncState = {
+        syncs: [
+          { issue_url: 'https://github.com/owner/repo/issues/1', local_file: 'docs/one.md' },
+          { issue_url: 'https://github.com/owner/repo/issues/2', local_file: 'docs/two.md' },
+        ],
+      }
+
+      expect(() => selectSync(state, {}, testDir)).toThrow(AmbiguousSyncError)
+    })
+
+    test('selects sync by local file path', () => {
+      const state: IssyncState = {
+        syncs: [
+          { issue_url: 'https://github.com/owner/repo/issues/1', local_file: 'docs/one.md' },
+          { issue_url: 'https://github.com/owner/repo/issues/2', local_file: 'docs/two.md' },
+        ],
+      }
+
+      const { sync } = selectSync(state, { file: './docs/two.md' }, testDir)
+      expect(sync.issue_url).toBe('https://github.com/owner/repo/issues/2')
+    })
+
+    test('selects sync by issue URL', () => {
+      const state: IssyncState = {
+        syncs: [
+          { issue_url: 'https://github.com/owner/repo/issues/1', local_file: 'docs/one.md' },
+          { issue_url: 'https://github.com/owner/repo/issues/2', local_file: 'docs/two.md' },
+        ],
+      }
+
+      const { sync } = selectSync(
+        state,
+        { issueUrl: 'https://github.com/owner/repo/issues/1' },
+        testDir,
+      )
+      expect(sync.local_file).toBe('docs/one.md')
+    })
+
+    test('throws SyncNotFoundError when selector does not match', () => {
+      const state: IssyncState = {
+        syncs: [{ issue_url: 'https://github.com/owner/repo/issues/1', local_file: 'docs/one.md' }],
+      }
+
+      expect(() => selectSync(state, { file: 'docs/unknown.md' }, testDir)).toThrow(
+        SyncNotFoundError,
+      )
     })
   })
 })

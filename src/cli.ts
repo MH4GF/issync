@@ -45,24 +45,36 @@ program
 program
   .command('pull')
   .description('Pull remote changes from GitHub Issue to local file')
-  .action(async () => {
+  .option('-f, --file <path>', 'Select sync target by local file path')
+  .option('--issue <url>', 'Select sync target by issue URL')
+  .action(async (options: { file?: string; issue?: string }) => {
     const { pull } = await import('./commands/pull.js')
-    await _handleCommand(async () => pull(), '✓ Pulled changes from remote')
+    await _handleCommand(
+      async () => pull({ file: options.file, issue: options.issue }),
+      '✓ Pulled changes from remote',
+    )
   })
 
 program
   .command('push')
   .description('Push local changes to GitHub Issue comment')
-  .action(async () => {
+  .option('-f, --file <path>', 'Select sync target by local file path')
+  .option('--issue <url>', 'Select sync target by issue URL')
+  .action(async (options: { file?: string; issue?: string }) => {
     const { push } = await import('./commands/push.js')
-    await _handleCommand(async () => push(), '✓ Pushed changes to remote')
+    await _handleCommand(
+      async () => push({ file: options.file, issue: options.issue }),
+      '✓ Pushed changes to remote',
+    )
   })
 
 program
   .command('watch')
   .description('Watch for changes and sync automatically (foreground process)')
   .option('-i, --interval <seconds>', 'Polling interval in seconds', '10')
-  .action(async (options: { interval: string }) => {
+  .option('-f, --file <path>', 'Select sync target by local file path')
+  .option('--issue <url>', 'Select sync target by issue URL')
+  .action(async (options: { interval: string; file?: string; issue?: string }) => {
     const { watch } = await import('./commands/watch.js')
     const interval = Number.parseInt(options.interval, 10)
 
@@ -80,7 +92,7 @@ program
       console.error('Recommended: 10-60 seconds (GitHub API rate limit: 5000 req/hour)')
       process.exit(1)
     }
-    await watch({ interval })
+    await watch({ interval, file: options.file, issue: options.issue })
   })
 
 program

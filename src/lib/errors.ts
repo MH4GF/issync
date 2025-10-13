@@ -48,3 +48,17 @@ export class FileAlreadyExistsError extends IssyncError {
     this.name = 'FileAlreadyExistsError'
   }
 }
+
+export class SyncNotFoundError extends IssyncError {
+  constructor(message = 'No sync entry found. Run `issync init` to configure a sync target.') {
+    super(message)
+    this.name = 'SyncNotFoundError'
+  }
+}
+
+export class AmbiguousSyncError extends IssyncError {
+  constructor() {
+    super('Multiple sync entries found. Specify --file or --issue to select a target.')
+    this.name = 'AmbiguousSyncError'
+  }
+}
