@@ -1,4 +1,4 @@
-export interface IssyncConfig {
+export interface IssyncSync {
   issue_url: string
   comment_id?: number
   local_file: string
@@ -8,6 +8,10 @@ export interface IssyncConfig {
   poll_interval?: number
   merge_strategy?: 'section-based' | 'simple'
   watch_daemon_pid?: number
+}
+
+export interface IssyncState {
+  syncs: IssyncSync[]
 }
 
 export interface GitHubIssueInfo {

@@ -5,7 +5,7 @@ import chokidar from 'chokidar'
 import * as configModule from '../lib/config.js'
 import * as githubModule from '../lib/github.js'
 import { calculateHash } from '../lib/hash.js'
-import type { IssyncConfig } from '../types/index.js'
+import type { IssyncState } from '../types/index.js'
 import * as pullModule from './pull.js'
 import * as pushModule from './push.js'
 import { watch } from './watch.js'
@@ -40,6 +40,9 @@ describe('watch command (chokidar mocked)', () => {
   let pullMock: ReturnType<typeof spyOn>
   let pushMock: ReturnType<typeof spyOn>
   let watchPromise: Promise<void> | undefined
+  let relativeFile: string
+  let loadConfigSpy: ReturnType<typeof spyOn>
+  let chokidarSpy: ReturnType<typeof spyOn>
 
   const startWatch = async (interval = 60): Promise<void> => {
     watchPromise = watch({ interval })
@@ -72,14 +75,21 @@ describe('watch command (chokidar mocked)', () => {
     changeHandlers = []
     watcherCloseMock = mock(() => Promise.resolve())
 
-    const mockConfig: IssyncConfig = {
-      issue_url: 'https://github.com/owner/repo/issues/1',
-      comment_id: 123,
-      local_file: filePath,
-      last_synced_hash: calculateHash(fileContent),
+    relativeFile = path.relative(process.cwd(), filePath)
+    relativeFile = path.relative(process.cwd(), filePath)
+
+    const mockState: IssyncState = {
+      syncs: [
+        {
+          issue_url: 'https://github.com/owner/repo/issues/1',
+          comment_id: 123,
+          local_file: relativeFile,
+          last_synced_hash: calculateHash(fileContent),
+        },
+      ],
     }
 
-    spyOn(configModule, 'loadConfig').mockReturnValue(mockConfig)
+    loadConfigSpy = spyOn(configModule, 'loadConfig').mockReturnValue(mockState)
 
     const mockGitHubClient: Pick<GitHubClientInstance, 'getComment'> = {
       getComment: () =>
@@ -93,7 +103,7 @@ describe('watch command (chokidar mocked)', () => {
       () => mockGitHubClient as unknown as githubModule.GitHubClient,
     )
 
-    spyOn(chokidar, 'watch').mockImplementation(() => {
+    chokidarSpy = spyOn(chokidar, 'watch').mockImplementation(() => {
       const watcher = {
         on: (event: string, handler: (...args: unknown[]) => void) => {
           if (event === 'change') {
@@ -127,6 +137,10 @@ describe('watch command (chokidar mocked)', () => {
 
     await waitFor(() => pushMock.mock.calls.length === 1)
     expect(pushMock).toHaveBeenCalledTimes(1)
+    expect(pushMock.mock.calls[0]?.[0]).toEqual({
+      cwd: process.cwd(),
+      file: relativeFile,
+    })
     expect(pullMock).not.toHaveBeenCalled()
   })
 
@@ -155,7 +169,42 @@ describe('watch command (chokidar mocked)', () => {
 
     await waitFor(() => pullMock.mock.calls.length >= 1, { timeout: 2000 })
     expect(pullMock.mock.calls.length).toBeGreaterThanOrEqual(1)
-    expect(pullMock.mock.calls[0]?.[0]).toEqual({ cwd: process.cwd() })
+    expect(pullMock.mock.calls[0]?.[0]).toEqual({
+      cwd: process.cwd(),
+      file: relativeFile,
+    })
+  })
+
+  test('watches all configured syncs when no selector provided', async () => {
+    const secondFile = path.join(tempDir, 'second.md')
+    await writeFile(secondFile, '# Test Content', 'utf-8')
+    const secondRelative = path.relative(process.cwd(), secondFile)
+
+    const multiState: IssyncState = {
+      syncs: [
+        {
+          issue_url: 'https://github.com/owner/repo/issues/1',
+          comment_id: 123,
+          local_file: relativeFile,
+          last_synced_hash: calculateHash('# Test Content'),
+        },
+        {
+          issue_url: 'https://github.com/owner/repo/issues/2',
+          comment_id: 456,
+          local_file: secondRelative,
+          last_synced_hash: calculateHash('# Test Content'),
+        },
+      ],
+    }
+
+    loadConfigSpy.mockReturnValue(multiState)
+
+    await startWatch()
+
+    expect(chokidarSpy.mock.calls.length).toBe(2)
+    const watchedPaths = chokidarSpy.mock.calls.map((call) => call[0])
+    expect(watchedPaths).toContain(path.resolve(process.cwd(), relativeFile))
+    expect(watchedPaths).toContain(path.resolve(process.cwd(), secondRelative))
   })
   // Error handling is validated via targeted unit tests to avoid relying on chokidar internals here.
 })

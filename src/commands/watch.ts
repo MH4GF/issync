@@ -1,11 +1,16 @@
 import { existsSync, readFileSync } from 'node:fs'
 import path from 'node:path'
 import chokidar, { type FSWatcher } from 'chokidar'
-import { loadConfig } from '../lib/config.js'
-import { ConfigNotFoundError, InvalidFilePathError } from '../lib/errors.js'
+import { loadConfig, selectSync } from '../lib/config.js'
+import {
+  AmbiguousSyncError,
+  ConfigNotFoundError,
+  InvalidFilePathError,
+  SyncNotFoundError,
+} from '../lib/errors.js'
 import { GitHubClient, parseIssueUrl } from '../lib/github.js'
 import { calculateHash } from '../lib/hash.js'
-import type { IssyncConfig } from '../types/index.js'
+import type { IssyncState, IssyncSync } from '../types/index.js'
 import { pull } from './pull.js'
 import { OptimisticLockError, push } from './push.js'
 
@@ -29,6 +34,8 @@ class ConflictError extends Error {
 interface WatchOptions {
   interval?: number // polling interval in seconds
   cwd?: string
+  file?: string
+  issue?: string
 }
 
 // Constants
@@ -67,24 +74,24 @@ function resolveLocalFilePath(localFile: string, cwd: string): string {
  * Exported for testing
  */
 export async function _performSafetyCheck(
-  config: IssyncConfig,
+  sync: IssyncSync,
   cwd = process.cwd(),
   resolvedFilePath?: string,
 ): Promise<void> {
-  if (!config.comment_id) {
+  if (!sync.comment_id) {
     throw new Error(
       'No comment_id found in config. Please run "issync push" first to create a comment.',
     )
   }
 
-  const lastSyncedHash = config.last_synced_hash
-  const localFilePath = resolvedFilePath ?? resolveLocalFilePath(config.local_file, cwd)
+  const lastSyncedHash = sync.last_synced_hash
+  const localFilePath = resolvedFilePath ?? resolveLocalFilePath(sync.local_file, cwd)
 
   if (!lastSyncedHash) {
     console.log(
       '⚠️  No sync history found. Pulling from remote to establish baseline before starting watch...',
     )
-    await pull({ cwd })
+    await pull({ cwd, file: sync.local_file })
     console.log('✓ Baseline established from remote')
     return
   }
@@ -92,7 +99,7 @@ export async function _performSafetyCheck(
   // Read local file
   if (!existsSync(localFilePath)) {
     console.log('⚠️  Local file missing. Pulling from remote to restore before starting watch...')
-    await pull({ cwd })
+    await pull({ cwd, file: sync.local_file })
     console.log('✓ Local file restored from remote')
     return
   }
@@ -101,8 +108,8 @@ export async function _performSafetyCheck(
 
   // Fetch remote content
   const client = new GitHubClient()
-  const { owner, repo } = parseIssueUrl(config.issue_url)
-  const comment = await client.getComment(owner, repo, config.comment_id)
+  const { owner, repo } = parseIssueUrl(sync.issue_url)
+  const comment = await client.getComment(owner, repo, sync.comment_id)
   const remoteHash = calculateHash(comment.body)
 
   // 3-way comparison
@@ -117,15 +124,72 @@ export async function _performSafetyCheck(
   if (localChanged) {
     // Only local changed → Auto push
     console.log('⚠️  Local changes detected. Pushing to remote before starting watch...')
-    await push({ cwd })
+    await push({ cwd, file: sync.local_file })
     console.log('✓ Local changes pushed')
   } else if (remoteChanged) {
     // Only remote changed → Auto pull
     console.log('⚠️  Remote changes detected. Pulling from remote before starting watch...')
-    await pull({ cwd })
+    await pull({ cwd, file: sync.local_file })
     console.log('✓ Remote changes pulled')
   }
   // else: Neither changed → No-op, proceed to watch
+}
+
+function determineSyncs(state: IssyncState, options: WatchOptions, cwd: string): IssyncSync[] {
+  if (options.file || options.issue) {
+    const { sync } = selectSync(state, { file: options.file, issueUrl: options.issue }, cwd)
+    return [sync]
+  }
+  return state.syncs
+}
+
+async function prepareTargets(
+  options: WatchOptions,
+  cwd: string,
+): Promise<Array<{ sync: IssyncSync; resolvedPath: string }>> {
+  const state = loadConfig(cwd)
+  const syncs = determineSyncs(state, options, cwd)
+
+  if (syncs.length === 0) {
+    throw new SyncNotFoundError()
+  }
+
+  const targets = syncs.map((sync) => ({
+    sync,
+    resolvedPath: resolveLocalFilePath(sync.local_file, cwd),
+  }))
+
+  for (const target of targets) {
+    await _performSafetyCheck(target.sync, cwd, target.resolvedPath)
+  }
+
+  return targets
+}
+
+function handleWatchSetupError(error: unknown): void {
+  if (error instanceof ConfigNotFoundError) {
+    console.error('Config not found. Please run "issync init" first.')
+    return
+  }
+  if (error instanceof AmbiguousSyncError) {
+    console.error(error.message)
+    return
+  }
+  if (error instanceof SyncNotFoundError) {
+    console.error(error.message)
+    return
+  }
+  if (error instanceof InvalidFilePathError) {
+    console.error(error.message)
+    return
+  }
+  if (error instanceof ConflictError) {
+    return
+  }
+  if (error instanceof Error) {
+    console.error(`Initial sync failed: ${error.message}`)
+    console.error('Cannot start watch mode - please ensure remote is accessible')
+  }
 }
 
 /**
@@ -142,6 +206,7 @@ class WatchSession {
   private lastPullCompletedAt = 0
 
   constructor(
+    private readonly sync: IssyncSync,
     private readonly filePath: string,
     private readonly intervalMs: number,
     private readonly cwd: string,
@@ -264,7 +329,7 @@ class WatchSession {
 
     try {
       await this.withLock(async () => {
-        await pull({ cwd: this.cwd })
+        await pull({ cwd: this.cwd, file: this.sync.local_file })
         this.lastPullCompletedAt = Date.now() // Record pull completion time
         console.log(`[${new Date().toISOString()}] ✓ Pulled changes from remote`)
       })
@@ -301,7 +366,7 @@ class WatchSession {
     // Initial pull (synchronous, throws on error) - skip if already synced by safety check
     if (!this._skipInitialPull) {
       try {
-        await pull({ cwd: this.cwd })
+        await pull({ cwd: this.cwd, file: this.sync.local_file })
         this.lastPullCompletedAt = Date.now() // Record initial pull completion time
         console.log('✓ Initial pull completed')
       } catch (error) {
@@ -366,7 +431,7 @@ class WatchSession {
 
     try {
       await this.withLock(async () => {
-        await push({ cwd: this.cwd })
+        await push({ cwd: this.cwd, file: this.sync.local_file })
         console.log(`[${new Date().toISOString()}] ✓ Pushed changes to remote`)
       })
     } catch (error) {
@@ -402,30 +467,20 @@ class WatchSession {
 
 export async function watch(options: WatchOptions = {}): Promise<void> {
   const cwd = options.cwd ?? process.cwd()
-  const config = loadConfig(cwd)
   const intervalSeconds = options.interval ?? DEFAULT_POLL_INTERVAL_SECONDS
   const intervalMs = intervalSeconds * 1000
 
-  const resolvedFilePath = resolveLocalFilePath(config.local_file, cwd)
-
-  // Perform safety check before starting watch
+  let targets: Array<{ sync: IssyncSync; resolvedPath: string }>
   try {
-    await _performSafetyCheck(config, cwd, resolvedFilePath)
+    targets = await prepareTargets(options, cwd)
   } catch (error) {
-    if (error instanceof ConfigNotFoundError) {
-      console.error('Config not found. Please run "issync init" first.')
-    } else if (error instanceof InvalidFilePathError) {
-      console.error(error.message)
-    } else if (error instanceof ConflictError) {
-      // Let conflict message surface as-is
-    } else if (error instanceof Error) {
-      console.error(`Initial sync failed: ${error.message}`)
-      console.error('Cannot start watch mode - please ensure remote is accessible')
-    }
+    handleWatchSetupError(error)
     throw error
   }
 
-  // Skip initial pull since safety check already synced
-  const session = new WatchSession(resolvedFilePath, intervalMs, cwd, true)
-  await session.start()
+  const sessions = targets.map(
+    ({ sync, resolvedPath }) => new WatchSession(sync, resolvedPath, intervalMs, cwd, true),
+  )
+
+  await Promise.all(sessions.map((session) => session.start()))
 }

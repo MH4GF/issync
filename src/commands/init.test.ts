@@ -39,12 +39,14 @@ describe('init command', () => {
     expect(existsSync(targetFile)).toBe(true)
     expect(readFileSync(targetFile, 'utf-8')).toBe('')
 
-    const config = loadConfig(TEST_DIR)
+    const state = loadConfig(TEST_DIR)
+    expect(state.syncs).toHaveLength(1)
+    const config = state.syncs[0]
 
-    expect(config.issue_url).toBe(issueUrl)
-    expect(config.local_file).toBe(localFile)
-    expect(config.comment_id).toBeUndefined()
-    expect(config.last_synced_hash).toBeUndefined()
+    expect(config?.issue_url).toBe(issueUrl)
+    expect(config?.local_file).toBe(localFile)
+    expect(config?.comment_id).toBeUndefined()
+    expect(config?.last_synced_hash).toBeUndefined()
   })
 
   test('uses default file path when not specified', () => {
@@ -52,9 +54,11 @@ describe('init command', () => {
 
     init(issueUrl, { cwd: TEST_DIR })
 
-    const config = loadConfig(TEST_DIR)
+    const state = loadConfig(TEST_DIR)
+    expect(state.syncs).toHaveLength(1)
+    const config = state.syncs[0]
 
-    expect(config.local_file).toBe('docs/plan.md')
+    expect(config?.local_file).toBe('docs/plan.md')
   })
 
   test('creates file from template when provided', () => {
@@ -136,14 +140,39 @@ describe('init command', () => {
     expect(() => init(invalidUrl, { cwd: TEST_DIR })).toThrow()
   })
 
-  test('throws error when state.yml already exists', () => {
+  test('throws error when issue is already tracked', () => {
     const issueUrl = 'https://github.com/owner/repo/issues/123'
 
     // First initialization
     init(issueUrl, { cwd: TEST_DIR })
 
     // Second initialization should fail
-    expect(() => init(issueUrl, { cwd: TEST_DIR })).toThrow(/already initialized/)
+    expect(() => init(issueUrl, { cwd: TEST_DIR })).toThrow(/Sync already exists for issue/)
+  })
+
+  test('throws error when local file is already tracked', () => {
+    const issueUrl1 = 'https://github.com/owner/repo/issues/123'
+    const issueUrl2 = 'https://github.com/owner/repo/issues/456'
+    const localFile = 'docs/plan.md'
+
+    init(issueUrl1, { cwd: TEST_DIR, file: localFile })
+
+    expect(() => init(issueUrl2, { cwd: TEST_DIR, file: localFile })).toThrow(
+      /Sync already exists for local file/,
+    )
+  })
+
+  test('allows multiple sync entries for different issues and files', () => {
+    init('https://github.com/owner/repo/issues/1', { cwd: TEST_DIR, file: 'docs/plan.md' })
+    init('https://github.com/owner/repo/issues/2', {
+      cwd: TEST_DIR,
+      file: 'docs/notes.md',
+    })
+
+    const state = loadConfig(TEST_DIR)
+    expect(state.syncs).toHaveLength(2)
+    const files = state.syncs.map((sync) => sync.local_file).sort()
+    expect(files).toEqual(['docs/notes.md', 'docs/plan.md'])
   })
 
   test('creates .issync directory if it does not exist', () => {

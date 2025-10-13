@@ -1,59 +1,62 @@
 import { existsSync } from 'node:fs'
 import { mkdir, writeFile } from 'node:fs/promises'
 import path from 'node:path'
-import { loadConfig, saveConfig } from '../lib/config.js'
-import { InvalidFilePathError } from '../lib/errors.js'
+import type { SyncSelector } from '../lib/config.js'
+import { loadConfig, saveConfig, selectSync } from '../lib/config.js'
 import { GitHubClient, parseIssueUrl } from '../lib/github.js'
 import { calculateHash } from '../lib/hash.js'
+import { resolvePathWithinBase } from '../lib/path.js'
 
 export interface PullOptions {
   cwd?: string
   token?: string
+  file?: string
+  issue?: string
 }
 
 export async function pull(options: PullOptions = {}): Promise<void> {
-  const { cwd, token } = options
+  const { cwd, token, file, issue } = options
+  const baseDir = cwd ?? process.cwd()
 
   // Load config
-  const config = loadConfig(cwd)
+  const state = loadConfig(cwd)
+  const selector: SyncSelector = {
+    file,
+    issueUrl: issue,
+  }
+  const { sync } = selectSync(state, selector, baseDir)
 
-  if (!config.comment_id) {
+  if (!sync.comment_id) {
     throw new Error(
       'No comment_id found in config. Please run "issync push" first to create a comment.',
     )
   }
 
   // Validate file path
-  const filePath = path.join(cwd || process.cwd(), config.local_file)
-
-  // Check for path traversal
-  const resolvedPath = path.resolve(cwd || process.cwd(), config.local_file)
-  const basePath = path.resolve(cwd || process.cwd())
-  if (!resolvedPath.startsWith(basePath)) {
-    throw new InvalidFilePathError(config.local_file, 'path traversal detected')
-  }
+  const basePath = path.resolve(baseDir)
+  const resolvedPath = resolvePathWithinBase(basePath, sync.local_file, sync.local_file)
 
   // Ensure parent directory exists
-  const parentDir = path.dirname(filePath)
+  const parentDir = path.dirname(resolvedPath)
   if (!existsSync(parentDir)) {
     await mkdir(parentDir, { recursive: true })
   }
 
   // Parse issue URL
-  const issueInfo = parseIssueUrl(config.issue_url)
+  const issueInfo = parseIssueUrl(sync.issue_url)
 
   // Fetch comment from GitHub
   const client = new GitHubClient(token)
-  const comment = await client.getComment(issueInfo.owner, issueInfo.repo, config.comment_id)
+  const comment = await client.getComment(issueInfo.owner, issueInfo.repo, sync.comment_id)
 
   // Calculate hash of remote content
   const remoteHash = calculateHash(comment.body)
 
   // Write to local file
-  await writeFile(filePath, comment.body, 'utf-8')
+  await writeFile(resolvedPath, comment.body, 'utf-8')
 
   // Update config with new hash
-  config.last_synced_hash = remoteHash
-  config.last_synced_at = new Date().toISOString()
-  saveConfig(config, cwd)
+  sync.last_synced_hash = remoteHash
+  sync.last_synced_at = new Date().toISOString()
+  saveConfig(state, cwd)
 }
