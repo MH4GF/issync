@@ -41,3 +41,10 @@ export class FileNotFoundError extends IssyncError {
     this.name = 'FileNotFoundError'
   }
 }
+
+export class FileAlreadyExistsError extends IssyncError {
+  constructor(path: string) {
+    super(`File already exists: ${path}`)
+    this.name = 'FileAlreadyExistsError'
+  }
+}

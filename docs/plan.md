@@ -36,7 +36,7 @@ issync は、GitHub Issue のコメントとローカルファイル間でテキ
 
 - [x] GitHub token format 検証の改善 (gho_ フォーマットのサポート)
 - [x] watch の pull-push ループバグ修正 (grace period で pull 直後の push をスキップ)
-- [ ] init コマンドに --template オプション追加（テンプレートから新規作成）
+- [x] init コマンドに --template オプション追加（テンプレートから新規作成）
 - [ ] 複数Issue同時管理のサポート（state.yml を配列化）
 - [x] watch 起動時の安全性チェック (3-way comparison でコンフリクト検出)
 - [ ] docs/plan.md を git 管理から除外（issync 管理のみに移行）
@@ -422,7 +422,7 @@ issync は、GitHub Issue のコメントとローカルファイル間でテキ
 - watch 起動時の 3-way セーフティチェックを実装し、両側更新時は起動前にコンフリクトを通知
 - ローカルのみ / リモートのみの差分は自動 push / pull でベースラインを回復するフローを整備
 - GitHub token の gho_ サポートや watch ログ改善で実行時の診断性を向上
-- 残タスク: init --template、複数 Issue 管理、watch デーモン化、セクションベースマージ、stop コマンド
+- 残タスク: 複数 Issue 管理、watch デーモン化、セクションベースマージ、stop コマンド
 
 ## コンテキストと方向性
 
@@ -472,14 +472,14 @@ issync は、GitHub Issue のコメントとローカルファイル間でテキ
 
 - watch 起動時の 3-way セーフティチェックと自動 push / pull
 - GitHub token フォーマット検証強化 (gho_ 追加)
+- init コマンドに --template オプションを追加し、テンプレートもしくは空ファイルから初期化可能にした
 
 **残タスク:**
 
-1. `issync init --template` によるテンプレートからの初期化
-2. `.issync/state.yml` の複数 Issue 対応と CLI でのターゲット選択
-3. `watch --daemon` / `issync stop` / `issync status` の実装と PID 管理
-4. セクションベースのマージ戦略とコンフリクト解決フロー
-5. docs/plan.md の issync 管理への移行（git 管理から除外）
+1. `.issync/state.yml` の複数 Issue 対応と CLI でのターゲット選択
+2. `watch --daemon` / `issync stop` / `issync status` の実装と PID 管理
+3. セクションベースのマージ戦略とコンフリクト解決フロー
+4. docs/plan.md の issync 管理への移行（git 管理から除外）
 
 **スコープ外 (Phase 3 以降):**
 
