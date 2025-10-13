@@ -36,6 +36,8 @@ issync は、GitHub Issue のコメントとローカルファイル間でテキ
 
 - [x] GitHub token format 検証の改善 (gho_ フォーマットのサポート)
 - [x] watch の pull-push ループバグ修正 (grace period で pull 直後の push をスキップ)
+- [ ] init コマンドに --template オプション追加（テンプレートから新規作成）
+- [ ] 複数Issue同時管理のサポート（state.yml を配列化）
 - [ ] watch 起動時の安全性チェック (3-way comparison でコンフリクト検出)
 - [ ] docs/plan.md を git 管理から除外（issync 管理のみに移行）
 - [ ] watch モードのデーモン化 (--daemon, PID 管理)
@@ -331,6 +333,61 @@ issync は、GitHub Issue のコメントとローカルファイル間でテキ
 - **他の検討案**:
   - ❌ Pre-commit hook: コミット時点ではファイル編集後なので遅すぎる
   - ❌ 内部 git 管理: リモートが必要で複雑すぎる、Phase 1 & 2 で十分な価値
+
+**2025-10-13: init コマンドのテンプレートサポート (Phase 2)**
+
+- **背景**: Issue を作成したがローカルファイルがまだ存在しないケースが頻繁に発生
+  - 実際のユースケース: タスクダッシュボード設計用に Issue #2 を作成したが、テンプレートからドキュメントを作成したい
+  - 現状の init コマンドは既存ファイルを前提としており、テンプレートからの新規作成に未対応
+- **採用**: init コマンドに `--template` オプションを追加
+  ```bash
+  issync init <issue-url> --file <path> --template <template-path>
+  ```
+- **動作**:
+  - ファイルが存在しない場合、テンプレートからコピー（ディレクトリも自動作成）
+  - テンプレートパス省略時は空ファイルを作成
+  - ファイルが既に存在する場合はエラー（上書き防止）
+- **メリット**:
+  - テンプレートからの新規プロジェクト開始がスムーズ
+  - ユーザーが手動で cp コマンドを実行する必要がない
+  - ディレクトリ作成も自動化され、エラーが減る
+- **比較検討した候補**:
+  - Unix哲学アプローチ（ユーザーが手動で cp）: シンプルだがUX が劣る
+- **実装方針**:
+  - init コマンドに --template フラグを追加
+  - ファイル存在チェック → テンプレートコピー → 既存の init フロー
+
+**2025-10-13: 複数Issue同時管理のサポート (Phase 2)**
+
+- **背景**: 単一プロジェクトで複数のドキュメントを管理したい
+  - 実際のユースケース: `docs/plan.md` (Issue #1) と `.issync/docs/task-dashboard.md` (Issue #2) を同時管理
+  - 現状の設計は単一 Issue のみサポート（`.issync/state.yml` がシングルオブジェクト）
+- **採用**: 単一状態ファイルで配列管理
+  ```yaml
+  # .issync/state.yml
+  syncs:
+    - issue_url: https://github.com/owner/repo/issues/1
+      local_file: docs/plan.md
+      comment_id: 123456789
+      last_synced_hash: abc123def
+      last_synced_at: '2025-10-13T00:55:23.058Z'
+    - issue_url: https://github.com/owner/repo/issues/2
+      local_file: .issync/docs/task-dashboard.md
+      comment_id: 987654321
+      last_synced_hash: def456abc
+      last_synced_at: '2025-10-13T01:00:00.000Z'
+  ```
+- **メリット**:
+  - 1ファイルで全体管理、状態の把握が容易
+  - watch が複数ファイルを一括監視可能（単一プロセスで効率的）
+  - 現在の設計を最小限の変更で拡張可能
+- **比較検討した候補**:
+  - ファイルごとに状態ファイル分割: 拡張性は高いが状態ファイルが増える
+  - ハイブリッド案（config.yml + states/*.yml）: 複雑すぎる
+- **実装方針**:
+  - `IssyncConfig` 型を `{ syncs: IssyncSync[] }` に変更（破壊的変更）
+  - init/pull/push/watch コマンドを複数管理に対応
+  - マイグレーション: 既存の state.yml を自動変換（Phase 2 開始時）
 
 ## 成果と振り返り
 
