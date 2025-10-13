@@ -38,7 +38,7 @@ issync は、GitHub Issue のコメントとローカルファイル間でテキ
 - [x] watch の pull-push ループバグ修正 (grace period で pull 直後の push をスキップ)
 - [ ] init コマンドに --template オプション追加（テンプレートから新規作成）
 - [ ] 複数Issue同時管理のサポート（state.yml を配列化）
-- [ ] watch 起動時の安全性チェック (3-way comparison でコンフリクト検出)
+- [x] watch 起動時の安全性チェック (3-way comparison でコンフリクト検出)
 - [ ] docs/plan.md を git 管理から除外（issync 管理のみに移行）
 - [ ] watch モードのデーモン化 (--daemon, PID 管理)
 - [ ] stop コマンドの実装
@@ -93,6 +93,13 @@ issync は、GitHub Issue のコメントとローカルファイル間でテキ
   - Edit() ツールでのファイル編集が失敗しやすくなる（常にファイルが変更されているため）
   - 実際にファイル編集中に複数回 "File has been modified" エラーが発生
 - **Phase 2 での修正**: pull 操作中は chokidar の監視を一時停止、または pull によるファイル変更を無視する仕組みを実装
+
+**2025-10-13: watch 起動前の 3-way セーフティチェック**
+
+- watch 起動時に last_synced_hash・ローカル・リモートの 3-way 比較を実装し、両側で差分がある場合に起動をブロック
+- ローカルのみ差分がある場合は自動 push、リモートのみ差分がある場合は自動 pull でベースラインを復旧
+- comment_id が未設定の場合は push 実行を促し、初回同期フローを明示化
+- ユニットテストで衝突検知・自動 push/pull・ファイル欠如時のリカバリーを検証済み
 
 ## 決定ログ
 
@@ -401,133 +408,157 @@ issync は、GitHub Issue のコメントとローカルファイル間でテキ
 - **watch pull-push ループバグ修正完了**: Grace period パターン (1000ms) を実装し、pull 直後のファイル変更による不要な push をスキップ。実際の watch ログで動作確認 (Ignoring file change 519ms ago)。これにより GitHub API レート制限の無駄な消費を半減 (720 req/hour → 360 req/hour)。32 テスト全て合格。
 - **次のステップ**: 起動時安全性チェック、デーモン化。
 
+## 成果と振り返り
+
+**Phase 1 完了 (2025-10-12)**
+
+- init / pull / push / watch コマンドの MVP 実装を完了し、Bun Test で TDD を徹底
+- `.issync/state.yml` に last_synced_hash と timestamp を保存し、CLI 間で共有できる楽観ロックを確立
+- watch モードの pull→push ループを grace period (1000ms) で抑止し、AI エージェントの Edit 失敗頻度を低減
+- CLAUDE.md と AGENTS.md に運用ガイドラインを整備し、複数セッションでの手順を統一
+
+**Phase 2 進行中 (2025-10-13)**
+
+- watch 起動時の 3-way セーフティチェックを実装し、両側更新時は起動前にコンフリクトを通知
+- ローカルのみ / リモートのみの差分は自動 push / pull でベースラインを回復するフローを整備
+- GitHub token の gho_ サポートや watch ログ改善で実行時の診断性を向上
+- 残タスク: init --template、複数 Issue 管理、watch デーモン化、セクションベースマージ、stop コマンド
+
 ## コンテキストと方向性
 
 **問題のコンテキスト:**
-AI エージェント(Claude Code、Devin など)は、開発セッション中に生きたドキュメントを維持することで利益を得ます。しかし、ローカルファイルには問題があります:
 
-1. 複数人チームでの Git コンフリクト
-2. 並行セッション(git worktree)間でドキュメントを共有できない
-3. ドキュメントの同期が困難
+- 並行する AI / 人間セッションが plan.md を共有すると、Git コンフリクトや書き戻し漏れが頻発する
+- Issue コメントとローカルファイルの乖離により、最新情報の所在が不明瞭になる
+- AI エージェントに余計な同期手順を要求すると、生産性と成功率が大幅に低下する
 
 **インスピレーション元:**
-Feler の手法: plans.md を生きたドキュメントとして使い、AI エージェントが長時間の開発セッション(7 時間セッション、150M トークン、15K 行のリファクタリング)中に継続的に読み書きする。
+
+- Feler の plans.md 運用: 長時間の AI セッションで単一ドキュメントを継続更新
+- Notion / Dropbox Paper によるセクション単位の共同編集体験
+- CRDT (yjs, Automerge) が提供する eventually consistent な分散同期
 
 **設計哲学:**
 
-- **AI エージェントに透過的**: エージェントは issync の存在を意識せず、通常のファイル操作(Read/Edit)で動作
-- **バックグラウンド同期**: watch mode がリモートとローカルを自動的に同期
-- **既存ツールの活用**: Claude Code の Edit() の失敗メカニズムをコンフリクト検出に利用
-- **段階的拡張**: MVP は Issue SSoT、将来的に CRDT ベース(yjs)へ移行可能
+- **エージェント透過性**: エージェントは普段どおり Read/Edit を使い、同期は watch モードが肩代わりする
+- **安全優先の同期**: ハッシュベースの楽観ロックと 3-way 比較で上書きリスクを抑え、衝突時は明示的に停止する
+- **軽量導入**: 追加インフラ不要で GitHub PAT のみを要求し、CLI 1 本で導入できる
+- **段階的拡張**: 初期は Issue コメントを SSoT とし、必要に応じて CRDT や専用サーバーに移行する
 
 ## 作業計画
 
-### Phase 1: MVP (ドッグフーディングまで)
+### Phase 1: ドッグフーディング MVP (完了)
 
-**ゴール:** docs/plan.md を GitHub Issue と同期し、issync 自体の開発に使う
+**ゴール:** docs/plan.md を GitHub Issue と同期し、AI / 人間混在のセッションで利用できる状態を作る
 
-**実装するコマンド:**
+**実装済み:**
 
-1. **init**: Issue URL → `.issync/state.yml` 生成
-2. **push**: ローカル → リモート (楽観ロック: hash 不一致時はエラー)
-3. **pull**: リモート → ローカル (無条件上書き)
-4. **watch**: フォアグラウンドプロセスで自動同期
-   - リモートポーリング (setInterval, デフォルト 10 秒)
-   - ローカルファイル監視 (chokidar)
-   - Ctrl+C で停止
+1. `issync init` で Issue URL とローカルファイルを紐付け、`.issync/state.yml` を生成
+2. `issync pull` / `issync push` による手動同期とハッシュベースの楽観ロック
+3. `issync watch` のポーリング + chokidar 監視と grace period による pull→push ループ防止
+4. CLAUDE.md / AGENTS.md による運用ガイド整備と Bun Test ベースのコマンド単体テスト
 
 **スコープ外 (Phase 2 以降):**
 
-- watch のデーモン化、PID 管理、stop コマンド
-- セクションベースの自動マージ
-- コンフリクト解決 UI
+- デーモン化された watch、stop / status コマンド
+- セクションベースの自動マージと UI
+- 複数 Issue の同時管理
 
-### Phase 2: スマートマージとデーモン化
+### Phase 2: スマートマージとデーモン化 (進行中)
 
-- watch mode のデーモン化 (--daemon オプション)
-- PID 管理と stop コマンド
-- status コマンドの詳細化
-- セクションベースの Markdown パース
-- 追記専用セクションの自動マージ
-- コンフリクト解決 UI
+**ゴール:** 並行セッションの安全性と可用性を高め、長時間稼働できる同期体験を提供する
 
-### Phase 3: 安定性と最適化
+**着手済み / 完了:**
 
-- レート制限処理の改善
-- エラーハンドリングとリトライ戦略
-- ローカルバックアップ機能
-- 包括的なテストスイート
+- watch 起動時の 3-way セーフティチェックと自動 push / pull
+- GitHub token フォーマット検証強化 (gho_ 追加)
 
-### Phase 4: 仕上げ
+**残タスク:**
 
-- ドキュメント整備
-- リリース自動化
-- npm パッケージ公開
+1. `issync init --template` によるテンプレートからの初期化
+2. `.issync/state.yml` の複数 Issue 対応と CLI でのターゲット選択
+3. `watch --daemon` / `issync stop` / `issync status` の実装と PID 管理
+4. セクションベースのマージ戦略とコンフリクト解決フロー
+5. docs/plan.md の issync 管理への移行（git 管理から除外）
+
+**スコープ外 (Phase 3 以降):**
+
+- CRDT ベースのリアルタイム同期
+- GitHub 以外のデータソース連携
+
+### Phase 3: 安定性と最適化 (計画中)
+
+**ゴール:** 大規模チームでも信頼して使える品質を確保する
+
+**プラン:**
+
+1. 包括的な統合テストと CLI 出力スナップショット
+2. レート制限・ネットワーク断に対するリトライとバックオフ戦略
+3. 障害時のロールバック / ローカルバックアップ機能
+4. ドキュメント・チュートリアル整備、導入チェックリスト
+
+### Phase 4: 仕上げ (将来検討)
+
+- リリース自動化 (CI/CD, npm 公開)
+- 単一バイナリ配布 (bun build / pkg など)
+- サポートする AI エージェント毎のガイド追加
 
 ## 検証と受け入れ基準
 
 **受け入れ基準:**
 
-- Issue コメント URL で初期化できる
-- リモートの変更をローカルファイルに pull できる
-- ローカルの変更をリモートコメントに push できる
-- **AI エージェントが通常の Read()/Edit() で透過的に動作する**:
-  - watch mode がバックグラウンドで動作中
-  - AI エージェントが Edit() を試行
-  - リモート更新があった場合、Edit() が失敗し、再 Read() が促される
-  - issync の存在を意識せずに動作する
-- Watch モードがリモート変更時にローカルファイルを自動更新する
-- ローカルファイル変更時に自動的に push される
-- 同じ Issue で複数の worktree 間で動作する
-- 楽観ロックが機能し、コンフリクトを適切に検出・処理する
+- `issync init` が既存 state を検出して二重初期化を防ぎ、成功時に `.issync/state.yml` を生成
+- `issync push` が last_synced_hash を検証し、リモート差分がある場合に OptimisticLockError を返す
+- `issync pull` がディレクトリ作成とパス検証を行い、取得後に hash / timestamp を更新する
+- `issync watch` が 3-way セーフティチェックで両側更新を検出し、片側差分は自動 push / pull で解決する
+- `bun test`, `bun run check:ci` がグリーンである（テスト・lint・型チェックを網羅）
 
 **テストシナリオ:**
 
-- 単一ユーザー、単一セッション
-- 単一ユーザー、複数 worktree(同時編集)
-- 複数ユーザー、追記専用更新
-- コンフリクトシナリオ(両側が同じセクションを編集)
-- **AI エージェント透過性**:
-  - Claude Code で watch mode 起動
-  - Claude Code が plan.md を Read/Edit
-  - 別セッション(or 手動)でリモート更新
-  - Claude Code の Edit が自然に失敗し、再試行する
+- `src/commands/watch.unit.test.ts`: 3-way セーフティチェックの分岐（自動 push / pull / コンフリクト）を検証
+- `src/commands/push.test.ts`: 楽観ロック違反時のエラーと GitHub API 呼び出しの振る舞いを確認
+- `src/lib/config.test.ts`: YAML 読み書き、ディレクトリ生成、パス検証を網羅
+- 手動 QA: watch 起動 → リモート更新 → pull→push ループが発生しないかログで確認
 
 ## べき等性と復旧
 
-- Pull 操作はべき等(複数回安全に実行可能)
-- Push は書き込み前にリモートハッシュを検証
-- Watch モードは API 失敗を適切に処理
-- マージコンフリクト前にローカルバックアップを作成
+- `issync pull` は同一コメント内容であれば再実行してもファイル内容・ハッシュが変わらず、冪等に動作する
+- `issync push` は last_synced_hash が一致しない限り書き込みを拒否するため、失敗時は `pull → 手動マージ → push` の手順で回復
+- watch モードは AbortController と grace period により、安全に停止・再開できる（pull 中の変更通知は無視）
+- `.issync/state.yml` を誤って削除した場合でも、`issync init` で再生成し `issync pull` で最新状態を復旧できる
 
 ## 成果物とメモ
 
 **コマンドリファレンス:**
 
 ```bash
-# 初期化
+# 開発時 (Bun 経由)
+bun run dev init <issue-url> [--file path/to/file]
+bun run dev pull
+bun run dev push
+bun run dev watch --interval 10
+
+# ビルド後 CLI (Phase 2 で npm 公開を想定)
 issync init <issue-url> [--file path/to/file]
-
-# 手動同期
-issync pull                    # リモート → ローカル
-issync push [-m "message"]     # ローカル → リモート
-
-# 自動同期 (MVP: フォアグラウンド)
-issync watch [--interval 10]   # Ctrl+C で停止
-
-# Phase 2 予定: デーモン化
-issync watch --daemon          # バックグラウンド実行
-issync stop                    # デーモン停止
-issync status                  # 同期状態確認
+issync pull                       # リモート → ローカル
+issync push [-m "message"]        # ローカル → リモート
+issync watch [--interval 10]      # フォアグラウンド、Ctrl+C で停止
+issync watch --daemon             # デーモン化 (実装予定)
+issync stop                       # デーモン停止 (実装予定)
+issync status                     # 同期状態確認 (実装予定)
 ```
 
 **状態ファイルフォーマット (`.issync/state.yml`):**
 
 ```yaml
 issue_url: https://github.com/owner/repo/issues/123
-comment_id: 123456789 # 最初の push で自動設定
+comment_id: 123456789        # 最初の push で自動設定
 local_file: docs/plan.md
-last_synced_hash: abc123def # リモートの最終 hash (楽観ロック用)
+last_synced_hash: abc123def  # リモートの最終 hash (楽観ロック用)
+last_synced_at: 2025-10-13T09:00:00Z
+poll_interval: 10            # watch のポーリング間隔 (秒) - オプション
+merge_strategy: section-based # Phase 2 で導入予定
+watch_daemon_pid: null       # Phase 2 でデーモン化した場合に保存
 ```
 
 **`.gitignore` への追加推奨:**
