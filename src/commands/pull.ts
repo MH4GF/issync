@@ -7,7 +7,8 @@ import { SyncNotFoundError } from '../lib/errors.js'
 import { createGitHubClient, parseIssueUrl } from '../lib/github.js'
 import { calculateHash } from '../lib/hash.js'
 import { resolvePathWithinBase } from '../lib/path.js'
-import type { IssyncSync } from '../types/index.js'
+import { reportSyncResults } from '../lib/sync-reporter.js'
+import type { IssyncState, IssyncSync } from '../types/index.js'
 
 export interface PullOptions {
   cwd?: string
@@ -60,7 +61,7 @@ async function pullSingleSync(sync: IssyncSync, cwd: string, token?: string): Pr
  * Pull all syncs in parallel and report results
  */
 async function pullAllSyncs(
-  state: import('../types/index.js').IssyncState,
+  state: IssyncState,
   baseDir: string,
   cwd: string,
   token?: string,
@@ -75,36 +76,17 @@ async function pullAllSyncs(
   )
 
   // Collect failures
-  const failures: Array<{ index: number; sync: IssyncSync; reason: unknown }> = []
-  results.forEach((result, index) => {
-    if (result.status === 'rejected') {
-      failures.push({ index, sync: state.syncs[index], reason: result.reason })
-    }
-  })
+  const failures = results
+    .map((result, index) =>
+      result.status === 'rejected' ? { sync: state.syncs[index], reason: result.reason } : null,
+    )
+    .filter((failure): failure is { sync: IssyncSync; reason: unknown } => failure !== null)
 
   // Save config (updates successful syncs)
   saveConfig(state, cwd)
 
   // Report results
-  if (failures.length > 0) {
-    const successCount = state.syncs.length - failures.length
-    const message = `${failures.length} of ${state.syncs.length} pull operation(s) failed`
-    console.error(`\nError: ${message}`)
-
-    for (const { sync, reason } of failures) {
-      const label = `${sync.issue_url} → ${sync.local_file}`
-      const errorMsg = reason instanceof Error ? reason.message : String(reason)
-      console.error(`  ${label}: ${errorMsg}`)
-    }
-
-    if (successCount > 0) {
-      console.log(`\n✓ ${successCount} sync(s) pulled successfully`)
-    }
-
-    throw new Error(message)
-  }
-
-  console.log(`✓ Successfully pulled ${state.syncs.length} sync(s)`)
+  reportSyncResults('pull', state.syncs.length, failures)
 }
 
 export async function pull(options: PullOptions = {}): Promise<void> {

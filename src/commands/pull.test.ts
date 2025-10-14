@@ -121,6 +121,62 @@ describe('pull command - multi-sync support', () => {
     expect(syncTwo?.last_synced_at).toBeDefined()
   })
 
+  test('reports partial failures when some syncs fail', async () => {
+    const remoteBodyOne = '# Remote Content One'
+    const initialHashTwo = calculateHash('# Initial Content Two')
+    const state: IssyncState = {
+      syncs: [
+        {
+          issue_url: 'https://github.com/owner/repo/issues/1',
+          local_file: 'docs/one.md',
+          comment_id: 111,
+        },
+        {
+          issue_url: 'https://github.com/owner/repo/issues/2',
+          local_file: 'docs/two.md',
+          comment_id: 222,
+          last_synced_hash: initialHashTwo,
+        },
+      ],
+    }
+    saveConfig(state, tempDir)
+
+    const mockGitHubClient: Pick<GitHubClientInstance, 'getComment'> = {
+      getComment: (_, __, commentId) => {
+        if (commentId === 111) {
+          return Promise.resolve({
+            id: 111,
+            body: remoteBodyOne,
+            updated_at: '2025-01-01T00:00:00Z',
+          })
+        }
+        throw new Error('API Error: Rate limit exceeded')
+      },
+    }
+
+    spyOn(githubModule, 'createGitHubClient').mockReturnValue(
+      mockGitHubClient as unknown as GitHubClientInstance,
+    )
+
+    // eslint-disable-next-line @typescript-eslint/await-thenable
+    await expect(pull({ cwd: tempDir })).rejects.toThrow('1 of 2 pull operation(s) failed')
+
+    // Verify successful sync was updated
+    const updatedState = loadConfig(tempDir)
+    const syncOne = updatedState.syncs.find((entry) => entry.local_file === 'docs/one.md')
+    const syncTwo = updatedState.syncs.find((entry) => entry.local_file === 'docs/two.md')
+
+    expect(syncOne?.last_synced_hash).toBe(calculateHash(remoteBodyOne))
+    expect(syncOne?.last_synced_at).toBeDefined()
+
+    // Failed sync should still have old hash
+    expect(syncTwo?.last_synced_hash).toBe(initialHashTwo)
+
+    // File should have been written for successful sync
+    const pulledContentOne = readFileSync(path.join(tempDir, 'docs/one.md'), 'utf-8')
+    expect(pulledContentOne).toBe(remoteBodyOne)
+  })
+
   test('allows local files starting with double dots', async () => {
     const state: IssyncState = {
       syncs: [

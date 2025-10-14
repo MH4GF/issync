@@ -143,6 +143,70 @@ describe('push command - multi-sync support', () => {
     expect(syncTwo?.last_synced_at).toBeDefined()
   })
 
+  test('reports partial failures when some syncs fail', async () => {
+    const previousBody = '# Remote Content'
+    const localBodyOne = '# Updated Content One'
+    const localBodyTwo = '# Updated Content Two'
+    const state: IssyncState = {
+      syncs: [
+        {
+          issue_url: 'https://github.com/owner/repo/issues/1',
+          local_file: 'docs/one.md',
+          comment_id: 111,
+          last_synced_hash: calculateHash(previousBody),
+        },
+        {
+          issue_url: 'https://github.com/owner/repo/issues/2',
+          local_file: 'docs/two.md',
+          comment_id: 222,
+          last_synced_hash: calculateHash(previousBody),
+        },
+      ],
+    }
+    saveConfig(state, tempDir)
+
+    await mkdir(path.join(tempDir, 'docs'), { recursive: true })
+    await writeFile(path.join(tempDir, 'docs/one.md'), localBodyOne, 'utf-8')
+    await writeFile(path.join(tempDir, 'docs/two.md'), localBodyTwo, 'utf-8')
+
+    const mockGitHubClient: Pick<GitHubClientInstance, 'getComment' | 'updateComment'> = {
+      getComment: (_, __, commentId) => {
+        if (commentId === 111) {
+          return Promise.resolve({
+            id: 111,
+            body: previousBody,
+            updated_at: '2025-01-01T00:00:00Z',
+          })
+        }
+        throw new Error('API Error: Rate limit exceeded')
+      },
+      updateComment: (_, __, commentId, body) => {
+        if (commentId === 111) {
+          return Promise.resolve({ id: 111, body, updated_at: '2025-01-01T00:00:00Z' })
+        }
+        throw new Error('API Error: Rate limit exceeded')
+      },
+    }
+
+    spyOn(githubModule, 'createGitHubClient').mockReturnValue(
+      mockGitHubClient as unknown as GitHubClientInstance,
+    )
+
+    // eslint-disable-next-line @typescript-eslint/await-thenable
+    await expect(push({ cwd: tempDir })).rejects.toThrow('1 of 2 push operation(s) failed')
+
+    // Verify successful sync was updated
+    const updatedState = loadConfig(tempDir)
+    const syncOne = updatedState.syncs.find((entry) => entry.local_file === 'docs/one.md')
+    const syncTwo = updatedState.syncs.find((entry) => entry.local_file === 'docs/two.md')
+
+    expect(syncOne?.last_synced_hash).toBe(calculateHash(localBodyOne))
+    expect(syncOne?.last_synced_at).toBeDefined()
+
+    // Failed sync should still have old hash
+    expect(syncTwo?.last_synced_hash).toBe(calculateHash(previousBody))
+  })
+
   test('allows local files starting with double dots', async () => {
     const localBody = '# Updated Content'
     const state: IssyncState = {

@@ -5,19 +5,46 @@
 ## 使用方法
 
 ```bash
-/compact-plan <file_path>
+/compact-plan                    # 引数なし: .issync/state.ymlから選択
+/compact-plan <file_path>        # 明示的パス指定（後方互換性）
 ```
 
 **引数**:
-- `file_path` (必須): 圧縮するplan.mdファイルのパス
-  - 例: `/compact-plan docs/plan.md`
-  - 例: `/compact-plan .issync/docs/task-dashboard.md`
+- `file_path` (オプション): 圧縮するplan.mdファイルのパス
+  - 省略時: `.issync/state.yml`から同期中のファイルを選択
+  - 明示的指定: `/compact-plan docs/plan.md`
 
 ## 実行フロー
 
-### 1. ファイルパスの確認
+### 1. state.ymlの確認と選択
 
-ユーザーが指定したファイルパスを確認してください。引数が指定されていない場合は、ファイルパスの入力を促してください。
+**引数が指定されている場合**: そのパスを使用し、このステップをスキップして次へ進んでください。
+
+**引数が指定されていない場合**: `.issync/state.yml`を読み込み、同期中のファイル一覧を表示してください。
+
+**state.ymlが存在しない/syncsが空の場合**:
+```
+エラー: .issync/state.ymlが見つからないか、同期中のファイルがありません。
+明示的にパスを指定してください: /compact-plan <file_path>
+```
+
+**複数ファイルがある場合**: 選択を促してください
+```
+圧縮対象のplan.mdを選択してください:
+1. .issync/docs/task-dashboard.md (最終同期: 2025-10-14T08:20:50Z, Issue: route06/liam-internal/issues/5829)
+2. docs/plan.md (最終同期: 2025-10-14T07:07:44Z, Issue: MH4GF/issync/issues/1)
+
+番号を入力してください (1-2):
+```
+
+**1つのみの場合**: 確認を表示して自動選択
+```
+圧縮対象: .issync/docs/task-dashboard.md
+  最終同期: 2025-10-14T08:20:50Z
+  Issue: route06/liam-internal/issues/5829
+
+このファイルを圧縮しますか? (y/n)
+```
 
 ### 2. plan.mdの読み込みと分析
 
