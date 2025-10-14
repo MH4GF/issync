@@ -38,7 +38,7 @@ issync は、GitHub Issue のコメントとローカルファイル間でテキ
 - [x] watch の pull-push ループバグ修正 (grace period で pull 直後の push をスキップ)
 - [x] init コマンドに --template オプション追加（テンプレートから新規作成）
 - [x] lefthook 導入によるコミット前の品質保証 (lint, format, type-check, test)
-- [ ] 複数Issue同時管理のサポート（state.yml を配列化）
+- [x] 複数Issue同時管理のサポート（state.yml を配列化）
 - [x] watch 起動時の安全性チェック (3-way comparison でコンフリクト検出)
 - [ ] docs/plan.md を git 管理から除外（issync 管理のみに移行）
 - [ ] watch モードのデーモン化 (--daemon, PID 管理)
@@ -499,12 +499,33 @@ issync は、GitHub Issue のコメントとローカルファイル間でテキ
 - watch モードの pull→push ループを grace period (1000ms) で抑止し、AI エージェントの Edit 失敗頻度を低減
 - CLAUDE.md と AGENTS.md に運用ガイドラインを整備し、複数セッションでの手順を統一
 
+**Phase 2 複数Issue同時管理完了 (2025-10-14)**
+
+- **実装完了**: state.yml を単一オブジェクトから `{ syncs: IssyncSync[] }` の配列形式に移行
+- **後方互換性**: 既存の単一設定フォーマットを自動マイグレーション（初回ロード時に配列形式に変換）
+- **CLI改善**:
+  - 複数sync登録時は `--file` または `--issue` でターゲットを明示的に指定
+  - 単一syncの場合は自動選択（シンプルなUXを維持）
+  - 曖昧な場合は明確なエラーメッセージで選択を促す
+- **watch コマンドの拡張**:
+  - セレクタ未指定時は全syncを監視（並列実行）
+  - 部分的失敗モード（Promise.allSettled）で一部のsyncが失敗しても動作継続
+  - 失敗したsyncの詳細なエラーメッセージを表示
+- **エラーハンドリング改善**:
+  - `SyncAlreadyExistsError` を `src/lib/errors.ts` に集約
+  - Issue URLとファイルパスの重複を個別に検出
+  - パストラバーサル攻撃を防ぐ包括的なテスト追加（12テストケース）
+- **テンプレート改善**:
+  - `docs/plan-template.md` に各セクションの記入タイミングと内容を明記
+  - before-plan, before-poc, before-architecture-decision などのフェーズガイダンスを追加
+- **品質保証**: 72テスト全て合格（Lefthook pre-commitで自動検証）
+- **次のステップ**: watch デーモン化、セクションベースマージ、stop コマンド
+
 **Phase 2 進行中 (2025-10-13)**
 
 - watch 起動時の 3-way セーフティチェックを実装し、両側更新時は起動前にコンフリクトを通知
 - ローカルのみ / リモートのみの差分は自動 push / pull でベースラインを回復するフローを整備
 - GitHub token の gho_ サポートや watch ログ改善で実行時の診断性を向上
-- 残タスク: 複数 Issue 管理、watch デーモン化、セクションベースマージ、stop コマンド
 
 ## コンテキストと方向性
 
@@ -555,13 +576,16 @@ issync は、GitHub Issue のコメントとローカルファイル間でテキ
 - watch 起動時の 3-way セーフティチェックと自動 push / pull
 - GitHub token フォーマット検証強化 (gho_ 追加)
 - init コマンドに --template オプションを追加し、テンプレートもしくは空ファイルから初期化可能にした
+- `.issync/state.yml` の複数 Issue 対応と CLI でのターゲット選択（自動マイグレーション含む）
+- watch の複数sync並列実行と部分的失敗モード
+- パストラバーサル防止の包括的なテスト
+- テンプレート構造改善とフェーズガイダンス追加
 
 **残タスク:**
 
-1. `.issync/state.yml` の複数 Issue 対応と CLI でのターゲット選択
-2. `watch --daemon` / `issync stop` / `issync status` の実装と PID 管理
-3. セクションベースのマージ戦略とコンフリクト解決フロー
-4. docs/plan.md の issync 管理への移行（git 管理から除外）
+1. `watch --daemon` / `issync stop` / `issync status` の実装と PID 管理
+2. セクションベースのマージ戦略とコンフリクト解決フロー
+3. docs/plan.md の issync 管理への移行（git 管理から除外）
 
 **スコープ外 (Phase 3 以降):**
 
@@ -633,14 +657,26 @@ issync status                     # 同期状態確認 (実装予定)
 **状態ファイルフォーマット (`.issync/state.yml`):**
 
 ```yaml
-issue_url: https://github.com/owner/repo/issues/123
-comment_id: 123456789        # 最初の push で自動設定
-local_file: docs/plan.md
-last_synced_hash: abc123def  # リモートの最終 hash (楽観ロック用)
-last_synced_at: 2025-10-13T09:00:00Z
-poll_interval: 10            # watch のポーリング間隔 (秒) - オプション
-merge_strategy: section-based # Phase 2 で導入予定
-watch_daemon_pid: null       # Phase 2 でデーモン化した場合に保存
+# 複数sync対応フォーマット (v0.2.0以降)
+syncs:
+  - issue_url: https://github.com/owner/repo/issues/123
+    comment_id: 123456789        # 最初の push で自動設定
+    local_file: docs/plan.md
+    last_synced_hash: abc123def  # リモートの最終 hash (楽観ロック用)
+    last_synced_at: 2025-10-14T09:00:00Z
+    poll_interval: 10            # watch のポーリング間隔 (秒) - オプション
+    merge_strategy: section-based # Phase 2 で導入予定
+  - issue_url: https://github.com/owner/repo/issues/456
+    comment_id: 987654321
+    local_file: docs/design.md
+    last_synced_hash: def456ghi
+    last_synced_at: 2025-10-14T10:00:00Z
+
+# 旧フォーマット（自動マイグレーション対応）
+# issue_url: https://github.com/owner/repo/issues/123
+# comment_id: 123456789
+# local_file: docs/plan.md
+# ...
 ```
 
 **`.gitignore` への追加推奨:**
