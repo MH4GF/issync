@@ -37,6 +37,7 @@ issync は、GitHub Issue のコメントとローカルファイル間でテキ
 - [x] GitHub token format 検証の改善 (gho_ フォーマットのサポート)
 - [x] watch の pull-push ループバグ修正 (grace period で pull 直後の push をスキップ)
 - [x] init コマンドに --template オプション追加（テンプレートから新規作成）
+- [ ] lefthook 導入によるコミット前の品質保証 (lint, format, type-check, test)
 - [ ] 複数Issue同時管理のサポート（state.yml を配列化）
 - [x] watch 起動時の安全性チェック (3-way comparison でコンフリクト検出)
 - [ ] docs/plan.md を git 管理から除外（issync 管理のみに移行）
@@ -100,6 +101,23 @@ issync は、GitHub Issue のコメントとローカルファイル間でテキ
 - ローカルのみ差分がある場合は自動 push、リモートのみ差分がある場合は自動 pull でベースラインを復旧
 - comment_id が未設定の場合は push 実行を促し、初回同期フローを明示化
 - ユニットテストで衝突検知・自動 push/pull・ファイル欠如時のリカバリーを検証済み
+
+**2025-10-14: AI エージェントによるコミット時の品質チェック不足**
+
+- **発見**: type-check が失敗した状態でコミットが作成され、後で修正コミットが必要になった
+- **問題の詳細**:
+  - `GitHubClient` を factory function に変更するリファクタリング
+  - テストファイルの型定義を `InstanceType<typeof GitHubClient>` から `ReturnType<typeof createGitHubClient>` に変更
+  - しかし type-check を実行せずにコミット、CI でエラーが判明
+- **根本原因**: AI エージェントは「lint エラーは現在の変更と無関係」と判断してスキップする傾向がある
+- **影響**:
+  - コミット履歴に壊れた状態が記録される
+  - CI が失敗し、追加の修正コミットが必要
+  - 開発フローが中断される
+- **Phase 2 での解決**: Lefthook で pre-commit フックを導入し、コミット前に自動で品質チェックを強制
+  - `bun run check:ci` (lint, format, type-check, test) を pre-commit で実行
+  - AI エージェント向けに明確なエラーメッセージを提供
+  - 「全てのチェックがパスして初めてタスク完了」というルールを確立
 
 ## 決定ログ
 
@@ -266,6 +284,27 @@ issync は、GitHub Issue のコメントとローカルファイル間でテキ
   - CI/CD で定期実行し、不要コードの蓄積を防止
   - 手動実行: `bun run knip` で現状を確認
   - 自動修正: `bun run knip:fix` で削除可能なコードを自動削除
+
+**2025-10-14: Lefthook 導入 - Git フック管理とコミット前品質保証**
+
+- **背景**: type-check が失敗した状態でコミットされる問題が発生。AI エージェントはしばしば lint エラーを「現在の変更と無関係」と判断してスキップする傾向がある
+- **採用**: **Lefthook** (高速な Git フック管理ツール)
+- **理由**:
+  - **品質保証の強制**: コミット前に lint, format, type-check, test を自動実行し、全てパスすることを保証
+  - **AI エージェントとの統合**: 明確なエラーメッセージで AI エージェントに修正を促す
+  - **高速性**: Go 製で並列実行に対応、従来の Git フックより高速
+  - **設定の簡潔さ**: YAML ベースの設定で複数のフックを管理
+  - **柔軟性**: `LEFTHOOK=0` で一時的にスキップ可能（人間開発者向け）
+- **設定方針**:
+  - pre-commit フックで `bun run check:ci` を実行（lint, format, type-check, test を包括）
+  - 全プロジェクトファイルを対象（ステージングファイルのみではない）
+  - AI エージェント向けに明確な fail_text を提供
+  - `--no-verify` を無効化して強制実行
+- **参考**: Liam Bx の記事 "How I Enforce Lint Rules with AI Coding Agents Using Lefthook"
+- **メリット**:
+  - 「タスクは全てのチェックがパスして初めて完了」という明確なルールを確立
+  - コミット履歴の品質を保証
+  - CI での失敗を事前に防止
 
 **2025-10-12: GitHub token format 検証の改善 - gho_ サポート**
 

@@ -20,6 +20,9 @@ See `docs/plan.md` for detailed architecture decisions, progress tracking, and d
 # Install dependencies
 bun install
 
+# Install git hooks (once per clone)
+npx lefthook install
+
 # Run CLI in development
 bun run dev --help
 bun run dev init <issue-url>
@@ -34,6 +37,7 @@ bun run type-check
 
 # Code quality checks
 bun run check               # Biome linter and formatter
+bun run check:ci            # Comprehensive checks (lint, format, type-check, test) - used by pre-commit hook
 bun run knip                # Check for unused dependencies and exports
 bun run knip:fix            # Auto-fix knip issues where possible
 
@@ -43,6 +47,19 @@ bun run build
 
 **Development Workflow:**
 At the start of each session, run `bun test --watch` in the background. This provides continuous feedback as you write code and ensures tests are always passing. The watch mode is fast (~150ms) and won't slow down development.
+
+**Pre-commit Quality Checks:**
+This project uses **Lefthook** to automatically enforce code quality before commits. When you attempt to commit:
+- Lefthook runs `bun run check:ci` which includes:
+  - Biome linting and formatting
+  - ESLint checks
+  - TypeScript type checking
+  - All tests
+- If any check fails, the commit is blocked with a clear error message
+- **For AI Agents**: A task is NOT complete until all checks pass and the commit succeeds
+- To manually run the same checks: `bun run check:ci`
+- To temporarily skip (humans only): `LEFTHOOK=0 git commit`
+- **Initial setup**: After dependency install, run `npx lefthook install` to ensure hooks are active in this clone
 
 ## Architecture
 

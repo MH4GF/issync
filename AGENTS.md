@@ -9,6 +9,7 @@
 
 ## Build, Test, and Development Commands
 - `bun install` bootstraps dependencies (needs Bun >=1.1 and Node >=18).
+- After the first install, run `npx lefthook install` to set up Git hooks in the local clone.
 - `bun run dev --help` or `bun run dev init <issue-url>` exercise the CLI without compiling.
 - `bun test`, `bun test --watch`, `bun test path/to/file.test.ts` run Bun’s Jest-compatible runner.
 - `bun run type-check` invokes `tsc`; `bun run lint:check`, `bun run format:check`, and `bun run check:ci` match CI's static analysis.

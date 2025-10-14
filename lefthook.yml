@@ -1,0 +1,24 @@
+# Lefthook configuration for issync
+# Enforces code quality checks before commits
+# For AI Agents: All checks must pass before a task is considered complete
+
+pre-commit:
+  commands:
+    quality-check:
+      # Run comprehensive quality checks on the entire project
+      # This ensures all code meets standards before committing
+      glob: "**/*.{ts,tsx,js,jsx,json,yml,yaml,md}"
+      run: bun run check:ci
+      fail_text: |
+        ❌ Quality checks failed.
+
+        FOR AI AGENTS: Please fix all errors before committing.
+        The task is NOT complete until all checks pass:
+        - Linting (Biome + ESLint)
+        - Formatting (Biome)
+        - Type checking (TypeScript)
+        - Tests (Bun Test)
+
+        Run: bun run check:ci
+
+        To temporarily skip (humans only): LEFTHOOK=0 git commit
