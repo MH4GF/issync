@@ -10,7 +10,7 @@ import { calculateHash } from '../lib/hash.js'
 import type { IssyncState } from '../types/index.js'
 import { pull } from './pull.js'
 
-type GitHubClientInstance = InstanceType<typeof githubModule.GitHubClient>
+type GitHubClientInstance = ReturnType<typeof githubModule.createGitHubClient>
 
 describe('pull command - multi-sync support', () => {
   let tempDir: string
@@ -48,8 +48,8 @@ describe('pull command - multi-sync support', () => {
       getComment: () =>
         Promise.resolve({ id: 222, body: remoteBody, updated_at: '2025-01-01T00:00:00Z' }),
     }
-    spyOn(githubModule, 'GitHubClient').mockImplementation(
-      () => mockGitHubClient as unknown as githubModule.GitHubClient,
+    spyOn(githubModule, 'createGitHubClient').mockReturnValue(
+      mockGitHubClient as unknown as GitHubClientInstance,
     )
 
     await pull({ cwd: tempDir, file: 'docs/two.md' })
@@ -100,8 +100,8 @@ describe('pull command - multi-sync support', () => {
       getComment: () =>
         Promise.resolve({ id: 999, body: remoteBody, updated_at: '2025-01-01T00:00:00Z' }),
     }
-    spyOn(githubModule, 'GitHubClient').mockImplementation(
-      () => mockGitHubClient as unknown as githubModule.GitHubClient,
+    spyOn(githubModule, 'createGitHubClient').mockReturnValue(
+      mockGitHubClient as unknown as GitHubClientInstance,
     )
 
     await pull({ cwd: tempDir })

@@ -1,7 +1,7 @@
 import { afterEach, beforeEach, describe, expect, mock, spyOn, test } from 'bun:test'
 import { mkdtemp, rm, writeFile } from 'node:fs/promises'
 import path from 'node:path'
-import chokidar from 'chokidar'
+import chokidar, { type FSWatcher } from 'chokidar'
 import * as configModule from '../lib/config.js'
 import * as githubModule from '../lib/github.js'
 import { calculateHash } from '../lib/hash.js'
@@ -10,7 +10,7 @@ import * as pullModule from './pull.js'
 import * as pushModule from './push.js'
 import { watch } from './watch.js'
 
-type GitHubClientInstance = InstanceType<typeof githubModule.GitHubClient>
+type GitHubClientInstance = ReturnType<typeof githubModule.createGitHubClient>
 
 const GRACE_PERIOD_MS = 1000
 
@@ -99,8 +99,8 @@ describe('watch command (chokidar mocked)', () => {
           updated_at: '2025-01-01T00:00:00Z',
         }),
     }
-    spyOn(githubModule, 'GitHubClient').mockImplementation(
-      () => mockGitHubClient as unknown as githubModule.GitHubClient,
+    spyOn(githubModule, 'createGitHubClient').mockReturnValue(
+      mockGitHubClient as unknown as GitHubClientInstance,
     )
 
     chokidarSpy = spyOn(chokidar, 'watch').mockImplementation(() => {
@@ -113,7 +113,7 @@ describe('watch command (chokidar mocked)', () => {
         },
         close: watcherCloseMock,
       }
-      return watcher as unknown as chokidar.FSWatcher
+      return watcher as unknown as FSWatcher
     })
 
     pullMock = spyOn(pullModule, 'pull').mockResolvedValue()
@@ -202,7 +202,7 @@ describe('watch command (chokidar mocked)', () => {
     await startWatch()
 
     expect(chokidarSpy.mock.calls.length).toBe(2)
-    const watchedPaths = chokidarSpy.mock.calls.map((call) => call[0])
+    const watchedPaths = chokidarSpy.mock.calls.map((call: unknown[]) => call[0])
     expect(watchedPaths).toContain(path.resolve(process.cwd(), relativeFile))
     expect(watchedPaths).toContain(path.resolve(process.cwd(), secondRelative))
   })

@@ -8,7 +8,7 @@ import {
   InvalidFilePathError,
   SyncNotFoundError,
 } from '../lib/errors.js'
-import { GitHubClient, parseIssueUrl } from '../lib/github.js'
+import { createGitHubClient, parseIssueUrl } from '../lib/github.js'
 import { calculateHash } from '../lib/hash.js'
 import type { IssyncState, IssyncSync } from '../types/index.js'
 import { pull } from './pull.js'
@@ -107,7 +107,7 @@ export async function _performSafetyCheck(
   const localHash = calculateHash(localContent)
 
   // Fetch remote content
-  const client = new GitHubClient()
+  const client = createGitHubClient()
   const { owner, repo } = parseIssueUrl(sync.issue_url)
   const comment = await client.getComment(owner, repo, sync.comment_id)
   const remoteHash = calculateHash(comment.body)

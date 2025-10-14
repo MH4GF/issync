@@ -106,3 +106,7 @@ export class GitHubClient {
     }
   }
 }
+
+export function createGitHubClient(token?: string): GitHubClient {
+  return new GitHubClient(token)
+}

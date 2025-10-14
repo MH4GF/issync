@@ -4,7 +4,7 @@ import path from 'node:path'
 import type { SyncSelector } from '../lib/config.js'
 import { loadConfig, saveConfig, selectSync } from '../lib/config.js'
 import { FileNotFoundError } from '../lib/errors.js'
-import { GitHubClient, parseIssueUrl } from '../lib/github.js'
+import { createGitHubClient, parseIssueUrl } from '../lib/github.js'
 import { calculateHash } from '../lib/hash.js'
 import { resolvePathWithinBase } from '../lib/path.js'
 
@@ -50,7 +50,7 @@ export async function push(options: PushOptions = {}): Promise<void> {
   const issueInfo = parseIssueUrl(sync.issue_url)
 
   // Initialize GitHub client
-  const client = new GitHubClient(token)
+  const client = createGitHubClient(token)
 
   if (sync.comment_id) {
     // Update existing comment with optimistic locking

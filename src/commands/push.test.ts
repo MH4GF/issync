@@ -9,7 +9,7 @@ import { calculateHash } from '../lib/hash.js'
 import type { IssyncState } from '../types/index.js'
 import { push } from './push.js'
 
-type GitHubClientInstance = InstanceType<typeof githubModule.GitHubClient>
+type GitHubClientInstance = ReturnType<typeof githubModule.createGitHubClient>
 
 describe('push command - multi-sync support', () => {
   let tempDir: string
@@ -49,7 +49,13 @@ describe('push command - multi-sync support', () => {
     await mkdir(path.join(tempDir, 'docs'), { recursive: true })
     await writeFile(path.join(tempDir, 'docs/two.md'), localBody, 'utf-8')
 
-    const updateComment = mock<GitHubClientInstance['updateComment']>(() => Promise.resolve())
+    const updateComment = mock<GitHubClientInstance['updateComment']>(() =>
+      Promise.resolve({
+        id: 222,
+        body: '',
+        updated_at: '2025-01-01T00:00:00Z',
+      }),
+    )
     const mockGitHubClient: Pick<GitHubClientInstance, 'getComment' | 'updateComment'> = {
       getComment: () =>
         Promise.resolve({ id: 222, body: previousBody, updated_at: '2025-01-01T00:00:00Z' }),
@@ -57,8 +63,8 @@ describe('push command - multi-sync support', () => {
         updateComment(...args),
     }
 
-    spyOn(githubModule, 'GitHubClient').mockImplementation(
-      () => mockGitHubClient as unknown as githubModule.GitHubClient,
+    spyOn(githubModule, 'createGitHubClient').mockReturnValue(
+      mockGitHubClient as unknown as GitHubClientInstance,
     )
 
     await push({ cwd: tempDir, file: 'docs/two.md' })
@@ -116,7 +122,13 @@ describe('push command - multi-sync support', () => {
     await mkdir(path.join(tempDir, '..docs'), { recursive: true })
     await writeFile(path.join(tempDir, '..docs/plan.md'), localBody, 'utf-8')
 
-    const updateComment = mock<GitHubClientInstance['updateComment']>(() => Promise.resolve())
+    const updateComment = mock<GitHubClientInstance['updateComment']>(() =>
+      Promise.resolve({
+        id: 999,
+        body: '',
+        updated_at: '2025-01-01T00:00:00Z',
+      }),
+    )
     const mockGitHubClient: Pick<GitHubClientInstance, 'getComment' | 'updateComment'> = {
       getComment: () =>
         Promise.resolve({ id: 999, body: '# Remote Content', updated_at: '2025-01-01T00:00:00Z' }),
@@ -124,8 +136,8 @@ describe('push command - multi-sync support', () => {
         updateComment(...args),
     }
 
-    spyOn(githubModule, 'GitHubClient').mockImplementation(
-      () => mockGitHubClient as unknown as githubModule.GitHubClient,
+    spyOn(githubModule, 'createGitHubClient').mockReturnValue(
+      mockGitHubClient as unknown as GitHubClientInstance,
     )
 
     await push({ cwd: tempDir })
