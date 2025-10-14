@@ -4,7 +4,20 @@
 
 ## 概要
 
-このpluginは2つのスラッシュコマンドを提供し、plan.mdファイルの管理を効率化します：
+このpluginは3つのスラッシュコマンドを提供し、plan.mdファイルの管理を効率化します：
+
+### `/plan`: before-plan実行ワークフロー
+
+before-planフェーズのplan.md初期作成をガイドします。以下の6ステップを自動化します：
+
+1. GitHub Issue内容の確認
+2. コードベース調査（CRITICAL）
+3. plan.md基本セクションの記入
+4. Open Questionsの精査
+5. Tasksの初期化
+6. issync pushで同期
+
+**重要**: コードベース調査を先に実施することで、Open Questionsを真に不明な点（アーキテクチャ選択・仕様の曖昧性）のみに絞ります。
 
 ### `/resolve-question`: Open Question解消ワークフロー
 
@@ -79,6 +92,7 @@ Claude Codeで以下のコマンドを実行し、GitHubから直接マーケッ
 インストール後は、どのプロジェクトでも以下のコマンドが使えます：
 
 ```bash
+/plan                # before-plan実行ワークフロー
 /resolve-question    # Open Question解消ワークフロー
 /compact-plan        # plan.md圧縮ツール
 ```
@@ -147,6 +161,40 @@ git clone https://github.com/MH4GF/issync.git
 
 ## 使い方
 
+### `/plan`: before-plan実行
+
+#### 基本的なワークフロー
+
+1. 前提条件を確認:
+   - GitHub Issueが作成されている
+   - `issync init --template` が完了し、plan.mdが存在する
+   - issync watch modeが起動している（推奨）
+
+2. コマンドを実行:
+   ```
+   /plan
+   ```
+
+3. pluginが以下を自動実行:
+   - **ステップ1**: GitHub Issue内容を確認
+   - **ステップ2**: コードベース調査（類似機能、技術スタック、テストコード、関連ファイル、ドキュメント）
+   - **ステップ3**: plan.md基本セクション記入（Purpose/Overview、Context & Direction、Acceptance Criteria、Work Plan Phase 1）
+   - **ステップ4**: Open Questions精査（5-10項目に絞り込み）
+   - **ステップ5**: Tasks初期化
+   - **ステップ6**: issync pushで同期
+
+4. 完了後、plan.mdの内容をレビューしてから Statusを `before-poc` に変更
+
+#### 実行例
+
+新規タスクのplan.md作成時：
+- GitHub Issueの要求を理解
+- コードベースを調査（既存の類似機能を発見、使用技術スタックを確認）
+- Purpose/Overview、Context & Direction、Acceptance Criteriaを記入
+- Open Questionsをコードで確認できないもののみ3項目に絞り込み
+- Work Plan Phase 1とTasksを初期化
+- watchモードが起動している場合は自動的にGitHub Issueに同期
+
 ### `/resolve-question`: Open Question解消
 
 #### 基本的なワークフロー
@@ -209,6 +257,15 @@ plan.mdが779行に膨らんだ場合、pluginは：
 
 ## いつ使うか
 
+### `/plan`
+
+before-planフェーズでplan.mdを初期作成する時にこのコマンドを使用してください：
+- **新規タスクのplan.md作成時**: GitHub Issue作成後、`issync init --template` の直後
+- **コードベース調査を徹底したい時**: 既存パターンや技術スタックを事前に確認
+- **Open Questionsを適切に絞り込みたい時**: コードで確認可能な情報を質問にしない
+
+**重要**: このコマンドは、before-planステート専用です。他のステートでは使用しません。
+
 ### `/resolve-question`
 
 開発のどの段階でも、Open Questionに答えた時にこのコマンドを使用してください：
@@ -231,6 +288,7 @@ plan.mdが779行に膨らんだ場合、pluginは：
 ## 必要要件
 
 - プロジェクトに以下のセクションを含む `plan.md` ファイルが必要:
+  - **`/plan`用**: plan-template.mdから生成された初期構造
   - **`/resolve-question`用**: Decision Log, Open Questions / 残論点, Tasks
   - **`/compact-plan`用**: docs/plan-template.md（圧縮の基準として使用）
 - (オプション) 自動同期用のissync CLIツール
@@ -242,6 +300,7 @@ contradiction-tools/
 ├── .claude-plugin/
 │   └── plugin.json            # Pluginメタデータ
 ├── commands/
+│   ├── plan.md                # before-plan実行コマンド
 │   ├── resolve-question.md    # Open Question解消コマンド
 │   └── compact-plan.md        # plan.md圧縮コマンド
 └── README.md                  # このファイル
@@ -252,6 +311,7 @@ contradiction-tools/
 このpluginを変更するには：
 
 1. コマンドプロンプトを編集:
+   - `/plan`: `commands/plan.md`
    - `/resolve-question`: `commands/resolve-question.md`
    - `/compact-plan`: `commands/compact-plan.md`
 2. メタデータを変更する場合は `plugin.json` を更新
