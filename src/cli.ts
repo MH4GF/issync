@@ -32,12 +32,15 @@ program
   .command('init <issue-url>')
   .description('Initialize issync with a GitHub Issue URL')
   .option('-f, --file <path>', 'Local file path', 'docs/plan.md')
-  .option('-t, --template <path>', 'Template file path to initialize from')
+  .option(
+    '-t, --template <path>',
+    'Template file path or URL to initialize from (defaults to official template if file does not exist)',
+  )
   .action(async (issueUrl: string, options: { file: string; template?: string }) => {
     const { init } = await import('./commands/init.js')
     const templateLine = options.template ? `\n  Template: ${options.template}` : ''
     await _handleCommand(
-      () => init(issueUrl, { file: options.file, template: options.template }),
+      async () => init(issueUrl, { file: options.file, template: options.template }),
       `✓ Initialized issync\n  Issue: ${issueUrl}\n  File:  ${options.file}${templateLine}\n\nRecommended: Add .issync/ to your .gitignore`,
     )
   })

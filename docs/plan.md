@@ -146,10 +146,6 @@ syncs:
 ## Tasks
 
 **Phase 2 残タスク:**
-- [ ] init コマンドのURL対応とデフォルトテンプレート設定
-  - [ ] `--template` オプションでURLを受け取れるようにする
-  - [ ] デフォルトテンプレートを `https://raw.githubusercontent.com/MH4GF/issync/refs/heads/main/docs/plan-template.md` に設定
-  - [ ] HTTPリクエストでテンプレートを取得する機能を実装
 - [ ] docs/plan.md を git 管理から除外
 - [ ] watch --daemon / issync stop / issync status の実装
 - [ ] セクションベースのマージ戦略とコンフリクト解決フロー
@@ -162,6 +158,12 @@ syncs:
 ---
 
 ## Discoveries & Insights
+
+**2025-10-14: init コマンドのテンプレートURL対応完了**
+- `--template` オプションでローカルファイルパスに加えてURLも指定可能に
+- オプション未指定時は公式テンプレート（GitHub raw URL）をデフォルト使用
+- 既存ファイルがある場合は維持する挙動を保持（後方互換性）
+- 72個すべてのテストが通過、既存機能に影響なし
 
 **2025-10-14: v0.2.0 リリース - 複数Issue同時管理サポート**
 - state.yml を単一オブジェクトから配列形式に移行、既存設定を自動マイグレーション
@@ -206,6 +208,17 @@ syncs:
 ---
 
 ## Decision Log
+
+**2025-10-14: init コマンドのテンプレートURL対応とデフォルト設定**
+- **背景**: テンプレートをローカルファイルパスでしか指定できないが、リモートテンプレートを直接使えると便利
+- **採用**: `--template` オプションでURLを受け取り、HTTPリクエストでテンプレートを取得
+- **デフォルト**: オプション未指定かつファイル不在時は `https://raw.githubusercontent.com/MH4GF/issync/refs/heads/main/docs/plan-template.md` を使用
+- **理由**:
+  - プロジェクト開始時にローカルにテンプレートを用意する手間を削減
+  - 公式テンプレートの最新版を常に使用できる
+  - カスタムテンプレートもURLで共有可能に
+  - 既存ファイルがある場合は維持する後方互換性を保持
+- **実装方針**: `http://` または `https://` で始まる文字列をURLと判定し、fetchでコンテンツを取得
 
 **2025-10-14: Lefthook 導入 - Git フック管理とコミット前品質保証**
 - **背景**: type-check が失敗した状態でコミットされる問題が発生
@@ -317,16 +330,21 @@ syncs:
 
 ```bash
 # 開発時 (Bun 経由)
-bun run dev init <issue-url> [--file path/to/file] [--template path/to/template]
+bun run dev init <issue-url> [--file path/to/file] [--template path/to/template-or-url]
 bun run dev pull [--file path/to/file] [--issue issue-url]
 bun run dev push [--file path/to/file] [--issue issue-url]
 bun run dev watch [--interval 10] [--file path/to/file] [--issue issue-url]
 
 # ビルド後 CLI (npm 公開済み)
-issync init <issue-url> [--file path/to/file] [--template path/to/template]
+issync init <issue-url> [--file path/to/file] [--template path/to/template-or-url]
 issync pull [--file path/to/file] [--issue issue-url]
 issync push [--file path/to/file] [--issue issue-url]
 issync watch [--interval 10] [--file path/to/file] [--issue issue-url]
+
+# init コマンドのテンプレート指定例
+issync init <issue-url>                                          # デフォルトテンプレート使用
+issync init <issue-url> --template ./my-template.md             # ローカルファイル
+issync init <issue-url> --template https://example.com/tpl.md   # カスタムURL
 
 # 実装予定
 issync watch --daemon    # デーモン化 (Phase 2)

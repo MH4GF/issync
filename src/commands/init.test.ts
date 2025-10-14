@@ -20,11 +20,11 @@ describe('init command', () => {
     await rm(TEST_DIR, { recursive: true, force: true })
   })
 
-  test('creates .issync directory and state.yml with valid Issue URL', () => {
+  test('creates .issync directory and state.yml with valid Issue URL', async () => {
     const issueUrl = 'https://github.com/owner/repo/issues/123'
     const localFile = 'docs/plan.md'
 
-    init(issueUrl, { file: localFile, cwd: TEST_DIR })
+    await init(issueUrl, { file: localFile, cwd: TEST_DIR })
 
     // Check .issync directory exists
     const issyncDir = path.join(TEST_DIR, '.issync')
@@ -34,10 +34,13 @@ describe('init command', () => {
     const stateFile = path.join(issyncDir, 'state.yml')
     expect(existsSync(stateFile)).toBe(true)
 
-    // Check local file was created
+    // Check local file was created with default template
     const targetFile = path.join(TEST_DIR, localFile)
     expect(existsSync(targetFile)).toBe(true)
-    expect(readFileSync(targetFile, 'utf-8')).toBe('')
+    const content = readFileSync(targetFile, 'utf-8')
+    // Verify template was fetched (not empty)
+    expect(content).toBeTruthy()
+    expect(content.length).toBeGreaterThan(0)
 
     const state = loadConfig(TEST_DIR)
     expect(state.syncs).toHaveLength(1)
@@ -49,10 +52,10 @@ describe('init command', () => {
     expect(config?.last_synced_hash).toBeUndefined()
   })
 
-  test('uses default file path when not specified', () => {
+  test('uses default file path when not specified', async () => {
     const issueUrl = 'https://github.com/owner/repo/issues/123'
 
-    init(issueUrl, { cwd: TEST_DIR })
+    await init(issueUrl, { cwd: TEST_DIR })
 
     const state = loadConfig(TEST_DIR)
     expect(state.syncs).toHaveLength(1)
@@ -61,7 +64,7 @@ describe('init command', () => {
     expect(config?.local_file).toBe('docs/plan.md')
   })
 
-  test('creates file from template when provided', () => {
+  test('creates file from template when provided', async () => {
     const issueUrl = 'https://github.com/owner/repo/issues/123'
     const localFile = 'docs/notes/plan.md'
     const templatesDir = path.join(TEST_DIR, 'templates')
@@ -70,7 +73,7 @@ describe('init command', () => {
     mkdirSync(templatesDir, { recursive: true })
     writeFileSync(templateFile, '# Template', 'utf-8')
 
-    init(issueUrl, {
+    await init(issueUrl, {
       file: localFile,
       cwd: TEST_DIR,
       template: path.relative(TEST_DIR, templateFile),
@@ -81,7 +84,37 @@ describe('init command', () => {
     expect(readFileSync(createdFile, 'utf-8')).toBe('# Template')
   })
 
-  test('allows existing file when template not provided', () => {
+  test('creates file from URL template when provided', async () => {
+    const issueUrl = 'https://github.com/owner/repo/issues/123'
+    const localFile = 'docs/custom.md'
+    // Use the actual default template URL to test real HTTP fetch
+    const templateUrl =
+      'https://raw.githubusercontent.com/MH4GF/issync/refs/heads/main/docs/plan-template.md'
+
+    await init(issueUrl, {
+      file: localFile,
+      cwd: TEST_DIR,
+      template: templateUrl,
+    })
+
+    const createdFile = path.join(TEST_DIR, localFile)
+    expect(existsSync(createdFile)).toBe(true)
+    const content = readFileSync(createdFile, 'utf-8')
+    // Verify content was fetched from URL (not empty)
+    expect(content).toBeTruthy()
+    expect(content.length).toBeGreaterThan(0)
+  })
+
+  test('throws error for unreachable URL template', () => {
+    const issueUrl = 'https://github.com/owner/repo/issues/123'
+    const invalidUrl = 'https://raw.githubusercontent.com/invalid-domain-123456/issync/main/none.md'
+
+    expect(init(issueUrl, { template: invalidUrl, cwd: TEST_DIR })).rejects.toThrow(
+      /Failed to fetch template/,
+    )
+  })
+
+  test('allows existing file when template not provided', async () => {
     const issueUrl = 'https://github.com/owner/repo/issues/123'
     const localFile = 'docs/plan.md'
     const targetFile = path.join(TEST_DIR, localFile)
@@ -90,7 +123,7 @@ describe('init command', () => {
     mkdirSync(path.dirname(targetFile), { recursive: true })
     writeFileSync(targetFile, originalContent, 'utf-8')
 
-    init(issueUrl, { file: localFile, cwd: TEST_DIR })
+    await init(issueUrl, { file: localFile, cwd: TEST_DIR })
 
     expect(readFileSync(targetFile, 'utf-8')).toBe(originalContent)
   })
@@ -106,30 +139,33 @@ describe('init command', () => {
     writeFileSync(targetFile, 'existing', 'utf-8')
     writeFileSync(templateFile, '# Template', 'utf-8')
 
-    expect(() =>
+    expect(
       init(issueUrl, {
         file: localFile,
         cwd: TEST_DIR,
         template: path.relative(TEST_DIR, templateFile),
       }),
-    ).toThrow(FileAlreadyExistsError)
+    ).rejects.toThrow(FileAlreadyExistsError)
   })
 
-  test('accepts file paths containing leading double dots in the name', () => {
+  test('accepts file paths containing leading double dots in the name', async () => {
     const issueUrl = 'https://github.com/owner/repo/issues/123'
     const localFile = '..docs/plan.md'
 
-    init(issueUrl, { file: localFile, cwd: TEST_DIR })
+    await init(issueUrl, { file: localFile, cwd: TEST_DIR })
 
     const createdFile = path.join(TEST_DIR, localFile)
     expect(existsSync(createdFile)).toBe(true)
-    expect(readFileSync(createdFile, 'utf-8')).toBe('')
+    const content = readFileSync(createdFile, 'utf-8')
+    // Verify file was created with content
+    expect(content).toBeTruthy()
+    expect(content.length).toBeGreaterThan(0)
   })
 
   test('rejects file paths that escape the working directory', () => {
     const issueUrl = 'https://github.com/owner/repo/issues/123'
 
-    expect(() => init(issueUrl, { file: '../plan.md', cwd: TEST_DIR })).toThrow(
+    expect(init(issueUrl, { file: '../plan.md', cwd: TEST_DIR })).rejects.toThrow(
       InvalidFilePathError,
     )
   })
@@ -137,34 +173,34 @@ describe('init command', () => {
   test('throws error for invalid GitHub Issue URL', () => {
     const invalidUrl = 'https://github.com/owner/repo/pull/123' // PR URL, not Issue
 
-    expect(() => init(invalidUrl, { cwd: TEST_DIR })).toThrow()
+    expect(init(invalidUrl, { cwd: TEST_DIR })).rejects.toThrow()
   })
 
-  test('throws error when issue is already tracked', () => {
+  test('throws error when issue is already tracked', async () => {
     const issueUrl = 'https://github.com/owner/repo/issues/123'
 
     // First initialization
-    init(issueUrl, { cwd: TEST_DIR })
+    await init(issueUrl, { cwd: TEST_DIR })
 
     // Second initialization should fail
-    expect(() => init(issueUrl, { cwd: TEST_DIR })).toThrow(/Sync already exists for issue/)
+    expect(init(issueUrl, { cwd: TEST_DIR })).rejects.toThrow(/Sync already exists for issue/)
   })
 
-  test('throws error when local file is already tracked', () => {
+  test('throws error when local file is already tracked', async () => {
     const issueUrl1 = 'https://github.com/owner/repo/issues/123'
     const issueUrl2 = 'https://github.com/owner/repo/issues/456'
     const localFile = 'docs/plan.md'
 
-    init(issueUrl1, { cwd: TEST_DIR, file: localFile })
+    await init(issueUrl1, { cwd: TEST_DIR, file: localFile })
 
-    expect(() => init(issueUrl2, { cwd: TEST_DIR, file: localFile })).toThrow(
+    expect(init(issueUrl2, { cwd: TEST_DIR, file: localFile })).rejects.toThrow(
       /Sync already exists for local file/,
     )
   })
 
-  test('allows multiple sync entries for different issues and files', () => {
-    init('https://github.com/owner/repo/issues/1', { cwd: TEST_DIR, file: 'docs/plan.md' })
-    init('https://github.com/owner/repo/issues/2', {
+  test('allows multiple sync entries for different issues and files', async () => {
+    await init('https://github.com/owner/repo/issues/1', { cwd: TEST_DIR, file: 'docs/plan.md' })
+    await init('https://github.com/owner/repo/issues/2', {
       cwd: TEST_DIR,
       file: 'docs/notes.md',
     })
@@ -175,13 +211,13 @@ describe('init command', () => {
     expect(files).toEqual(['docs/notes.md', 'docs/plan.md'])
   })
 
-  test('creates .issync directory if it does not exist', () => {
+  test('creates .issync directory if it does not exist', async () => {
     const issueUrl = 'https://github.com/owner/repo/issues/123'
     const issyncDir = path.join(TEST_DIR, '.issync')
 
     expect(existsSync(issyncDir)).toBe(false)
 
-    init(issueUrl, { cwd: TEST_DIR })
+    await init(issueUrl, { cwd: TEST_DIR })
 
     expect(existsSync(issyncDir)).toBe(true)
   })
