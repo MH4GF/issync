@@ -3,7 +3,7 @@ import { mkdir, writeFile } from 'node:fs/promises'
 import path from 'node:path'
 import type { SyncSelector } from '../lib/config.js'
 import { loadConfig, saveConfig, selectSync } from '../lib/config.js'
-import { GitHubClient, parseIssueUrl } from '../lib/github.js'
+import { createGitHubClient, parseIssueUrl } from '../lib/github.js'
 import { calculateHash } from '../lib/hash.js'
 import { resolvePathWithinBase } from '../lib/path.js'
 
@@ -46,7 +46,7 @@ export async function pull(options: PullOptions = {}): Promise<void> {
   const issueInfo = parseIssueUrl(sync.issue_url)
 
   // Fetch comment from GitHub
-  const client = new GitHubClient(token)
+  const client = createGitHubClient(token)
   const comment = await client.getComment(issueInfo.owner, issueInfo.repo, sync.comment_id)
 
   // Calculate hash of remote content

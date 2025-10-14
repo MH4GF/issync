@@ -8,7 +8,7 @@ import * as pullModule from './pull.js'
 import * as pushModule from './push.js'
 import { _performSafetyCheck } from './watch.js'
 
-type GitHubClientInstance = InstanceType<typeof githubModule.GitHubClient>
+type GitHubClientInstance = ReturnType<typeof githubModule.createGitHubClient>
 
 describe('watch command - unit tests', () => {
   let tempDir: string
@@ -61,8 +61,8 @@ describe('watch command - unit tests', () => {
         getComment: () =>
           Promise.resolve({ id: 123, body: content, updated_at: '2025-01-01T00:00:00Z' }),
       }
-      spyOn(githubModule, 'GitHubClient').mockImplementation(
-        () => mockGitHubClient as unknown as githubModule.GitHubClient,
+      spyOn(githubModule, 'createGitHubClient').mockReturnValue(
+        mockGitHubClient as unknown as GitHubClientInstance,
       )
 
       await _performSafetyCheck(mockConfig)
@@ -88,7 +88,7 @@ describe('watch command - unit tests', () => {
 
       const pullMock = spyOn(pullModule, 'pull').mockImplementation(() => Promise.resolve())
       const pushMock = spyOn(pushModule, 'push').mockImplementation(() => Promise.resolve())
-      const githubClientSpy = spyOn(githubModule, 'GitHubClient')
+      const githubClientSpy = spyOn(githubModule, 'createGitHubClient')
 
       await _performSafetyCheck(mockConfig)
 
@@ -121,8 +121,8 @@ describe('watch command - unit tests', () => {
         getComment: () =>
           Promise.resolve({ id: 123, body: remoteContent, updated_at: '2025-01-01T00:00:00Z' }),
       }
-      spyOn(githubModule, 'GitHubClient').mockImplementation(
-        () => mockGitHubClient as unknown as githubModule.GitHubClient,
+      spyOn(githubModule, 'createGitHubClient').mockReturnValue(
+        mockGitHubClient as unknown as GitHubClientInstance,
       )
 
       // Act & Assert: Should throw conflict error
@@ -149,8 +149,8 @@ describe('watch command - unit tests', () => {
         getComment: () =>
           Promise.resolve({ id: 123, body: remoteContent, updated_at: '2025-01-01T00:00:00Z' }),
       }
-      spyOn(githubModule, 'GitHubClient').mockImplementation(
-        () => mockGitHubClient as unknown as githubModule.GitHubClient,
+      spyOn(githubModule, 'createGitHubClient').mockReturnValue(
+        mockGitHubClient as unknown as GitHubClientInstance,
       )
 
       const pushMock = spyOn(pushModule, 'push').mockImplementation(() => Promise.resolve())
@@ -186,8 +186,8 @@ describe('watch command - unit tests', () => {
         getComment: () =>
           Promise.resolve({ id: 123, body: remoteContent, updated_at: '2025-01-01T00:00:00Z' }),
       }
-      spyOn(githubModule, 'GitHubClient').mockImplementation(
-        () => mockGitHubClient as unknown as githubModule.GitHubClient,
+      spyOn(githubModule, 'createGitHubClient').mockReturnValue(
+        mockGitHubClient as unknown as GitHubClientInstance,
       )
 
       const pushMock = spyOn(pushModule, 'push').mockImplementation(() => Promise.resolve())
@@ -222,8 +222,8 @@ describe('watch command - unit tests', () => {
         getComment: () =>
           Promise.resolve({ id: 123, body: content, updated_at: '2025-01-01T00:00:00Z' }),
       }
-      spyOn(githubModule, 'GitHubClient').mockImplementation(
-        () => mockGitHubClient as unknown as githubModule.GitHubClient,
+      spyOn(githubModule, 'createGitHubClient').mockReturnValue(
+        mockGitHubClient as unknown as GitHubClientInstance,
       )
 
       const pushMock = spyOn(pushModule, 'push').mockImplementation(() => Promise.resolve())

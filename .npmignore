@@ -1,0 +1,45 @@
+# Source files (only dist/ should be published)
+src/
+*.test.ts
+*.test.js
+
+# Development files
+.issync/
+tsconfig.json
+biome.json
+eslint.config.mjs
+knip.ts
+lefthook.yml
+
+# Documentation
+docs/
+CLAUDE.md
+AGENTS.md
+
+# CI/CD
+.github/
+
+# Git
+.git/
+.gitignore
+
+# Dependencies
+node_modules/
+
+# Build artifacts
+*.log
+*.tsbuildinfo
+
+# Test coverage
+coverage/
+
+# Editor
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# OS
+.DS_Store
+Thumbs.db

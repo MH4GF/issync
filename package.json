@@ -1,13 +1,27 @@
 {
-  "name": "issync",
+  "name": "@mh4gf/issync",
   "version": "0.1.0",
   "description": "CLI tool to sync text between GitHub Issue comments and local files",
   "type": "module",
   "bin": {
     "issync": "./dist/cli.js"
   },
+  "files": [
+    "dist",
+    "README.md",
+    "LICENSE"
+  ],
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/MH4GF/issync.git"
+  },
+  "homepage": "https://github.com/MH4GF/issync#readme",
+  "bugs": {
+    "url": "https://github.com/MH4GF/issync/issues"
+  },
   "scripts": {
-    "build": "bun build ./src/cli.ts --outdir ./dist --target node",
+    "build": "bun build ./src/cli.ts --outdir ./dist --target node --format esm --external @octokit/rest --external chokidar --external commander --external js-yaml",
+    "prepare": "bun run build",
     "dev": "bun run ./src/cli.ts",
     "type-check": "tsc --noEmit",
     "test": "bun test",
@@ -19,7 +33,7 @@
     "lint:eslint": "eslint .",
     "lint:fix": "eslint . --fix",
     "check": "biome check --write .",
-    "check:ci": "biome check . & eslint . & wait",
+    "check:ci": "biome check . && eslint . && tsc --noEmit && bun test",
     "knip": "knip-bun",
     "knip:fix": "knip-bun --fix"
   },
@@ -47,6 +61,7 @@
     "@types/node": "^24.7.2",
     "eslint": "^9.37.0",
     "knip": "^5.64.3",
+    "lefthook": "^1.13.6",
     "typescript-eslint": "^8.46.0"
   },
   "peerDependencies": {
