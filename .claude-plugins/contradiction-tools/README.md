@@ -46,7 +46,104 @@ plan.mdファイルが大きくなりすぎた際に、情報量を保持した�
 
 ### 他のプロジェクトで使用する場合
 
-issyncリポジトリをcloneして、上記の手順でマーケットプレイスを追加してください。pluginはissyncプロジェクトの一部として提供されています。
+このpluginは他のプロジェクトでも利用できます。GitHubから直接インストールできるため、リポジトリのcloneは不要です。
+
+#### 1. マーケットプレイスを追加
+
+Claude Codeで以下のコマンドを実行し、GitHubから直接マーケットプレイスを追加します：
+
+```bash
+/plugin marketplace add MH4GF/issync
+```
+
+#### 2. pluginをインストール
+
+マーケットプレイスを追加したら、pluginをインストールします：
+
+```bash
+/plugin install contradiction-tools@issync-plugins
+```
+
+#### 3. インストール確認
+
+正しくインストールされたか確認します：
+
+```bash
+/plugin list
+```
+
+`contradiction-tools` が表示されていれば成功です。
+
+#### 4. 使い方
+
+インストール後は、どのプロジェクトでも以下のコマンドが使えます：
+
+```bash
+/resolve-question    # Open Question解消ワークフロー
+/compact-plan        # plan.md圧縮ツール
+```
+
+#### 更新方法
+
+pluginが更新された場合、以下の手順で最新版に更新できます：
+
+```bash
+# 1. マーケットプレイスを更新（GitHubから最新情報を取得）
+/plugin marketplace update issync-plugins
+
+# 2. pluginを再インストール
+/plugin install contradiction-tools@issync-plugins
+```
+
+マーケットプレイスの更新により、GitHubリポジトリの最新のplugin情報が取り込まれます。
+
+#### トラブルシューティング
+
+**Q: pluginが見つからないと言われる**
+
+A: マーケットプレイス名を確認してください。正しい形式は `contradiction-tools@issync-plugins` です（`@issync-plugins` はマーケットプレイス名）。
+
+**Q: 古いバージョンのまま更新されない**
+
+A: 以下を試してください：
+
+```bash
+# 1. マーケットプレイスを更新
+/plugin marketplace update issync-plugins
+
+# 2. pluginをアンインストール
+/plugin uninstall contradiction-tools@issync-plugins
+
+# 3. 再インストール
+/plugin install contradiction-tools@issync-plugins
+```
+
+**Q: ローカル開発版を使いたい（plugin開発者向け）**
+
+A: issyncリポジトリをcloneし、ローカルパスからマーケットプレイスを追加してください：
+
+```bash
+# issyncリポジトリをclone
+git clone https://github.com/MH4GF/issync.git
+# または: ghq get MH4GF/issync
+
+# ローカルパスでマーケットプレイスを追加（絶対パスを使用）
+/plugin marketplace add /path/to/issync
+
+# 例（ghqを使っている場合）:
+# /plugin marketplace add /Users/username/ghq/github.com/MH4GF/issync
+
+# インストール
+/plugin install contradiction-tools@issync-plugins
+```
+
+ローカル開発版を使用している場合、変更を反映するには：
+
+```bash
+# pluginを再インストール
+/plugin uninstall contradiction-tools@issync-plugins
+/plugin install contradiction-tools@issync-plugins
+```
 
 ## 使い方
 

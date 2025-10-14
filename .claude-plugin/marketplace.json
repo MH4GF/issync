@@ -1,0 +1,13 @@
+{
+  "name": "issync-plugins",
+  "owner": {
+    "name": "MH4GF"
+  },
+  "plugins": [
+    {
+      "name": "contradiction-tools",
+      "source": "./.claude-plugins/contradiction-tools",
+      "description": "矛盾解消駆動開発のためのツール群(/resolve-question, /compact-plan)"
+    }
+  ]
+}
