@@ -61,6 +61,17 @@ issync は、GitHub Issue のコメントとローカルファイル間でテキ
 - [x] npm publish で公開
 - [x] リリース情報をplan.mdに記録
 
+**npm 公開準備 (v0.2.0):**
+
+- [x] package.json のバージョンを 0.2.0 に更新
+- [x] ビルドとCLIバイナリの動作確認
+- [x] 最終品質チェック（test, lint, type-check）
+- [x] 変更をコミットしてpush
+- [x] git tag v0.2.0 を作成
+- [x] タグをpush (git push origin v0.2.0)
+- [x] npm publish で公開
+- [x] リリース情報をplan.mdに記録
+
 **Phase 3 (安定性):**
 
 - [ ] 包括的なテストの追加
@@ -499,26 +510,32 @@ issync は、GitHub Issue のコメントとローカルファイル間でテキ
 - watch モードの pull→push ループを grace period (1000ms) で抑止し、AI エージェントの Edit 失敗頻度を低減
 - CLAUDE.md と AGENTS.md に運用ガイドラインを整備し、複数セッションでの手順を統一
 
-**Phase 2 複数Issue同時管理完了 (2025-10-14)**
+**v0.2.0 リリース完了 - 複数Issue同時管理サポート (2025-10-14)**
 
-- **実装完了**: state.yml を単一オブジェクトから `{ syncs: IssyncSync[] }` の配列形式に移行
-- **後方互換性**: 既存の単一設定フォーマットを自動マイグレーション（初回ロード時に配列形式に変換）
+- **パッケージ**: `@mh4gf/issync` v0.2.0
+- **実装完了内容**:
+  - state.yml を単一オブジェクトから `{ syncs: IssyncSync[] }` の配列形式に移行
+  - 既存の単一設定フォーマットを自動マイグレーション（初回ロード時に配列形式に変換）
+  - 複数Issue/ファイルの同時管理に対応
 - **CLI改善**:
-  - 複数sync登録時は `--file` または `--issue` でターゲットを明示的に指定
-  - 単一syncの場合は自動選択（シンプルなUXを維持）
+  - `--file` / `--issue` オプションでターゲットsyncを明示的に選択
+  - 単一syncの場合は自動選択（既存のUXを維持）
   - 曖昧な場合は明確なエラーメッセージで選択を促す
 - **watch コマンドの拡張**:
   - セレクタ未指定時は全syncを監視（並列実行）
-  - 部分的失敗モード（Promise.allSettled）で一部のsyncが失敗しても動作継続
+  - 部分的失敗モード（Promise.allSettled）で一部のsyncが失敗しても他は動作継続
   - 失敗したsyncの詳細なエラーメッセージを表示
-- **エラーハンドリング改善**:
-  - `SyncAlreadyExistsError` を `src/lib/errors.ts` に集約
+- **セキュリティ改善**:
+  - パストラバーサル攻撃を防ぐ包括的なテスト（12テストケース）
+  - `SyncAlreadyExistsError` などエラーハンドリングの改善
   - Issue URLとファイルパスの重複を個別に検出
-  - パストラバーサル攻撃を防ぐ包括的なテスト追加（12テストケース）
 - **テンプレート改善**:
-  - `docs/plan-template.md` に各セクションの記入タイミングと内容を明記
+  - `docs/plan-template.md` に各セクションの記入タイミングガイダンスを追加
   - before-plan, before-poc, before-architecture-decision などのフェーズガイダンスを追加
 - **品質保証**: 72テスト全て合格（Lefthook pre-commitで自動検証）
+- **後方互換性**: v0.1.0からの破壊的変更なし
+- **インストール方法**: `npm install -g @mh4gf/issync@0.2.0`
+- **Git タグ**: v0.2.0 (https://github.com/MH4GF/issync/releases/tag/v0.2.0)
 - **次のステップ**: watch デーモン化、セクションベースマージ、stop コマンド
 
 **Phase 2 進行中 (2025-10-13)**

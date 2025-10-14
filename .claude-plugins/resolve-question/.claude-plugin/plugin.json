@@ -1,0 +1,8 @@
+{
+  "name": "resolve-question",
+  "description": "Open Question解消ワークフローを自動化: Decision Logへの決定事項記録、質問の解決済みマーク、関連タスクの更新",
+  "version": "0.1.0",
+  "author": {
+    "name": "MH4GF"
+  }
+}

@@ -1,0 +1,13 @@
+{
+  "name": "issync-plugins",
+  "owner": {
+    "name": "MH4GF"
+  },
+  "plugins": [
+    {
+      "name": "resolve-question",
+      "source": "./resolve-question",
+      "description": "Open Question解消ワークフローを自動化"
+    }
+  ]
+}
