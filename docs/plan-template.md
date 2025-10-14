@@ -179,17 +179,6 @@
 
 ---
 
-## Idempotency & Recovery
-
-**📝 記入タイミング**: before-architecture-decision
-**✍️ 記入内容**: べき等性の保証方法、エラーハンドリング戦略、復旧手順
-
-- [べき等性の保証方法]
-- [エラーハンドリング戦略]
-- [復旧手順]
-
----
-
 ## Outcomes & Retrospectives
 
 **📝 記入タイミング**: before-retrospective
