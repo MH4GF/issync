@@ -1,59 +1,205 @@
 # issync
 
-CLI tool to sync text between GitHub Issue comments and local files.
+CLI tool to sync text between GitHub Issue comments and local files, enabling AI-driven development workflows.
+
+## Overview
+
+`issync` allows AI agents to maintain living documentation (like `plan.md`) in GitHub Issues as a single source of truth. Multiple local sessions (git worktrees, Devin, Claude Code, etc.) can read and write to the same document concurrently without git conflicts.
+
+**Core Features:**
+
+- **Transparent to AI agents**: AI coding agents use normal file operations, issync handles sync in background
+- **Conflict detection**: Hash-based optimistic locking prevents data loss
+- **Watch mode**: Automatic bidirectional sync between local files and GitHub Issue comments
+- **Safety checks**: 3-way comparison on watch startup prevents accidental overwrites
+
+## Installation
+
+```bash
+npm install -g issync
+```
+
+**Requirements:**
+
+- Node.js >= 18.0.0
+- GitHub Personal Access Token with `repo` scope
+
+## Quick Start
+
+### 1. Set up GitHub token
+
+```bash
+export GITHUB_TOKEN=$(gh auth token)  # Using GitHub CLI
+# or
+export GITHUB_TOKEN=ghp_your_token_here
+```
+
+### 2. Initialize sync
+
+```bash
+# Link a GitHub Issue to a local file
+issync init https://github.com/owner/repo/issues/123 --file docs/plan.md
+
+# Or create a new file from template
+issync init https://github.com/owner/repo/issues/123 --file docs/plan.md --template template.md
+```
+
+### 3. Start watch mode
+
+**⚠️ IMPORTANT: Always start watch mode BEFORE editing files**
+
+```bash
+issync watch
+
+# With custom polling interval (default: 60s)
+issync watch --interval 10
+```
+
+### 4. Edit files normally
+
+AI agents and editors can now read/edit the file normally. issync automatically syncs changes.
+
+## Commands
+
+### `issync init <issue-url>`
+
+Initialize sync for a GitHub Issue.
+
+```bash
+issync init https://github.com/owner/repo/issues/123 --file docs/plan.md
+```
+
+**Options:**
+- `--file <path>`: Local file path (default: `docs/plan.md`)
+- `--template <path>`: Create file from template if it doesn't exist
+
+### `issync pull`
+
+Pull remote changes from GitHub Issue comment to local file.
+
+```bash
+issync pull
+```
+
+### `issync push`
+
+Push local changes to GitHub Issue comment.
+
+```bash
+issync push
+```
+
+### `issync watch`
+
+Start watch mode (foreground process, press Ctrl+C to stop).
+
+```bash
+issync watch
+
+# Custom polling interval
+issync watch --interval 10
+```
+
+**Watch mode behavior:**
+
+- Polls GitHub Issue comment every 60 seconds (configurable)
+- Watches local file for changes with `chokidar`
+- Automatically syncs changes bidirectionally
+- Safety check on startup: detects conflicts and auto-syncs if only one side changed
+
+## Configuration
+
+issync stores state in `.issync/state.yml` (should be git-ignored):
+
+```yaml
+issue_url: https://github.com/owner/repo/issues/123
+comment_id: 123456789
+local_file: docs/plan.md
+last_synced_hash: abc123def
+last_synced_at: '2025-10-14T12:00:00.000Z'
+```
+
+Add to `.gitignore`:
+
+```gitignore
+.issync/
+```
+
+## Workflow for AI Agents
+
+**Recommended workflow in CLAUDE.md or project documentation:**
+
+```bash
+# 1. Set GitHub token
+export GITHUB_TOKEN=$(gh auth token)
+
+# 2. Start watch mode FIRST (before any edits)
+issync watch
+
+# 3. Then edit files
+# AI agents can now safely read/edit the synced file
+```
+
+**Why this order matters:** The MVP's pull operation overwrites local files. If you edit before starting watch, and the remote is outdated, your changes may be lost.
+
+## How It Works
+
+### Conflict Detection (Pull side)
+
+When issync pulls remote changes, it updates the local file. If an AI agent's `Edit()` tool tries to modify the file, it will fail because `old_string` no longer matches (the file was updated). The agent naturally re-reads and retries.
+
+### Optimistic Locking (Push side)
+
+1. Local file change detected
+2. Read local file and calculate hash
+3. Fetch remote comment
+4. Compare `last_synced_hash` from state with remote hash
+5. If mismatch → conflict (abort)
+6. If match → update comment, save new hash
+
+### Watch Mode Safety Check
+
+On watch startup, issync performs a 3-way comparison:
+
+- **Both changed**: Block startup, user must resolve manually
+- **Only local changed**: Auto-push to remote
+- **Only remote changed**: Auto-pull from remote
+- **Neither changed**: Start watching normally
+
+## Limitations (MVP)
+
+- **No merge logic**: Pull overwrites local file completely
+- **Single Issue per project**: Multi-Issue support coming in Phase 2
+- **Foreground watch**: Daemon mode planned for Phase 2
+- **No section-based merging**: Smart merge strategy planned for Phase 2
 
 ## Development
 
-### Install dependencies
+See [CLAUDE.md](./CLAUDE.md) for development setup and architecture details.
 
 ```bash
+# Install dependencies
 bun install
-```
 
-### Run CLI
+# Run CLI in development
+bun run dev init <issue-url>
 
-```bash
-bun run dev --help
-```
-
-### Run tests
-
-```bash
-# Run all tests
+# Run tests
 bun test
 
-# Run tests in watch mode
-bun test --watch
-```
-
-### Type check
-
-```bash
-bun run type-check
-```
-
-### Build
-
-```bash
+# Build for distribution
 bun run build
-```
-
-## Project Structure
-
-```
-issync/
-├── src/
-│   ├── cli.ts           # CLI entry point
-│   ├── commands/        # Command implementations
-│   ├── lib/
-│   │   ├── config.ts    # .issync.yml management
-│   │   ├── github.ts    # GitHub API client
-│   │   └── hash.ts      # Hash utilities
-│   └── types/           # TypeScript types
-└── docs/
-    └── plan.md          # Development plan
 ```
 
 ## License
 
 MIT
+
+## Author
+
+MH4GF
+
+## Links
+
+- [GitHub Repository](https://github.com/MH4GF/issync)
+- [Issue Tracker](https://github.com/MH4GF/issync/issues)

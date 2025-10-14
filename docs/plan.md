@@ -46,6 +46,21 @@ issync は、GitHub Issue のコメントとローカルファイル間でテキ
 - [ ] セクションベースのマージ戦略の実装
 - [ ] コンフリクト解決 UI
 
+**npm 公開準備 (v0.1.0):**
+
+- [x] package.json の更新（npm公開用のメタデータ追加）
+- [x] README.md の作成（インストール・使用方法）
+- [x] LICENSE ファイルの追加（MIT License）
+- [x] .npmignore の作成（不要ファイルの除外）
+- [x] ビルドとCLIバイナリの動作確認
+- [x] 最終品質チェック（test, lint, type-check）
+- [x] npm pack でローカルインストールテスト
+- [ ] 変更をコミットしてpush
+- [ ] git tag v0.1.0 を作成
+- [ ] タグをpush (git push origin v0.1.0)
+- [ ] npm publish で公開
+- [ ] リリース情報をplan.mdに記録
+
 **Phase 3 (安定性):**
 
 - [ ] 包括的なテストの追加
