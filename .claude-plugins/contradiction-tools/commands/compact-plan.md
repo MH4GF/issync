@@ -58,7 +58,7 @@
 
 ### 3. plan-template.mdとの比較
 
-`docs/plan-template.md`を読み込み、以下をチェックしてください：
+公式テンプレート（`https://raw.githubusercontent.com/MH4GF/issync/refs/heads/main/docs/plan-template.md`）を取得し、以下をチェックしてください：
 - セクション順序がテンプレートと一致しているか
 - 各セクションの「📝 記入タイミング」「✍️ 記入内容」に沿っているか
 - 不要なカスタムセクションがないか
