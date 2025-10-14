@@ -1,6 +1,22 @@
 #!/usr/bin/env node
 
+import { readFileSync } from 'node:fs'
+import { dirname, join } from 'node:path'
+import { fileURLToPath } from 'node:url'
 import { Command } from 'commander'
+
+const __filename = fileURLToPath(import.meta.url)
+const __dirname = dirname(__filename)
+const packageJson = JSON.parse(readFileSync(join(__dirname, '../package.json'), 'utf-8')) as {
+  version?: string
+}
+
+if (!packageJson.version || typeof packageJson.version !== 'string') {
+  console.error(
+    'Error: Failed to read version from package.json. Please ensure package.json contains a valid "version" field.',
+  )
+  process.exit(1)
+}
 
 const program = new Command()
 
@@ -26,7 +42,7 @@ async function _handleCommand(
 program
   .name('issync')
   .description('CLI tool to sync text between GitHub Issue comments and local files')
-  .version('0.1.0')
+  .version(packageJson.version)
 
 program
   .command('init <issue-url>')

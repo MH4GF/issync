@@ -36,7 +36,10 @@
         "useExponentiationOperator": "error"
       },
       "correctness": {
-        "noUnusedVariables": "error"
+        "noUnusedVariables": {
+          "level": "error",
+          "fix": "none"
+        }
       }
     }
   },
