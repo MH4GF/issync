@@ -1,7 +1,12 @@
 import { copyFileSync, existsSync, mkdirSync, statSync, writeFileSync } from 'node:fs'
 import path from 'node:path'
 import { configExists, loadConfig, saveConfig } from '../lib/config.js'
-import { FileAlreadyExistsError, FileNotFoundError, InvalidFilePathError } from '../lib/errors.js'
+import {
+  FileAlreadyExistsError,
+  FileNotFoundError,
+  InvalidFilePathError,
+  SyncAlreadyExistsError,
+} from '../lib/errors.js'
 import { parseIssueUrl } from '../lib/github.js'
 import { resolvePathWithinBase } from '../lib/path.js'
 import type { IssyncState, IssyncSync } from '../types/index.js'
@@ -10,14 +15,6 @@ interface InitOptions {
   file?: string
   cwd?: string
   template?: string
-}
-
-class SyncAlreadyExistsError extends Error {
-  constructor(target: string, kind: 'issue' | 'file') {
-    const label = kind === 'issue' ? 'issue' : 'local file'
-    super(`Sync already exists for ${label}: ${target}`)
-    this.name = 'SyncAlreadyExistsError'
-  }
 }
 
 function validateTemplate(templatePath: string | undefined, templateOption?: string): void {
