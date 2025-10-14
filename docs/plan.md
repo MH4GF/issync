@@ -58,8 +58,8 @@ issync は、GitHub Issue のコメントとローカルファイル間でテキ
 - [x] 変更をコミットしてpush
 - [x] git tag v0.1.0 を作成
 - [x] タグをpush (git push origin v0.1.0)
-- [ ] npm publish で公開
-- [ ] リリース情報をplan.mdに記録
+- [x] npm publish で公開
+- [x] リリース情報をplan.mdに記録
 
 **Phase 3 (安定性):**
 
@@ -68,6 +68,34 @@ issync は、GitHub Issue のコメントとローカルファイル間でテキ
 - [ ] ドキュメント作成
 
 ## 発見と気づき
+
+**2025-10-14: v0.1.0 リリース - npm 公開完了**
+
+- **パッケージ名**: `@mh4gf/issync` (スコープ付きパッケージとして公開)
+  - 当初 `issync` で公開を試みたが、既に他の開発者によって公開済みだった
+  - GitHub の scoped package 機能を使用して `@mh4gf/issync` として公開
+- **公開内容**:
+  - バージョン: 0.1.0
+  - パッケージサイズ: 10.9 kB (tarball), 38.3 kB (展開後)
+  - 含まれるファイル: dist/cli.js (30.4 kB), README.md, LICENSE, package.json
+- **インストール方法**: `npm install -g @mh4gf/issync`
+- **npm レジストリ**: https://registry.npmjs.org/@mh4gf/issync
+- **Git タグ**: v0.1.0 (https://github.com/MH4GF/issync/releases/tag/v0.1.0)
+- **主な機能**:
+  - GitHub Issue コメントとローカルファイル間の同期
+  - init/pull/push/watch コマンド
+  - ハッシュベースの楽観的ロック
+  - watch モードでの自動双方向同期
+  - 起動時の 3-way セーフティチェック
+  - テンプレートサポート
+- **npm 警告の対応**:
+  - `bin[issync]` script name が自動修正された (./dist/cli.js)
+  - `repository.url` が正規化された (git+https://github.com/MH4GF/issync.git)
+  - これらの警告は次回の package.json 更新時に `npm pkg fix` で対応予定
+- **品質保証**:
+  - 60 テスト全てパス
+  - Lefthook による pre-commit チェック (lint, format, type-check, test) を通過
+  - ローカルインストールテストで動作確認済み
 
 **2025-10-12: Claude Code の Edit() ツールを活用したコンフリクト検出**
 
