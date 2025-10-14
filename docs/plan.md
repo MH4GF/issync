@@ -146,6 +146,9 @@ syncs:
 
 ## Tasks
 
+**バグフィックス:**
+- [x] CLI の --version が package.json と同期されていない問題を修正
+
 **Phase 2 残タスク:**
 - [ ] docs/plan.md を git 管理から除外
 - [ ] watch --daemon / issync stop / issync status の実装
@@ -159,6 +162,12 @@ syncs:
 ---
 
 ## Discoveries & Insights
+
+**2025-10-14: CLI の --version が package.json と同期されていない問題**
+- 問題: `package.json` のバージョンは 0.3.0 だが、`src/cli.ts` でハードコードされた値は 0.1.0 のまま
+- 影響: ユーザーが `issync --version` を実行すると、実際のバージョンと異なる情報が表示される
+- 解決: `fs.readFileSync` で package.json を動的に読み込み、`.version(packageJson.version)` で参照するように変更
+- メリット: package.json のバージョン更新時に cli.ts を手動で更新する必要がなくなる
 
 **2025-10-14: 複数sync管理時のpush/pullコマンドのUX課題**
 - 問題: 複数syncが登録されている場合、`issync push` を実行すると「--file か --issue を指定してください」というエラーが出る
@@ -215,6 +224,23 @@ syncs:
 ---
 
 ## Decision Log
+
+**2025-10-14: Biome の noUnusedVariables 自動修正を無効化**
+- Biome の `noUnusedVariables` ルールは未使用変数に自動的に `_` プレフィックスを追加する unsafe fix を持つ
+- エディタの自動修正により、意図せず変数名が変更される問題が発生していた
+- `biome.json` で `fix: "none"` に設定し、リントエラーは報告するが自動修正は無効化
+
+**2025-10-14: CLI バージョンを package.json から動的に読み込む**
+- **背景**: CLI の --version がハードコードされており、package.json と同期されていなかった
+- **採用**: `fs.readFileSync` で package.json を動的に読み込み、version フィールドを参照
+- **理由**:
+  - package.json を Single Source of Truth として扱う
+  - バージョンアップ時の手動更新ミスを防止
+  - 開発環境とビルド後の両方で動作する
+- **実装方針**:
+  - `import.meta.url` と `fileURLToPath` でモジュールの位置を特定
+  - 相対パス `../package.json` で package.json を参照（開発時もビルド後も動作）
+  - 型安全性のために `as { version: string }` でキャスト
 
 **2025-10-14: push/pull コマンドのデフォルト動作を全sync対象に変更**
 - **背景**: 複数syncが登録されている場合、オプション未指定でエラーになり、毎回 --file や --issue を指定する必要がある
