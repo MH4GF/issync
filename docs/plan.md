@@ -1,8 +1,10 @@
 # issync 開発計画
 
-この実行計画は生きたドキュメントです。新しい情報が出るたびに `進捗状況`、`発見と気づき`、`決定ログ`、`成果と振り返り` を更新してください。各セクションは、事前知識のない初めての貢献者へのガイダンスとして扱ってください。
+この実行計画は生きたドキュメントです。新しい情報が出るたびに各セクションを更新してください。各セクションは、事前知識のない初めての貢献者へのガイダンスとして扱ってください。
 
-## 目的 / 全体像
+---
+
+## Purpose / Overview
 
 issync は、GitHub Issue のコメントとローカルファイル間でテキストを同期する CLI ツールです。AI エージェントが GitHub Issue 内で生きたドキュメント(plans.md など)を単一の信頼できる情報源として維持できるようにし、複数のローカルセッション(git worktree、Devin など)が同じドキュメントを同時に読み書きできるようにします。
 
@@ -12,539 +14,9 @@ issync は、GitHub Issue のコメントとローカルファイル間でテキ
 - ドキュメントファイルでの git コンフリクトを回避する
 - 環境間で進捗ドキュメントを同期し続ける
 
-## 進捗状況
+---
 
-- [x] プロジェクト名決定: `issync`
-- [x] リポジトリ作成と初期化
-- [x] 言語/ランタイムの選択: **Bun + TypeScript**
-- [x] プロジェクト構造の定義
-- [x] 基本的な CLI フレームワークの実装 (commander.js)
-- [x] GitHub API クライアントの実装 (Octokit)
-- [x] .issync.yml スキーマの実装 (型定義 + config 管理)
-- [x] テストフレームワークのセットアップ (Bun Test)
-- [x] 基本ライブラリのテスト作成 (hash, github URL parse)
-
-**Phase 1 (MVP - ドッグフーディングまで):**
-- [x] init コマンドの実装 (TDD)
-- [x] push コマンドの実装 (楽観ロック含む、TDD)
-- [x] pull コマンドの実装 (TDD)
-- [x] GitHub Issue #1 作成とドッグフーディング開始
-- [x] コードレビューと品質改善 (8件の改善完了)
-- [x] watch モードの実装 (フォアグラウンド、ポーリング + ファイル監視)
-
-**Phase 2 (スマートマージとデーモン化):**
-
-- [x] GitHub token format 検証の改善 (gho_ フォーマットのサポート)
-- [x] watch の pull-push ループバグ修正 (grace period で pull 直後の push をスキップ)
-- [x] init コマンドに --template オプション追加（テンプレートから新規作成）
-- [x] lefthook 導入によるコミット前の品質保証 (lint, format, type-check, test)
-- [x] 複数Issue同時管理のサポート（state.yml を配列化）
-- [x] watch 起動時の安全性チェック (3-way comparison でコンフリクト検出)
-- [ ] docs/plan.md を git 管理から除外（issync 管理のみに移行）
-- [ ] watch モードのデーモン化 (--daemon, PID 管理)
-- [ ] stop コマンドの実装
-- [ ] セクションベースのマージ戦略の実装
-- [ ] コンフリクト解決 UI
-
-**npm 公開準備 (v0.1.0):**
-
-- [x] package.json の更新（npm公開用のメタデータ追加）
-- [x] README.md の作成（インストール・使用方法）
-- [x] LICENSE ファイルの追加（MIT License）
-- [x] .npmignore の作成（不要ファイルの除外）
-- [x] ビルドとCLIバイナリの動作確認
-- [x] 最終品質チェック（test, lint, type-check）
-- [x] npm pack でローカルインストールテスト
-- [x] 変更をコミットしてpush
-- [x] git tag v0.1.0 を作成
-- [x] タグをpush (git push origin v0.1.0)
-- [x] npm publish で公開
-- [x] リリース情報をplan.mdに記録
-
-**npm 公開準備 (v0.2.0):**
-
-- [x] package.json のバージョンを 0.2.0 に更新
-- [x] ビルドとCLIバイナリの動作確認
-- [x] 最終品質チェック（test, lint, type-check）
-- [x] 変更をコミットしてpush
-- [x] git tag v0.2.0 を作成
-- [x] タグをpush (git push origin v0.2.0)
-- [x] npm publish で公開
-- [x] リリース情報をplan.mdに記録
-
-**Phase 3 (安定性):**
-
-- [ ] 包括的なテストの追加
-- [ ] エラーハンドリングとリトライ戦略
-- [ ] ドキュメント作成
-
-## 発見と気づき
-
-**2025-10-14: v0.1.0 リリース - npm 公開完了**
-
-- **パッケージ名**: `@mh4gf/issync` (スコープ付きパッケージとして公開)
-  - 当初 `issync` で公開を試みたが、既に他の開発者によって公開済みだった
-  - GitHub の scoped package 機能を使用して `@mh4gf/issync` として公開
-- **公開内容**:
-  - バージョン: 0.1.0
-  - パッケージサイズ: 10.9 kB (tarball), 38.3 kB (展開後)
-  - 含まれるファイル: dist/cli.js (30.4 kB), README.md, LICENSE, package.json
-- **インストール方法**: `npm install -g @mh4gf/issync`
-- **npm レジストリ**: https://registry.npmjs.org/@mh4gf/issync
-- **Git タグ**: v0.1.0 (https://github.com/MH4GF/issync/releases/tag/v0.1.0)
-- **主な機能**:
-  - GitHub Issue コメントとローカルファイル間の同期
-  - init/pull/push/watch コマンド
-  - ハッシュベースの楽観的ロック
-  - watch モードでの自動双方向同期
-  - 起動時の 3-way セーフティチェック
-  - テンプレートサポート
-- **npm 警告の対応**:
-  - `bin[issync]` script name が自動修正された (./dist/cli.js)
-  - `repository.url` が正規化された (git+https://github.com/MH4GF/issync.git)
-  - これらの警告は次回の package.json 更新時に `npm pkg fix` で対応予定
-- **品質保証**:
-  - 60 テスト全てパス
-  - Lefthook による pre-commit チェック (lint, format, type-check, test) を通過
-  - ローカルインストールテストで動作確認済み
-
-**2025-10-12: Claude Code の Edit() ツールを活用したコンフリクト検出**
-
-- Claude Code の Edit() は Read() しないと動作しない
-- Edit() は文字列置換に失敗すると(= ファイルが更新されていると)エラーになる
-- この仕組みをそのまま活用すれば、AI エージェント側でコンフリクト検出が自然に起きる
-- issync は透過的にバックグラウンドで動作し、AI エージェントは存在を意識しなくて済む
-
-**2025-10-12: Bun Test によるゼロ設定テスト環境**
-
-- Bun Test は追加の依存関係なしで動作する
-- Jest 互換 API でテストが書ける
-- TypeScript をそのままテストできる(トランスパイル不要)
-- 実行速度が非常に速い (8 tests in 156ms)
-
-**2025-10-12: watch モード使用時の前提条件とワークフロー**
-
-- **発見**: AI エージェントが issync を使うには、**watch モード起動 → 編集開始** の順序が重要
-- **問題事例**: watch を起動せずに編集したため、実際に 45 行の進捗記録が消失（git checkout で復元）
-  - リモートが古いバージョンのまま watch を起動
-  - pull が古いバージョンでローカルを無条件上書き
-  - 楽観的ロックの TOCTOU 問題が実際に発生
-- **根本原因**: MVP 版の pull は無条件上書きするため、リモートが最新でないと必ずデータロスが起きる
-- **運用での対処**: CLAUDE.md に使用手順を明記し、watch 起動を最初のステップとして定義
-- **Phase 2 での解決**: セクションベースマージ実装により、pull での上書きリスクを軽減
-
-**2025-10-12: watch モードの無限ループバグ発見**
-
-- **発見**: watch モードで pull-push の無限ループが発生
-- **問題の詳細**:
-  - リモートポーリングで pull を実行 → ローカルファイルを書き込み
-  - chokidar がファイル変更を検知 → push を実行
-  - 10秒後に再びポーリング → pull を実行（リモートと完全に同じでも書き込み）
-  - 再び chokidar が変更検知 → push を実行
-  - **結果**: 10秒ごとに pull → push が永久に繰り返される
-- **根本原因**: pull 時のファイル書き込みを chokidar が検知し、push がトリガーされる
-- **影響**:
-  - GitHub API のレート制限を無駄に消費（360 req/hour → 720 req/hour）
-  - Edit() ツールでのファイル編集が失敗しやすくなる（常にファイルが変更されているため）
-  - 実際にファイル編集中に複数回 "File has been modified" エラーが発生
-- **Phase 2 での修正**: pull 操作中は chokidar の監視を一時停止、または pull によるファイル変更を無視する仕組みを実装
-
-**2025-10-13: watch 起動前の 3-way セーフティチェック**
-
-- watch 起動時に last_synced_hash・ローカル・リモートの 3-way 比較を実装し、両側で差分がある場合に起動をブロック
-- ローカルのみ差分がある場合は自動 push、リモートのみ差分がある場合は自動 pull でベースラインを復旧
-- comment_id が未設定の場合は push 実行を促し、初回同期フローを明示化
-- ユニットテストで衝突検知・自動 push/pull・ファイル欠如時のリカバリーを検証済み
-
-**2025-10-14: AI エージェントによるコミット時の品質チェック不足**
-
-- **発見**: type-check が失敗した状態でコミットが作成され、後で修正コミットが必要になった
-- **問題の詳細**:
-  - `GitHubClient` を factory function に変更するリファクタリング
-  - テストファイルの型定義を `InstanceType<typeof GitHubClient>` から `ReturnType<typeof createGitHubClient>` に変更
-  - しかし type-check を実行せずにコミット、CI でエラーが判明
-- **根本原因**: AI エージェントは「lint エラーは現在の変更と無関係」と判断してスキップする傾向がある
-- **影響**:
-  - コミット履歴に壊れた状態が記録される
-  - CI が失敗し、追加の修正コミットが必要
-  - 開発フローが中断される
-- **Phase 2 での解決**: Lefthook で pre-commit フックを導入し、コミット前に自動で品質チェックを強制
-  - `bun run check:ci` (lint, format, type-check, test) を pre-commit で実行
-  - AI エージェント向けに明確なエラーメッセージを提供
-  - 「全てのチェックがパスして初めてタスク完了」というルールを確立
-
-## 決定ログ
-
-**2025-10-12: ツール命名**
-
-- 候補: isync、plansync、ghmd、tether、clink、relay、plink、zync、comlink
-- 採用: `issync` (issue + sync)
-- 理由: 明確、機能的、利用可能
-
-**2025-10-12: アーキテクチャ決定**
-
-- SSoT: GitHub Issue Comment (Issue 本文ではない)
-- 同期戦略: Pull 重視 + オンデマンド push
-- マージ戦略: セクションベースの自動マージとコンフリクト検出
-- コンフリクト解決: 楽観的ロックと手動フォールバック
-- メタデータ保存: プロジェクトルートの .issync.yml
-
-**2025-10-12: MVP の SSoT は GitHub Issue とする**
-
-- 理由:
-  - インフラ不要、GitHub の認証・認可をそのまま活用
-  - 可視性・監査可能性が高い(Issue/PR の文脈と紐づく)
-  - 運用負荷ゼロ(サーバー管理、DB、デプロイ不要)
-  - 段階的拡張が可能(後から yjs など CRDT ベースに移行可能)
-- yjs + 中央サーバーは将来の拡張として検討
-  - ハイブリッド案: yjs をセッション中のみ起動し、定期的に Issue に永続化
-
-**2025-10-12: AI エージェントに透過的な設計**
-
-- **重要な要件**: AI コーディングエージェントは issync の存在を知らなくて済む
-- AI エージェントは通常の Read()/Edit() ツールでファイルを操作
-- issync は watch mode でバックグラウンド動作し、自動的に pull/push
-- **コンフリクト検出の仕組み**:
-  1. issync が watch mode でリモートの変更を pull し、ローカルファイルを更新
-  2. AI エージェントが Edit() を試みる
-  3. old_string が見つからず Edit() が失敗(ファイルが更新済みのため)
-  4. AI エージェントは自然に Re-read して再試行(Claude Code の標準動作)
-- **push 側の楽観ロック**:
-  - ローカルファイル変更を検知(inotify/fswatch)
-  - push 前に GitHub 側の comment hash を検証
-  - 既に更新されていたら pull → マージ → 再 push or 手動解決
-
-**2025-10-12: 言語・ツールスタック**
-
-- **採用**: Bun + TypeScript, Bun Test
-- **理由**: MVP の高速実装を優先。Octokit (GitHub API) と chokidar (ファイル監視) の成熟したエコシステムを活用。Bun Test はゼロ設定で Jest 互換。
-- **配布**: npm パッケージ (Phase 1)、将来的に単一バイナリ化を検討
-
-**2025-10-12: MVP スコープの明確化 - ドッグフーディング優先**
-
-- **ゴール**: docs/plan.md を実際の GitHub Issue と同期し、issync 自体の開発に使う
-- **Phase 1 (MVP) に含める**:
-  - ✅ init, pull, push コマンド
-  - ✅ シンプルな楽観ロック (hash 不一致時はエラーのみ、自動マージなし)
-  - ✅ watch mode (フォアグラウンドプロセス、Ctrl+C で停止)
-  - ✅ リモートポーリング (setInterval)
-  - ✅ ローカルファイル監視 (chokidar)
-- **Phase 2 以降に後回し**:
-  - ❌ watch mode のデーモン化 (--daemon, PID 管理)
-  - ❌ stop コマンド (デーモン停止用)
-  - ❌ セクションベースの自動マージ
-  - ❌ コンフリクト解決 UI
-  - ❌ 高度なレート制限処理
-- **理由**: 早期にドッグフーディングを開始し、実際の使用感を確認する
-
-**2025-10-12: 状態管理に `.issync/` ディレクトリを採用**
-
-- **採用**: `.issync/state.yml` で状態を管理
-- **理由**:
-  - **設定 vs 状態の明確な分離**: ルートの `.issync.yml` は設定ファイルと誤認される
-  - **`.git/` との類似性**: 開発者に馴染み深いパターン（ローカル状態管理）
-  - **gitignore の自然さ**: `.issync/` → 「状態管理。gitignore に追加」と直感的
-  - **将来の拡張性**: 複数ファイル対応時に `.issync/plan.state.yml` などに拡張可能
-- **ディレクトリ構造**:
-  ```
-  project-root/
-    .issync/
-      state.yml       # 状態ファイル（gitignore）
-    .gitignore        # .issync/ を追加推奨
-    docs/
-      plan.md
-  ```
-- **init コマンドの動作**:
-  - `.issync/` ディレクトリを作成
-  - `state.yml` に状態を保存
-  - ユーザーに `.gitignore` への追加を推奨（自動化は Phase 2 で検討）
-
-**2025-10-12: Formatter/Linter - Biome 採用**
-
-- **採用**: **Biome** (formatter + linter)
-- **理由**:
-  - **高速**: Rust 製、ESLint + Prettier より圧倒的に速い
-  - **ゼロ設定**: デフォルト設定で即座に使える
-  - **統合**: フォーマットとリントを単一ツールで実行
-  - **Bun エコシステムとの相性**: Bun ランタイムと同様にパフォーマンス重視
-- **比較検討した候補**: ESLint + Prettier
-  - ESLint + Prettier: 成熟しているが設定が複雑で遅い
-  - Biome: モダンで高速、MVP に最適
-- **セットアップ内容**:
-  - `@biomejs/biome` をインストール
-  - `biome.json` で設定
-  - `package.json` にスクリプト追加 (`format`, `lint`, `check`)
-
-**2025-10-12: TypeScript ESLint の追加導入**
-
-- **追加採用**: **typescript-eslint** (Biome と併用)
-- **理由**:
-  - **Biome で検出できないルール**: 不要な `async` キーワード検出 (`@typescript-eslint/require-await`)
-  - **型情報を活用したリント**: `no-floating-promises`, `no-misused-promises` など
-  - **コードレビュー指摘の予防**: 静的解析で事前に品質問題を検出
-- **Biome との役割分担**:
-  - **Biome**: フォーマット + 基本的なリント (高速、日常的に使用)
-  - **typescript-eslint**: 型情報ベースの高度なリント (CI/プッシュ前)
-- **セットアップ内容**:
-  - `eslint`, `typescript-eslint` をインストール
-  - `eslint.config.mjs` で Flat Config を使用
-  - `recommended` + `require-await` ルールを有効化
-  - `package.json` にスクリプト追加 (`lint:eslint`)
-
-**2025-10-12: CLAUDE.md での運用ガイドライン提供**
-
-- **背景**: MVP 版の pull は無条件上書きするため、watch 起動前にリモートが最新でないとデータロスが起きる
-- **採用**: issync を使うプロジェクトは CLAUDE.md に使用手順を記載
-  - watch 起動手順 (セッション開始時の最初のステップ)
-  - 注意事項 (watch 起動前に編集しない)
-  - コマンド例 (GITHUB_TOKEN の設定方法含む)
-- **理由**:
-  - Phase 2 実装まで、この運用ルールで MVP の制約をカバー
-  - AI エージェントへの明示的な指示により、データロスを防止
-  - CLAUDE.md は AI エージェントが最初に読むため、効果的
-- **Phase 2 での改善**: セクションベースマージで pull のリスク軽減
-
-**2025-10-12: コードレビュー後のリンティング設定強化**
-
-- **最終的な追加ルール**:
-  - **Biome**:
-    - `noUnusedVariables: error` - 未使用変数の検出
-    - `noAssignInExpressions: error` - 条件式内の誤った代入を防止
-    - `noExcessiveCognitiveComplexity: error (maxAllowedComplexity: 15)` - 複雑度が高いコードを検出
-  - **typescript-eslint**:
-    - `@typescript-eslint/await-thenable: error` - Promise 以外を await しないことを強制
-    - `@typescript-eslint/return-await: ['error', 'in-try-catch']` - try-catch での return await を強制
-- **検討したが追加しなかったルール**:
-  - `noMagicNumbers` (Biome nursery) - 実験的ルールでまだ不安定、手動レビューで対応可能
-- **方針**:
-  - 設計レベルの問題（レースコンディション、テスト不可能性）は静的解析では検出困難、コードレビュープロセスで対応
-  - リンティングルールは実際に問題が発生した時に追加（YAGNI原則）
-
-**2025-10-12: Knip 導入 - 不要コード検出**
-
-- **採用**: **Knip** (不要な依存関係、エクスポート、ファイルを検出)
-- **理由**:
-  - **保守性の向上**: 使われていない依存関係、エクスポート、ファイルを自動検出
-  - **パフォーマンス改善**: 不要なコードを削除することでビルドサイズと速度を改善
-  - **コードベースの健全性**: デッドコードを継続的に監視
-  - **Bun サポート**: `knip-bun` コマンドで Bun ランタイムを使用可能
-  - **TypeScript 統合**: 型安全な設定ファイル (`knip.ts`) をサポート
-- **セットアップ内容**:
-  - `knip` をインストール
-  - `knip.ts` で TypeScript 設定
-  - エントリーポイント (`src/cli.ts`) とプロジェクトファイルを定義
-  - `package.json` にスクリプト追加 (`knip`, `knip:fix`)
-- **検証方針**:
-  - CI/CD で定期実行し、不要コードの蓄積を防止
-  - 手動実行: `bun run knip` で現状を確認
-  - 自動修正: `bun run knip:fix` で削除可能なコードを自動削除
-
-**2025-10-14: Lefthook 導入 - Git フック管理とコミット前品質保証**
-
-- **背景**: type-check が失敗した状態でコミットされる問題が発生。AI エージェントはしばしば lint エラーを「現在の変更と無関係」と判断してスキップする傾向がある
-- **採用**: **Lefthook** (高速な Git フック管理ツール)
-- **理由**:
-  - **品質保証の強制**: コミット前に lint, format, type-check, test を自動実行し、全てパスすることを保証
-  - **AI エージェントとの統合**: 明確なエラーメッセージで AI エージェントに修正を促す
-  - **高速性**: Go 製で並列実行に対応、従来の Git フックより高速
-  - **設定の簡潔さ**: YAML ベースの設定で複数のフックを管理
-  - **柔軟性**: `LEFTHOOK=0` で一時的にスキップ可能（人間開発者向け）
-- **設定方針**:
-  - pre-commit フックで `bun run check:ci` を実行（lint, format, type-check, test を包括）
-  - 全プロジェクトファイルを対象（ステージングファイルのみではない）
-  - AI エージェント向けに明確な fail_text を提供
-  - `--no-verify` を無効化して強制実行
-- **参考**: Liam Bx の記事 "How I Enforce Lint Rules with AI Coding Agents Using Lefthook"
-- **メリット**:
-  - 「タスクは全てのチェックがパスして初めて完了」という明確なルールを確立
-  - コミット履歴の品質を保証
-  - CI での失敗を事前に防止
-
-**2025-10-12: GitHub token format 検証の改善 - gho_ サポート**
-
-- **背景**: GitHub が新しい fine-grained personal access token を導入、フォーマットは `gho_` で始まる
-- **実装内容**:
-  - トークン検証の正規表現を `/^gh[ps]_/` から `/^gh[pso]_/` に変更
-  - エラーメッセージに `gho_` フォーマットを追加
-  - TDD アプローチで実装（テスト先行、実装、確認）
-- **サポートするトークンフォーマット**:
-  - `ghp_*`: Personal Access Token (Classic)
-  - `ghs_*`: Server Token
-  - `gho_*`: Fine-grained Personal Access Token (新規サポート)
-- **テスト内容**:
-  - 各トークンフォーマットが警告なく受け入れられることを確認
-  - 無効なトークンフォーマットで警告が出ることを確認
-  - トークンなしでエラーがスローされることを確認
-- **理由**: 新しい GitHub トークンフォーマットへの対応により、ユーザーが最新のトークンを使用可能に
-
-**2025-10-12: コードレビュー後のリンティング設定検証**
-
-- **背景**: Grace period 境界値テスト、ログメッセージ改善、定数ドキュメント化などのコードレビュー指摘事項を修正後、リンティング設定の改善余地を調査
-- **調査結果**: **既存のリンティング設定が完璧に機能していることを確認**
-  - **Biome** の `noUnusedVariables` が未使用変数（`_CHOKIDAR_STABILITY_MS`）を正しく検出
-  - **typescript-eslint** の `@typescript-eslint/await-thenable` が Bun Test の `expect().rejects` を検証
-- **実施した改善**:
-  1. **ESLint設定のコメント改善**: `await-thenable` ルールの目的を明確化（Bun Test の `.resolves`/`.rejects` は thenable を返すため await が必要）
-  2. **テストコード内のコメント追加**: ESLint disable コメントに詳細な理由を記載（Bun Test の型定義の制限により誤検知が発生）
-- **判断**: 新規ルールの追加は不要
-  - 未使用変数検出は Biome で対応済み
-  - Magic number 防止はコードレビューで対応可能
-  - テスト境界値の不足は既存ルールでは検出困難（レビュープロセスで対応）
-- **方針**: YAGNI 原則に従い、実際に問題が発生した際にルールを追加
-
-**2025-10-12: watch 起動時の安全性チェック (Phase 2)**
-
-- **背景**: CLAUDE.md にワークフローを記載しても、AI エージェントが watch 起動を忘れるリスクは残る
-- **採用**: watch 起動時に 3-way comparison でコンフリクト検出を実装
-- **実装方針**:
-  ```typescript
-  // 疑似コード
-  const local = readFile('docs/plan.md')
-  const remote = await fetchRemote()
-  const lastSynced = state.last_synced_hash
-
-  const localHash = hash(local)
-  const remoteHash = hash(remote)
-
-  // 3-way comparison
-  if (localHash !== lastSynced && remoteHash !== lastSynced) {
-    // 両方が変更されている = コンフリクト
-    console.error("❌ Cannot start watch: CONFLICT DETECTED")
-    console.error("Both local and remote have changes since last sync")
-    console.error("Options: 1. diff 2. pull --force 3. push --force")
-    process.exit(1)
-  }
-
-  // どちらか一方のみが変更されている場合は自動同期
-  if (localHash !== lastSynced) await push()
-  else if (remoteHash !== lastSynced) await pull()
-
-  startPolling()
-  startFileWatcher()
-  ```
-- **メリット**:
-  - データロスを事前に防止（watch 起動前に検出）
-  - ユーザーに明示的な選択肢を提示（diff, pull --force, push --force）
-  - 一方のみが変更されている場合は自動同期して watch 開始
-- **Phase 1 との関係**:
-  - Phase 1 (CLAUDE.md での運用ガイドライン) は AI エージェントへの教育
-  - Phase 2 (起動時チェック) はシステムレベルでの強制
-  - 両方を組み合わせることで多層防御を実現
-- **他の検討案**:
-  - ❌ Pre-commit hook: コミット時点ではファイル編集後なので遅すぎる
-  - ❌ 内部 git 管理: リモートが必要で複雑すぎる、Phase 1 & 2 で十分な価値
-
-**2025-10-13: init コマンドのテンプレートサポート (Phase 2)**
-
-- **背景**: Issue を作成したがローカルファイルがまだ存在しないケースが頻繁に発生
-  - 実際のユースケース: タスクダッシュボード設計用に Issue #2 を作成したが、テンプレートからドキュメントを作成したい
-  - 現状の init コマンドは既存ファイルを前提としており、テンプレートからの新規作成に未対応
-- **採用**: init コマンドに `--template` オプションを追加
-  ```bash
-  issync init <issue-url> --file <path> --template <template-path>
-  ```
-- **動作**:
-  - ファイルが存在しない場合、テンプレートからコピー（ディレクトリも自動作成）
-  - テンプレートパス省略時は空ファイルを作成
-  - ファイルが既に存在する場合はエラー（上書き防止）
-- **メリット**:
-  - テンプレートからの新規プロジェクト開始がスムーズ
-  - ユーザーが手動で cp コマンドを実行する必要がない
-  - ディレクトリ作成も自動化され、エラーが減る
-- **比較検討した候補**:
-  - Unix哲学アプローチ（ユーザーが手動で cp）: シンプルだがUX が劣る
-- **実装方針**:
-  - init コマンドに --template フラグを追加
-  - ファイル存在チェック → テンプレートコピー → 既存の init フロー
-
-**2025-10-13: 複数Issue同時管理のサポート (Phase 2)**
-
-- **背景**: 単一プロジェクトで複数のドキュメントを管理したい
-  - 実際のユースケース: `docs/plan.md` (Issue #1) と `.issync/docs/task-dashboard.md` (Issue #2) を同時管理
-  - 現状の設計は単一 Issue のみサポート（`.issync/state.yml` がシングルオブジェクト）
-- **採用**: 単一状態ファイルで配列管理
-  ```yaml
-  # .issync/state.yml
-  syncs:
-    - issue_url: https://github.com/owner/repo/issues/1
-      local_file: docs/plan.md
-      comment_id: 123456789
-      last_synced_hash: abc123def
-      last_synced_at: '2025-10-13T00:55:23.058Z'
-    - issue_url: https://github.com/owner/repo/issues/2
-      local_file: .issync/docs/task-dashboard.md
-      comment_id: 987654321
-      last_synced_hash: def456abc
-      last_synced_at: '2025-10-13T01:00:00.000Z'
-  ```
-- **メリット**:
-  - 1ファイルで全体管理、状態の把握が容易
-  - watch が複数ファイルを一括監視可能（単一プロセスで効率的）
-  - 現在の設計を最小限の変更で拡張可能
-- **比較検討した候補**:
-  - ファイルごとに状態ファイル分割: 拡張性は高いが状態ファイルが増える
-  - ハイブリッド案（config.yml + states/*.yml）: 複雑すぎる
-- **実装方針**:
-  - `IssyncConfig` 型を `{ syncs: IssyncSync[] }` に変更（破壊的変更）
-  - init/pull/push/watch コマンドを複数管理に対応
-  - マイグレーション: 既存の state.yml を自動変換（Phase 2 開始時）
-
-## 成果と振り返り
-
-**Phase 1 MVP 完了 (2025-10-12)**
-- **実装完了**: init, pull, push, watch コマンドの TDD 実装。Issue #1 でドッグフーディング開始 (docs/plan.md 465行を同期)。
-- **品質改善**: コードレビューで 8 件の改善 (トークン検証、パス検証、エラーハンドリング、型安全性)。24 テスト全て合格。
-- **発見**: watch 起動前の編集でデータロス発生 (45 行消失、git checkout で復元)。CLAUDE.md に運用ガイドライン追加し、Phase 2 でセクションベースマージを実装予定。
-
-**Phase 2 開始 (2025-10-12)**
-- **gho_ トークンサポート追加**: Fine-grained Personal Access Token (`gho_`) のサポート。TDD で実装、12 テスト合格。
-- **watch pull-push ループバグ修正完了**: Grace period パターン (1000ms) を実装し、pull 直後のファイル変更による不要な push をスキップ。実際の watch ログで動作確認 (Ignoring file change 519ms ago)。これにより GitHub API レート制限の無駄な消費を半減 (720 req/hour → 360 req/hour)。32 テスト全て合格。
-- **次のステップ**: 起動時安全性チェック、デーモン化。
-
-## 成果と振り返り
-
-**Phase 1 完了 (2025-10-12)**
-
-- init / pull / push / watch コマンドの MVP 実装を完了し、Bun Test で TDD を徹底
-- `.issync/state.yml` に last_synced_hash と timestamp を保存し、CLI 間で共有できる楽観ロックを確立
-- watch モードの pull→push ループを grace period (1000ms) で抑止し、AI エージェントの Edit 失敗頻度を低減
-- CLAUDE.md と AGENTS.md に運用ガイドラインを整備し、複数セッションでの手順を統一
-
-**v0.2.0 リリース完了 - 複数Issue同時管理サポート (2025-10-14)**
-
-- **パッケージ**: `@mh4gf/issync` v0.2.0
-- **実装完了内容**:
-  - state.yml を単一オブジェクトから `{ syncs: IssyncSync[] }` の配列形式に移行
-  - 既存の単一設定フォーマットを自動マイグレーション（初回ロード時に配列形式に変換）
-  - 複数Issue/ファイルの同時管理に対応
-- **CLI改善**:
-  - `--file` / `--issue` オプションでターゲットsyncを明示的に選択
-  - 単一syncの場合は自動選択（既存のUXを維持）
-  - 曖昧な場合は明確なエラーメッセージで選択を促す
-- **watch コマンドの拡張**:
-  - セレクタ未指定時は全syncを監視（並列実行）
-  - 部分的失敗モード（Promise.allSettled）で一部のsyncが失敗しても他は動作継続
-  - 失敗したsyncの詳細なエラーメッセージを表示
-- **セキュリティ改善**:
-  - パストラバーサル攻撃を防ぐ包括的なテスト（12テストケース）
-  - `SyncAlreadyExistsError` などエラーハンドリングの改善
-  - Issue URLとファイルパスの重複を個別に検出
-- **テンプレート改善**:
-  - `docs/plan-template.md` に各セクションの記入タイミングガイダンスを追加
-  - before-plan, before-poc, before-architecture-decision などのフェーズガイダンスを追加
-- **品質保証**: 72テスト全て合格（Lefthook pre-commitで自動検証）
-- **後方互換性**: v0.1.0からの破壊的変更なし
-- **インストール方法**: `npm install -g @mh4gf/issync@0.2.0`
-- **Git タグ**: v0.2.0 (https://github.com/MH4GF/issync/releases/tag/v0.2.0)
-- **次のステップ**: watch デーモン化、セクションベースマージ、stop コマンド
-
-**Phase 2 進行中 (2025-10-13)**
-
-- watch 起動時の 3-way セーフティチェックを実装し、両側更新時は起動前にコンフリクトを通知
-- ローカルのみ / リモートのみの差分は自動 push / pull でベースラインを回復するフローを整備
-- GitHub token の gho_ サポートや watch ログ改善で実行時の診断性を向上
-
-## コンテキストと方向性
+## Context & Direction
 
 **問題のコンテキスト:**
 
@@ -565,68 +37,9 @@ issync は、GitHub Issue のコメントとローカルファイル間でテキ
 - **軽量導入**: 追加インフラ不要で GitHub PAT のみを要求し、CLI 1 本で導入できる
 - **段階的拡張**: 初期は Issue コメントを SSoT とし、必要に応じて CRDT や専用サーバーに移行する
 
-## 作業計画
+---
 
-### Phase 1: ドッグフーディング MVP (完了)
-
-**ゴール:** docs/plan.md を GitHub Issue と同期し、AI / 人間混在のセッションで利用できる状態を作る
-
-**実装済み:**
-
-1. `issync init` で Issue URL とローカルファイルを紐付け、`.issync/state.yml` を生成
-2. `issync pull` / `issync push` による手動同期とハッシュベースの楽観ロック
-3. `issync watch` のポーリング + chokidar 監視と grace period による pull→push ループ防止
-4. CLAUDE.md / AGENTS.md による運用ガイド整備と Bun Test ベースのコマンド単体テスト
-
-**スコープ外 (Phase 2 以降):**
-
-- デーモン化された watch、stop / status コマンド
-- セクションベースの自動マージと UI
-- 複数 Issue の同時管理
-
-### Phase 2: スマートマージとデーモン化 (進行中)
-
-**ゴール:** 並行セッションの安全性と可用性を高め、長時間稼働できる同期体験を提供する
-
-**着手済み / 完了:**
-
-- watch 起動時の 3-way セーフティチェックと自動 push / pull
-- GitHub token フォーマット検証強化 (gho_ 追加)
-- init コマンドに --template オプションを追加し、テンプレートもしくは空ファイルから初期化可能にした
-- `.issync/state.yml` の複数 Issue 対応と CLI でのターゲット選択（自動マイグレーション含む）
-- watch の複数sync並列実行と部分的失敗モード
-- パストラバーサル防止の包括的なテスト
-- テンプレート構造改善とフェーズガイダンス追加
-
-**残タスク:**
-
-1. `watch --daemon` / `issync stop` / `issync status` の実装と PID 管理
-2. セクションベースのマージ戦略とコンフリクト解決フロー
-3. docs/plan.md の issync 管理への移行（git 管理から除外）
-
-**スコープ外 (Phase 3 以降):**
-
-- CRDT ベースのリアルタイム同期
-- GitHub 以外のデータソース連携
-
-### Phase 3: 安定性と最適化 (計画中)
-
-**ゴール:** 大規模チームでも信頼して使える品質を確保する
-
-**プラン:**
-
-1. 包括的な統合テストと CLI 出力スナップショット
-2. レート制限・ネットワーク断に対するリトライとバックオフ戦略
-3. 障害時のロールバック / ローカルバックアップ機能
-4. ドキュメント・チュートリアル整備、導入チェックリスト
-
-### Phase 4: 仕上げ (将来検討)
-
-- リリース自動化 (CI/CD, npm 公開)
-- 単一バイナリ配布 (bun build / pkg など)
-- サポートする AI エージェント毎のガイド追加
-
-## 検証と受け入れ基準
+## Validation & Acceptance Criteria
 
 **受け入れ基準:**
 
@@ -643,57 +56,282 @@ issync は、GitHub Issue のコメントとローカルファイル間でテキ
 - `src/lib/config.test.ts`: YAML 読み書き、ディレクトリ生成、パス検証を網羅
 - 手動 QA: watch 起動 → リモート更新 → pull→push ループが発生しないかログで確認
 
-## べき等性と復旧
+---
 
-- `issync pull` は同一コメント内容であれば再実行してもファイル内容・ハッシュが変わらず、冪等に動作する
-- `issync push` は last_synced_hash が一致しない限り書き込みを拒否するため、失敗時は `pull → 手動マージ → push` の手順で回復
-- watch モードは AbortController と grace period により、安全に停止・再開できる（pull 中の変更通知は無視）
-- `.issync/state.yml` を誤って削除した場合でも、`issync init` で再生成し `issync pull` で最新状態を復旧できる
+## Work Plan
 
-## 成果物とメモ
+### Phase 1: ドッグフーディング MVP ✅ 完了 (2025-10-12)
+
+**ゴール:** docs/plan.md を GitHub Issue と同期し、AI / 人間混在のセッションで利用できる状態を作る
+
+**完了内容:** 詳細は Outcomes & Retrospectives 参照
+
+### Phase 2: スマートマージとデーモン化 (進行中)
+
+**ゴール:** 並行セッションの安全性と可用性を高め、長時間稼働できる同期体験を提供する
+
+**完了済み:**
+- watch 起動時の 3-way セーフティチェックと自動 push / pull
+- GitHub token フォーマット検証強化 (gho_ 追加)
+- init コマンドに --template オプション追加
+- 複数Issue同時管理のサポート（state.yml を配列化、v0.2.0リリース）
+- watch の複数sync並列実行と部分的失敗モード
+- lefthook 導入によるコミット前の品質保証
+
+**残タスク:**
+- [ ] docs/plan.md を git 管理から除外（issync 管理のみに移行）
+- [ ] watch モードのデーモン化 (--daemon, PID 管理)
+- [ ] stop コマンドの実装
+- [ ] セクションベースのマージ戦略の実装
+- [ ] コンフリクト解決 UI
+
+**スコープ外 (Phase 3 以降):**
+- CRDT ベースのリアルタイム同期
+- GitHub 以外のデータソース連携
+
+### Phase 3: 安定性と最適化 (計画中)
+
+**ゴール:** 大規模チームでも信頼して使える品質を確保する
+
+**プラン:**
+- [ ] 包括的な統合テストと CLI 出力スナップショット
+- [ ] レート制限・ネットワーク断に対するリトライとバックオフ戦略
+- [ ] 障害時のロールバック / ローカルバックアップ機能
+- [ ] ドキュメント・チュートリアル整備、導入チェックリスト
+
+---
+
+## Specification / 仕様
+
+### アーキテクチャ概要
+
+- **SSoT**: GitHub Issue Comment (Issue 本文ではない)
+- **同期戦略**: Pull 重視 + オンデマンド push
+- **マージ戦略**: セクションベースの自動マージとコンフリクト検出（Phase 2 実装予定）
+- **コンフリクト解決**: 楽観的ロックと手動フォールバック
+- **メタデータ保存**: プロジェクトルートの `.issync/state.yml`
+
+### 技術スタック
+
+- **言語・ランタイム**: Bun + TypeScript
+- **テストフレームワーク**: Bun Test（ゼロ設定、Jest互換）
+- **Formatter/Linter**: Biome + typescript-eslint
+- **Git フック管理**: Lefthook
+- **GitHub API**: Octokit
+- **ファイル監視**: chokidar
+
+### watch モードの設計
+
+- **リモートポーリング**: setInterval でリモートコメントを定期取得（デフォルト10秒）
+- **ローカルファイル監視**: chokidar でファイル変更を検知
+- **grace period**: pull 直後の 1000ms はファイル変更を無視し、pull→push ループを防止
+- **3-way セーフティチェック**: 起動時に last_synced_hash・ローカル・リモートを比較し、コンフリクトを事前検出
+
+### 状態管理
+
+`.issync/state.yml` で複数syncを配列管理（v0.2.0以降）:
+
+```yaml
+syncs:
+  - issue_url: https://github.com/owner/repo/issues/123
+    comment_id: 123456789
+    local_file: docs/plan.md
+    last_synced_hash: abc123def
+    last_synced_at: 2025-10-14T09:00:00Z
+    poll_interval: 10
+```
+
+---
+
+## Tasks
+
+**Phase 2 残タスク:**
+- [ ] init コマンドのURL対応とデフォルトテンプレート設定
+  - [ ] `--template` オプションでURLを受け取れるようにする
+  - [ ] デフォルトテンプレートを `https://raw.githubusercontent.com/MH4GF/issync/refs/heads/main/docs/plan-template.md` に設定
+  - [ ] HTTPリクエストでテンプレートを取得する機能を実装
+- [ ] docs/plan.md を git 管理から除外
+- [ ] watch --daemon / issync stop / issync status の実装
+- [ ] セクションベースのマージ戦略とコンフリクト解決フロー
+
+**Phase 3 タスク:**
+- [ ] 包括的なテストの追加
+- [ ] エラーハンドリングとリトライ戦略
+- [ ] ドキュメント作成
+
+---
+
+## Discoveries & Insights
+
+**2025-10-14: v0.2.0 リリース - 複数Issue同時管理サポート**
+- state.yml を単一オブジェクトから配列形式に移行、既存設定を自動マイグレーション
+- `--file` / `--issue` オプションでターゲットsync選択、単一syncの場合は自動選択
+- watch コマンドが全syncを並列監視、部分的失敗モードで一部失敗時も他は継続動作
+- パストラバーサル攻撃防止の包括的なテスト、72テスト全て合格
+
+**2025-10-14: v0.1.0 リリース - npm 公開完了**
+- `@mh4gf/issync` として npm 公開（スコープ付きパッケージ）
+- init/pull/push/watch コマンド、ハッシュベース楽観ロック、3-way セーフティチェック実装
+- Lefthook による pre-commit チェック (lint, format, type-check, test) 導入
+
+**2025-10-14: AI エージェントによるコミット時の品質チェック不足**
+- type-check が失敗した状態でコミットが作成され、後で修正コミットが必要に
+- 原因: AI エージェントは「lint エラーは現在の変更と無関係」と判断してスキップする傾向
+- 解決: Lefthook で pre-commit フックを導入し、コミット前に自動で品質チェックを強制
+
+**2025-10-13: watch 起動前の 3-way セーフティチェック**
+- watch 起動時に last_synced_hash・ローカル・リモートの 3-way 比較を実装
+- 両側で差分がある場合に起動をブロック、片側差分は自動 push/pull でベースラインを復旧
+
+**2025-10-12: watch モードの無限ループバグ発見と修正**
+- 問題: pull 時のファイル書き込みを chokidar が検知し、push がトリガーされ無限ループ
+- 影響: GitHub API のレート制限を無駄に消費（360 req/hour → 720 req/hour）
+- 解決: grace period (1000ms) 実装により、pull 直後の変更通知を無視
+
+**2025-10-12: watch モード使用時の前提条件とワークフロー**
+- 発見: watch モード起動 → 編集開始 の順序が重要
+- 問題事例: watch を起動せずに編集したため、実際に 45 行の進捗記録が消失（git checkout で復元）
+- 根本原因: MVP 版の pull は無条件上書きするため、リモートが最新でないと必ずデータロスが起きる
+- 対処: CLAUDE.md に使用手順を明記、Phase 2 でセクションベースマージ実装予定
+
+**2025-10-12: Claude Code の Edit() ツールを活用したコンフリクト検出**
+- Claude Code の Edit() は old_string が見つからないとエラーになる
+- この仕組みをそのまま活用すれば、AI エージェント側でコンフリクト検出が自然に起きる
+- issync は透過的にバックグラウンドで動作し、AI エージェントは存在を意識しなくて済む
+
+**2025-10-12: Bun Test によるゼロ設定テスト環境**
+- Bun Test は追加の依存関係なしで動作、Jest 互換 API でテストが書ける
+- TypeScript をそのままテストできる(トランスパイル不要)、実行速度が非常に速い
+
+---
+
+## Decision Log
+
+**2025-10-14: Lefthook 導入 - Git フック管理とコミット前品質保証**
+- **背景**: type-check が失敗した状態でコミットされる問題が発生
+- **採用**: Lefthook (高速な Git フック管理ツール)
+- **理由**: 品質保証の強制、AI エージェントとの統合、高速性、設定の簡潔さ
+- **設定方針**: pre-commit フックで `bun run check:ci` を実行（lint, format, type-check, test を包括）
+- **参考**: Liam Bx の記事 "How I Enforce Lint Rules with AI Coding Agents Using Lefthook"
+
+**2025-10-13: 複数Issue同時管理のサポート (Phase 2)**
+- **背景**: 単一プロジェクトで複数のドキュメントを管理したい
+- **採用**: 単一状態ファイルで配列管理
+- **理由**: 1ファイルで全体管理、watch が複数ファイルを一括監視可能、現在の設計を最小限の変更で拡張可能
+
+**2025-10-13: init コマンドのテンプレートサポート (Phase 2)**
+- **背景**: Issue を作成したがローカルファイルがまだ存在しないケースが頻繁に発生
+- **採用**: init コマンドに `--template` オプションを追加
+- **メリット**: テンプレートからの新規プロジェクト開始がスムーズ、ディレクトリ作成も自動化
+
+**2025-10-12: watch 起動時の安全性チェック (Phase 2)**
+- **採用**: watch 起動時に 3-way comparison でコンフリクト検出を実装
+- **実装方針**: 両方が変更されている = コンフリクト（起動ブロック）、どちらか一方のみ = 自動同期
+- **メリット**: データロスを事前に防止、ユーザーに明示的な選択肢を提示
+
+**2025-10-12: Knip 導入 - 不要コード検出**
+- **採用**: Knip (不要な依存関係、エクスポート、ファイルを検出)
+- **理由**: 保守性の向上、パフォーマンス改善、コードベースの健全性、Bun サポート
+
+**2025-10-12: TypeScript ESLint の追加導入**
+- **追加採用**: typescript-eslint (Biome と併用)
+- **理由**: Biome で検出できないルール (`@typescript-eslint/require-await`)、型情報を活用したリント
+- **役割分担**: Biome (フォーマット + 基本的なリント)、typescript-eslint (型情報ベースの高度なリント)
+
+**2025-10-12: Formatter/Linter - Biome 採用**
+- **採用**: Biome (formatter + linter)
+- **理由**: 高速（Rust製）、ゼロ設定、統合（フォーマットとリントを単一ツールで実行）
+
+**2025-10-12: CLAUDE.md での運用ガイドライン提供**
+- **背景**: MVP 版の pull は無条件上書きするため、watch 起動前にリモートが最新でないとデータロスが起きる
+- **採用**: issync を使うプロジェクトは CLAUDE.md に使用手順を記載
+- **理由**: Phase 2 実装まで、この運用ルールで MVP の制約をカバー
+
+**2025-10-12: 状態管理に `.issync/` ディレクトリを採用**
+- **採用**: `.issync/state.yml` で状態を管理
+- **理由**: 設定 vs 状態の明確な分離、`.git/` との類似性、gitignore の自然さ、将来の拡張性
+
+**2025-10-12: MVP スコープの明確化 - ドッグフーディング優先**
+- **ゴール**: docs/plan.md を実際の GitHub Issue と同期し、issync 自体の開発に使う
+- **理由**: 早期にドッグフーディングを開始し、実際の使用感を確認する
+
+**2025-10-12: 言語・ツールスタック**
+- **採用**: Bun + TypeScript, Bun Test
+- **理由**: MVP の高速実装を優先。Octokit (GitHub API) と chokidar (ファイル監視) の成熟したエコシステムを活用。
+
+**2025-10-12: AI エージェントに透過的な設計**
+- **重要な要件**: AI コーディングエージェントは issync の存在を知らなくて済む
+- **コンフリクト検出の仕組み**: issync が watch mode でリモートの変更を pull → AI エージェントが Edit() を試みる → old_string が見つからず失敗 → AI エージェントは自然に Re-read して再試行
+
+**2025-10-12: MVP の SSoT は GitHub Issue とする**
+- **理由**: インフラ不要、可視性・監査可能性が高い、運用負荷ゼロ、段階的拡張が可能
+- **将来**: yjs + 中央サーバーは将来の拡張として検討
+
+**2025-10-12: アーキテクチャ決定**
+- SSoT: GitHub Issue Comment、同期戦略: Pull 重視 + オンデマンド push
+- マージ戦略: セクションベースの自動マージとコンフリクト検出
+- コンフリクト解決: 楽観的ロックと手動フォールバック
+- メタデータ保存: プロジェクトルートの `.issync/state.yml`
+
+**2025-10-12: ツール命名**
+- **採用**: `issync` (issue + sync)
+- **理由**: 明確、機能的、利用可能
+
+---
+
+## Outcomes & Retrospectives
+
+**v0.2.0 リリース完了 (2025-10-14) - 複数Issue同時管理サポート**
+- **実装完了**: state.yml を配列形式に移行、既存設定の自動マイグレーション、複数Issue/ファイルの同時管理対応
+- **CLI改善**: `--file` / `--issue` オプションでターゲットsync選択、単一syncの場合は自動選択
+- **watch コマンド拡張**: 全syncを監視（並列実行）、部分的失敗モード（Promise.allSettled）
+- **セキュリティ改善**: パストラバーサル攻撃防止の包括的なテスト、エラーハンドリング改善
+- **テンプレート改善**: 各セクションの記入タイミングガイダンス追加
+- **品質保証**: 72テスト全て合格、後方互換性維持
+- **次のステップ**: watch デーモン化、セクションベースマージ、stop コマンド
+
+**v0.1.0 リリース完了 (2025-10-14) - npm 公開**
+- **実装完了**: init/pull/push/watch コマンド、ハッシュベース楽観ロック、3-way セーフティチェック
+- **公開内容**: `@mh4gf/issync` (スコープ付きパッケージ)、パッケージサイズ 10.9 kB
+- **品質保証**: 60 テスト全てパス、Lefthook による pre-commit チェック
+- **次のステップ**: 複数Issue同時管理、watch デーモン化
+
+**Phase 2 進行中 (2025-10-13)**
+- watch 起動時の 3-way セーフティチェックを実装、両側更新時は起動前にコンフリクトを通知
+- ローカルのみ / リモートのみの差分は自動 push / pull でベースラインを回復
+- GitHub token の gho_ サポート、watch ログ改善で実行時の診断性を向上
+
+**Phase 1 MVP 完了 (2025-10-12)**
+- init / pull / push / watch コマンドの MVP 実装を完了、Bun Test で TDD を徹底
+- `.issync/state.yml` に last_synced_hash と timestamp を保存、楽観ロックを確立
+- watch モードの pull→push ループを grace period (1000ms) で抑止
+- CLAUDE.md と AGENTS.md に運用ガイドラインを整備
+- **発見**: watch 起動前の編集でデータロス発生 (45 行消失、git checkout で復元)
+- **対処**: CLAUDE.md に運用ガイドライン追加、Phase 2 でセクションベースマージを実装予定
+
+---
+
+## Deliverables & Notes
 
 **コマンドリファレンス:**
 
 ```bash
 # 開発時 (Bun 経由)
-bun run dev init <issue-url> [--file path/to/file]
-bun run dev pull
-bun run dev push
-bun run dev watch --interval 10
+bun run dev init <issue-url> [--file path/to/file] [--template path/to/template]
+bun run dev pull [--file path/to/file] [--issue issue-url]
+bun run dev push [--file path/to/file] [--issue issue-url]
+bun run dev watch [--interval 10] [--file path/to/file] [--issue issue-url]
 
-# ビルド後 CLI (Phase 2 で npm 公開を想定)
-issync init <issue-url> [--file path/to/file]
-issync pull                       # リモート → ローカル
-issync push [-m "message"]        # ローカル → リモート
-issync watch [--interval 10]      # フォアグラウンド、Ctrl+C で停止
-issync watch --daemon             # デーモン化 (実装予定)
-issync stop                       # デーモン停止 (実装予定)
-issync status                     # 同期状態確認 (実装予定)
-```
+# ビルド後 CLI (npm 公開済み)
+issync init <issue-url> [--file path/to/file] [--template path/to/template]
+issync pull [--file path/to/file] [--issue issue-url]
+issync push [--file path/to/file] [--issue issue-url]
+issync watch [--interval 10] [--file path/to/file] [--issue issue-url]
 
-**状態ファイルフォーマット (`.issync/state.yml`):**
-
-```yaml
-# 複数sync対応フォーマット (v0.2.0以降)
-syncs:
-  - issue_url: https://github.com/owner/repo/issues/123
-    comment_id: 123456789        # 最初の push で自動設定
-    local_file: docs/plan.md
-    last_synced_hash: abc123def  # リモートの最終 hash (楽観ロック用)
-    last_synced_at: 2025-10-14T09:00:00Z
-    poll_interval: 10            # watch のポーリング間隔 (秒) - オプション
-    merge_strategy: section-based # Phase 2 で導入予定
-  - issue_url: https://github.com/owner/repo/issues/456
-    comment_id: 987654321
-    local_file: docs/design.md
-    last_synced_hash: def456ghi
-    last_synced_at: 2025-10-14T10:00:00Z
-
-# 旧フォーマット（自動マイグレーション対応）
-# issue_url: https://github.com/owner/repo/issues/123
-# comment_id: 123456789
-# local_file: docs/plan.md
-# ...
+# 実装予定
+issync watch --daemon    # デーモン化 (Phase 2)
+issync stop              # デーモン停止 (Phase 2)
+issync status            # 同期状態確認 (Phase 2)
 ```
 
 **`.gitignore` への追加推奨:**
@@ -708,9 +346,11 @@ syncs:
 - レート制限: 5000 リクエスト/時間(認証済み)
 - 10 秒間隔でのポーリング = 360 リクエスト/時間(watch プロセスあたり)
 - 403/429 レスポンスの処理が必要
-- **楽観ロックの実装**:
-  - GET /repos/{owner}/{repo}/issues/comments/{comment_id} でコメント取得
-  - body の hash を計算し、`state.yml` に保存
-  - PATCH で更新する前に再度 GET して hash を比較
-  - hash が一致しなければコンフリクト(pull → マージ → 再試行)
-- Issue comment の更新は PATCH /repos/{owner}/{repo}/issues/comments/{comment_id}
+- **楽観ロックの実装**: GET でコメント取得 → body の hash 計算 → PATCH 前に再度 GET して hash 比較 → 一致しなければコンフリクト
+
+**べき等性と復旧:**
+
+- `issync pull` は同一コメント内容であれば再実行してもファイル内容・ハッシュが変わらず、冪等に動作
+- `issync push` は last_synced_hash が一致しない限り書き込みを拒否、失敗時は `pull → 手動マージ → push` で回復
+- watch モードは AbortController と grace period により、安全に停止・再開できる
+- `.issync/state.yml` を誤って削除した場合でも、`issync init` で再生成し `issync pull` で最新状態を復旧可能
