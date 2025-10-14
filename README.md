@@ -16,7 +16,7 @@ CLI tool to sync text between GitHub Issue comments and local files, enabling AI
 ## Installation
 
 ```bash
-npm install -g issync
+npm install -g @mh4gf/issync
 ```
 
 **Requirements:**

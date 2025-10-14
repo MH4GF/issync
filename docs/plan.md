@@ -55,9 +55,9 @@ issync は、GitHub Issue のコメントとローカルファイル間でテキ
 - [x] ビルドとCLIバイナリの動作確認
 - [x] 最終品質チェック（test, lint, type-check）
 - [x] npm pack でローカルインストールテスト
-- [ ] 変更をコミットしてpush
-- [ ] git tag v0.1.0 を作成
-- [ ] タグをpush (git push origin v0.1.0)
+- [x] 変更をコミットしてpush
+- [x] git tag v0.1.0 を作成
+- [x] タグをpush (git push origin v0.1.0)
 - [ ] npm publish で公開
 - [ ] リリース情報をplan.mdに記録
 
