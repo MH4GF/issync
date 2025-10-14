@@ -5,9 +5,9 @@
   },
   "plugins": [
     {
-      "name": "resolve-question",
-      "source": "./resolve-question",
-      "description": "Open Question解消ワークフローを自動化"
+      "name": "contradiction-tools",
+      "source": "./contradiction-tools",
+      "description": "矛盾解消駆動開発のためのツール群(/resolve-question, /compact-plan)"
     }
   ]
 }
