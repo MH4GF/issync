@@ -37,7 +37,7 @@ issync は、GitHub Issue のコメントとローカルファイル間でテキ
 - [x] GitHub token format 検証の改善 (gho_ フォーマットのサポート)
 - [x] watch の pull-push ループバグ修正 (grace period で pull 直後の push をスキップ)
 - [x] init コマンドに --template オプション追加（テンプレートから新規作成）
-- [ ] lefthook 導入によるコミット前の品質保証 (lint, format, type-check, test)
+- [x] lefthook 導入によるコミット前の品質保証 (lint, format, type-check, test)
 - [ ] 複数Issue同時管理のサポート（state.yml を配列化）
 - [x] watch 起動時の安全性チェック (3-way comparison でコンフリクト検出)
 - [ ] docs/plan.md を git 管理から除外（issync 管理のみに移行）
