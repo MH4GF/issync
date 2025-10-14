@@ -478,9 +478,47 @@ export async function watch(options: WatchOptions = {}): Promise<void> {
     throw error
   }
 
+  const targetCount = targets.length
+  const plural = targetCount === 1 ? '' : 's'
+  console.log(`Starting watch mode for ${targetCount} sync target${plural}`)
+
   const sessions = targets.map(
     ({ sync, resolvedPath }) => new WatchSession(sync, resolvedPath, intervalMs, cwd, true),
   )
 
-  await Promise.all(sessions.map((session) => session.start()))
+  // Use Promise.allSettled to handle individual session failures
+  // Design decision: Partial failure mode is enabled - if some sessions succeed,
+  // watch mode continues running with those successful sessions. This allows users
+  // to work with syncs that succeeded while investigating failures.
+  const results = await Promise.allSettled(sessions.map((session) => session.start()))
+
+  const failures: Array<{ index: number; reason: unknown }> = []
+  results.forEach((result, index) => {
+    if (result.status === 'rejected') {
+      failures.push({ index, reason: result.reason })
+    }
+  })
+
+  if (failures.length > 0) {
+    const successCount = sessions.length - failures.length
+    const message = `${failures.length} of ${sessions.length} watch session(s) failed to start`
+    console.error(`\nError: ${message}`)
+
+    for (const { index, reason } of failures) {
+      const target = targets[index]
+      const sync = target.sync
+      const label = `${sync.issue_url} → ${sync.local_file}`
+      const errorMsg = reason instanceof Error ? reason.message : String(reason)
+      console.error(`  ${label}: ${errorMsg}`)
+    }
+
+    // If some sessions succeeded, show success count and continue
+    if (successCount > 0) {
+      console.log(`\n✓ ${successCount} session(s) started successfully`)
+      console.warn('\nWarning: Some syncs failed. Run `issync status` to check sync state.')
+    } else {
+      // All sessions failed - throw error
+      throw new Error('All watch sessions failed to start')
+    }
+  }
 }

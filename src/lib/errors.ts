@@ -62,3 +62,11 @@ export class AmbiguousSyncError extends IssyncError {
     this.name = 'AmbiguousSyncError'
   }
 }
+
+export class SyncAlreadyExistsError extends IssyncError {
+  constructor(target: string, kind: 'issue' | 'file') {
+    const label = kind === 'issue' ? 'issue' : 'local file'
+    super(`Sync already exists for ${label}: ${target}`)
+    this.name = 'SyncAlreadyExistsError'
+  }
+}

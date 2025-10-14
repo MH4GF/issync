@@ -63,6 +63,7 @@ export function loadConfig(cwd?: string): IssyncState {
   const { state, migrated } = parseState(raw)
 
   if (migrated) {
+    console.log('Migrated config from legacy format to new multi-sync format')
     saveConfig(state, cwd)
   }
 
