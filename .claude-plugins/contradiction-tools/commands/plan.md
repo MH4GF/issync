@@ -4,13 +4,12 @@ description: before-planフェーズのプロセスを標準化し、コード�
 
 # /plan: before-plan実行ワークフロー
 
-あなたはユーザーのplan.mdファイルを初期作成するサポートをしています。このコマンドは以下の6ステップのワークフローを自動化します：
+あなたはユーザーのplan.mdファイルを初期作成するサポートをしています。このコマンドは以下の5ステップのワークフローを自動化します：
 1. GitHub Issue内容の確認
 2. コードベース調査（CRITICAL）
 3. plan.md基本セクションの記入
-4. Open Questionsの精査
-5. Tasksの初期化
-6. issync pushで同期
+4. Open Questionsの精査とTasksの初期化
+5. issync pushで同期
 
 ## コンテキスト
 
@@ -124,31 +123,11 @@ Read: README.md, CLAUDE.md, docs/
 - [テスト戦略（単体/統合/E2E）]
 ```
 
-#### 3.4 Work Plan
-
-```markdown
-## Work Plan
-
-### Phase 1: [初期フェーズ名]
-
-**ゴール:** [Phase 1のゴール]
-
-**実装する機能:**
-1. [機能1]
-2. [機能2]
-3. [機能3]
-
-**スコープ外 (Phase 2 以降):**
-- [Phase 1では実装しない項目]
-
-### Phase 2: TBD（POC後に決定）
-
-**注**: Phase 2以降の詳細はPOC完了後、before-architecture-decisionステートで具体化します。
-```
-
 ---
 
-### ステップ4: Open Questionsの精査
+### ステップ4: Open Questionsの精査とTasksの初期化
+
+#### 4.1 Open Questionsの精査
 
 コードベース調査の結果を踏まえ、**コードで確認できないもののみ**をOpen Questionsに記載。
 
@@ -182,27 +161,38 @@ Read: README.md, CLAUDE.md, docs/
 - [質問の詳細]
 ```
 
----
+#### 4.2 Tasksの初期化
 
-### ステップ5: Tasksの初期化
-
-Work Plan Phase 1に基づいて、Tasksセクションを初期化：
+Tasksセクションを初期化し、Phase 1のゴール・タスク・スコープ外を記載：
 
 ```markdown
 ## Tasks
 
-**Phase 1:**
-- [ ] [タスク1: 具体的な実装項目]
-- [ ] [タスク2: 具体的な実装項目]
-- [ ] [タスク3: 具体的な実装項目]
+### Phase 1: [初期フェーズ名]
 
-**Phase 2 (未着手):**
-- TBD（POC後に決定）
+**ゴール:** [Phase 1のゴール]
+
+**タスク:**
+- [ ] [具体的なタスク1]
+- [ ] [具体的なタスク2]
+- [ ] [具体的なタスク3]
+
+**スコープ外（Phase 2以降）:**
+- [後回しにする項目1]
+- [後回しにする項目2]
+
+### Phase 2: [フェーズ名]（未着手）
+
+TBD（POC後に決定）
+
+### Phase 3: [フェーズ名]（未着手）
+
+TBD（POC後に決定）
 ```
 
 ---
 
-### ステップ6: issync pushで同期
+### ステップ5: issync pushで同期
 
 **注意**: issyncのwatchモードが起動している場合は、ファイルの変更が自動的にGitHub Issueに同期されます。明示的なpushコマンドは不要です。
 
@@ -224,10 +214,9 @@ issync push
 ### 完了したステップ
 - ✅ ステップ1: GitHub Issue内容確認
 - ✅ ステップ2: コードベース調査（[X]項目を調査、Discoveries & Insightsに記録）
-- ✅ ステップ3: plan.md基本セクション記入（Purpose/Overview、Context、Acceptance Criteria、Work Plan Phase 1）
-- ✅ ステップ4: Open Questions精査（[Y]項目に絞り込み）
-- ✅ ステップ5: Tasks初期化（Phase 1: [Z]項目）
-- ✅ ステップ6: issync push完了（watchモードで自動同期）
+- ✅ ステップ3: plan.md基本セクション記入（Purpose/Overview、Context、Acceptance Criteria）
+- ✅ ステップ4: Open Questions精査とTasks初期化（Open Questions: [Y]項目、Tasks: Phase 1に[Z]項目）
+- ✅ ステップ5: issync push完了（watchモードで自動同期）
 
 ### 次のアクション
 - [ ] plan.mdの内容をレビューしてください
@@ -281,14 +270,17 @@ issync push
 
 次に、基本セクションを記入します...
 
-[Purpose/Overview、Context & Direction、Acceptance Criteria、Work Plan Phase 1を記入]
+[Purpose/Overview、Context & Direction、Acceptance Criteriaを記入]
 
 Open Questionsを精査します。コードベース調査の結果、以下の3つの質問のみが真に不明な点です：
 - Q1: [...]
 - Q2: [...]
 - Q3: [...]
 
-Tasksを初期化しました（Phase 1: 5項目）。
+Tasksを初期化しました：
+- Phase 1のゴール: [...]
+- Phase 1のタスク: 5項目
+- スコープ外: 2項目
 
 watchモードが起動しているため、自動的にGitHub Issueに同期されます。
 
