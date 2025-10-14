@@ -3,10 +3,11 @@ import { readFile } from 'node:fs/promises'
 import path from 'node:path'
 import type { SyncSelector } from '../lib/config.js'
 import { loadConfig, saveConfig, selectSync } from '../lib/config.js'
-import { FileNotFoundError } from '../lib/errors.js'
+import { FileNotFoundError, SyncNotFoundError } from '../lib/errors.js'
 import { createGitHubClient, parseIssueUrl } from '../lib/github.js'
 import { calculateHash } from '../lib/hash.js'
 import { resolvePathWithinBase } from '../lib/path.js'
+import type { IssyncSync } from '../types/index.js'
 
 export interface PushOptions {
   cwd?: string
@@ -22,17 +23,11 @@ export class OptimisticLockError extends Error {
   }
 }
 
-export async function push(options: PushOptions = {}): Promise<void> {
-  const { cwd, token, file, issue } = options
+/**
+ * Push a single sync to remote
+ */
+async function pushSingleSync(sync: IssyncSync, cwd: string, token?: string): Promise<void> {
   const baseDir = cwd ?? process.cwd()
-
-  // Load config
-  const state = loadConfig(cwd)
-  const selector: SyncSelector = {
-    file,
-    issueUrl: issue,
-  }
-  const { sync } = selectSync(state, selector, baseDir)
 
   // Validate and read local file
   const basePath = path.resolve(baseDir)
@@ -87,8 +82,82 @@ export async function push(options: PushOptions = {}): Promise<void> {
     sync.comment_id = comment.id
   }
 
-  // Update config
+  // Update sync metadata
   sync.last_synced_hash = localHash
   sync.last_synced_at = new Date().toISOString()
+}
+
+/**
+ * Push all syncs in parallel and report results
+ */
+async function pushAllSyncs(
+  state: import('../types/index.js').IssyncState,
+  baseDir: string,
+  cwd: string,
+  token?: string,
+): Promise<void> {
+  if (state.syncs.length === 0) {
+    throw new SyncNotFoundError()
+  }
+
+  // Push all syncs in parallel
+  const results = await Promise.allSettled(
+    state.syncs.map((sync) => pushSingleSync(sync, baseDir, token)),
+  )
+
+  // Collect failures
+  const failures: Array<{ index: number; sync: IssyncSync; reason: unknown }> = []
+  results.forEach((result, index) => {
+    if (result.status === 'rejected') {
+      failures.push({ index, sync: state.syncs[index], reason: result.reason })
+    }
+  })
+
+  // Save config (updates successful syncs)
+  saveConfig(state, cwd)
+
+  // Report results
+  if (failures.length > 0) {
+    const successCount = state.syncs.length - failures.length
+    const message = `${failures.length} of ${state.syncs.length} push operation(s) failed`
+    console.error(`\nError: ${message}`)
+
+    for (const { sync, reason } of failures) {
+      const label = `${sync.issue_url} → ${sync.local_file}`
+      const errorMsg = reason instanceof Error ? reason.message : String(reason)
+      console.error(`  ${label}: ${errorMsg}`)
+    }
+
+    if (successCount > 0) {
+      console.log(`\n✓ ${successCount} sync(s) pushed successfully`)
+    }
+
+    throw new Error(message)
+  }
+
+  console.log(`✓ Successfully pushed ${state.syncs.length} sync(s)`)
+}
+
+export async function push(options: PushOptions = {}): Promise<void> {
+  const { cwd, token, file, issue } = options
+  const baseDir = cwd ?? process.cwd()
+
+  // Load config
+  const state = loadConfig(cwd)
+
+  // If no selector provided, push all syncs
+  if (!file && !issue) {
+    await pushAllSyncs(state, baseDir, baseDir, token)
+    return
+  }
+
+  // Single sync push
+  const selector: SyncSelector = {
+    file,
+    issueUrl: issue,
+  }
+  const { sync } = selectSync(state, selector, baseDir)
+
+  await pushSingleSync(sync, baseDir, token)
   saveConfig(state, cwd)
 }

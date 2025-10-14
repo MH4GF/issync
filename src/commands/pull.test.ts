@@ -4,7 +4,6 @@ import { mkdtemp, rm } from 'node:fs/promises'
 import { tmpdir } from 'node:os'
 import path from 'node:path'
 import { loadConfig, saveConfig } from '../lib/config.js'
-import { AmbiguousSyncError } from '../lib/errors.js'
 import * as githubModule from '../lib/github.js'
 import { calculateHash } from '../lib/hash.js'
 import type { IssyncState } from '../types/index.js'
@@ -63,7 +62,9 @@ describe('pull command - multi-sync support', () => {
     expect(sync?.last_synced_at).toBeDefined()
   })
 
-  test('throws when multiple syncs exist without selector', () => {
+  test('pulls all syncs when no selector provided', async () => {
+    const remoteBodyOne = '# Remote Content One'
+    const remoteBodyTwo = '# Remote Content Two'
     const state: IssyncState = {
       syncs: [
         {
@@ -80,7 +81,44 @@ describe('pull command - multi-sync support', () => {
     }
     saveConfig(state, tempDir)
 
-    return expect(pull({ cwd: tempDir })).rejects.toThrow(AmbiguousSyncError)
+    const mockGitHubClient: Pick<GitHubClientInstance, 'getComment'> = {
+      getComment: (_, __, commentId) => {
+        if (commentId === 111) {
+          return Promise.resolve({
+            id: 111,
+            body: remoteBodyOne,
+            updated_at: '2025-01-01T00:00:00Z',
+          })
+        }
+        if (commentId === 222) {
+          return Promise.resolve({
+            id: 222,
+            body: remoteBodyTwo,
+            updated_at: '2025-01-01T00:00:00Z',
+          })
+        }
+        throw new Error('Unexpected comment ID')
+      },
+    }
+    spyOn(githubModule, 'createGitHubClient').mockReturnValue(
+      mockGitHubClient as unknown as GitHubClientInstance,
+    )
+
+    await pull({ cwd: tempDir })
+
+    const pulledContentOne = readFileSync(path.join(tempDir, 'docs/one.md'), 'utf-8')
+    const pulledContentTwo = readFileSync(path.join(tempDir, 'docs/two.md'), 'utf-8')
+    expect(pulledContentOne).toBe(remoteBodyOne)
+    expect(pulledContentTwo).toBe(remoteBodyTwo)
+
+    const updatedState = loadConfig(tempDir)
+    const syncOne = updatedState.syncs.find((entry) => entry.local_file === 'docs/one.md')
+    const syncTwo = updatedState.syncs.find((entry) => entry.local_file === 'docs/two.md')
+
+    expect(syncOne?.last_synced_hash).toBe(calculateHash(remoteBodyOne))
+    expect(syncTwo?.last_synced_hash).toBe(calculateHash(remoteBodyTwo))
+    expect(syncOne?.last_synced_at).toBeDefined()
+    expect(syncTwo?.last_synced_at).toBeDefined()
   })
 
   test('allows local files starting with double dots', async () => {
