@@ -4,7 +4,7 @@
 
 ## 概要
 
-このpluginは3つのスラッシュコマンドを提供し、plan.mdファイルの管理を効率化します：
+このpluginは4つのスラッシュコマンドを提供し、plan.mdファイルの管理を効率化します：
 
 ### `/plan`: before-plan実行ワークフロー
 
@@ -26,6 +26,16 @@ plan.mdファイル内のOpen Questionを体系的に解決するサポートを
 1. Decision Logへの決定事項の記録
 2. Open Questionの解決済みマーク
 3. 関連するタスクの更新
+
+### `/add-question`: Open Question追加ワークフロー
+
+plan.mdファイルに新しいOpen Questionを追加する際に、優先度評価と最適な配置位置を提案します。以下のプロセスをガイドします：
+
+1. 質問内容の入力（対話形式）
+2. 優先度評価（最優先/高/中/低）
+3. 既存質問との関係分析
+4. 配置位置の提案
+5. Open Questionsセクションへの追加
 
 ### `/compact-plan`: plan.md圧縮ツール
 
@@ -94,6 +104,7 @@ Claude Codeで以下のコマンドを実行し、GitHubから直接マーケッ
 ```bash
 /plan                # before-plan実行ワークフロー
 /resolve-question    # Open Question解消ワークフロー
+/add-question        # Open Question追加ワークフロー
 /compact-plan        # plan.md圧縮ツール
 ```
 
@@ -224,6 +235,43 @@ Q5（issync init実行について）の決定内容を提供すると、plugin�
 - 必要に応じてTasksセクションを更新
 - watchモードが起動している場合は自動的にGitHub Issueに同期
 
+### `/add-question`: Open Question追加
+
+#### 基本的なワークフロー
+
+1. コマンドを実行:
+   ```
+   /add-question
+   ```
+
+2. プロンプトに従って以下の情報を提供:
+   - **質問のタイトル** (簡潔に)
+   - **詳細説明** (背景、検討事項、選択肢など)
+
+3. pluginが以下を実行:
+   - 既存のOpen Questionsを分析
+   - 優先度を評価（最優先/高/中/低）
+   - 配置位置を提案（既存質問との関係を考慮）
+   - 質問番号を自動採番（Q7, Q8...）
+
+4. 提案内容を確認:
+   - 優先度評価の理由
+   - 配置位置の理由
+   - 新しい質問番号
+
+5. 承認後、pluginがplan.mdを更新:
+   - Open Questionsセクションに追加
+   - issyncのwatchモードが起動している場合は自動的にGitHub Issueに同期
+
+#### 実行例
+
+新しい質問「エラーハンドリング戦略」を追加すると、pluginは：
+- 既存のQ5〜Q12を分析
+- 「高優先度」と評価（実装に直接影響するため）
+- Q6とQ7の間に配置を提案（アーキテクチャ決定関連の質問の近くに配置）
+- ユーザーの承認後、Open Questionsセクションを更新
+- watchモードが起動している場合は自動的にGitHub Issueに同期
+
 ### `/compact-plan`: plan.md圧縮
 
 #### 基本的なワークフロー
@@ -276,6 +324,16 @@ before-planフェーズでplan.mdを初期作成する時にこのコマンド�
 
 これは矛盾解消駆動開発ワークフローをサポートする横断的オペレーションです。
 
+### `/add-question`
+
+開発のどの段階でも、新しいOpen Questionを追加したい時にこのコマンドを使用してください：
+- **before-plan**: 初期設計で新たな質問が見つかった時
+- **before-poc**: 技術検証中に新しい疑問が生まれた時
+- **before-architecture-decision**: アーキテクチャ検討で追加の選択肢が見つかった時
+- **before-implement**: 実装準備中に新たな検討事項が発生した時
+
+このコマンドは、質問の優先度を自動評価し、最適な配置位置を提案することで、Open Questionsセクションの整合性を保ちます。
+
 ### `/compact-plan`
 
 以下のような状況で使用してください：
@@ -290,6 +348,7 @@ before-planフェーズでplan.mdを初期作成する時にこのコマンド�
 - プロジェクトに以下のセクションを含む `plan.md` ファイルが必要:
   - **`/plan`用**: plan-template.mdから生成された初期構造
   - **`/resolve-question`用**: Decision Log, Open Questions / 残論点, Tasks
+  - **`/add-question`用**: Open Questions / 残論点
   - **`/compact-plan`用**: docs/plan-template.md（圧縮の基準として使用）
 - (オプション) 自動同期用のissync CLIツール
 
@@ -302,6 +361,7 @@ contradiction-tools/
 ├── commands/
 │   ├── plan.md                # before-plan実行コマンド
 │   ├── resolve-question.md    # Open Question解消コマンド
+│   ├── add-question.md        # Open Question追加コマンド
 │   └── compact-plan.md        # plan.md圧縮コマンド
 └── README.md                  # このファイル
 ```
@@ -313,6 +373,7 @@ contradiction-tools/
 1. コマンドプロンプトを編集:
    - `/plan`: `commands/plan.md`
    - `/resolve-question`: `commands/resolve-question.md`
+   - `/add-question`: `commands/add-question.md`
    - `/compact-plan`: `commands/compact-plan.md`
 2. メタデータを変更する場合は `plugin.json` を更新
 3. ローカルでテスト: `/plugin install contradiction-tools` で再インストール
