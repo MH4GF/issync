@@ -4,7 +4,7 @@
 
 ## 概要
 
-このpluginは5つのスラッシュコマンドを提供し、plan.mdファイルの管理を効率化します：
+このpluginは6つのスラッシュコマンドを提供し、plan.mdファイルの管理を効率化します：
 
 ### `/plan`: before-plan実行ワークフロー
 
@@ -58,6 +58,24 @@ plan.mdのTasksセクションから`(未Issue化)`マーク付きタスクを�
 6. issync pushで同期
 
 **ハイブリッド方式**: 大きなタスクのみサブissue化し、小さなタスクはTasksセクションで管理することで、タスク管理の透明性と効率性を向上させます。
+
+### `/complete-subtask`: サブissue完了ワークフロー
+
+サブissue完了時に親issueのplan.mdを自動更新し、完了サマリーとFollow-up事項を親issueに反映します。以下のプロセスを自動化します：
+
+1. サブissue情報のフェッチと親issue番号の抽出
+2. サブissueのplan.mdから完了情報を抽出（Outcomes & Retrospectives、Follow-up Issues）
+3. 親issueのplan.mdを更新
+   - Tasksセクション: 該当タスクを完了マーク
+   - Outcomes & Retrospectives: サブタスク完了サマリー追加
+   - Follow-up Issuesの振り分け（Tasks、Open Questions、Follow-up Issuesに適切に配置）
+4. サブissueのclose
+5. 完了通知（watchモードで自動同期）
+
+**Follow-up Issues振り分けロジック**:
+- 「実装タスク」→ 親issueの**Tasksセクション**に`(未Issue化)`として追加
+- 「未解決の質問・改善課題」→ 親issueの**Open Questionsセクション**に追加
+- 「別issueとして扱うべき申し送り事項」→ 親issueの**Follow-up Issuesセクション**に追加
 
 ## インストール
 
@@ -120,6 +138,7 @@ Claude Codeで以下のコマンドを実行し、GitHubから直接マーケッ
 /add-question         # Open Question追加ワークフロー
 /compact-plan         # plan.md圧縮ツール
 /create-task-issues   # タスクのサブissue化ワークフロー
+/complete-subtask     # サブissue完了ワークフロー
 ```
 
 #### 更新方法
@@ -408,6 +427,23 @@ before-planフェーズでplan.mdを初期作成する時にこのコマンド�
 
 これは矛盾解消駆動開発ワークフローをサポートする横断的オペレーションです。
 
+### `/complete-subtask`
+
+サブissueが完了し、親issueに成果を反映したい時にこのコマンドを使用してください：
+- **before-retrospective**: サブissueの振り返り記入後、親issueに完了情報を反映する時
+- **サブissueのclose時**: 完了サマリーとFollow-up事項を親issueに自動転記したい時
+
+**運用フロー**:
+1. サブissueで開発完了（before-plan → before-retrospective）
+2. サブissueのplan.mdにOutcomes & RetrospectivesとFollow-up Issuesを記入
+3. `/complete-subtask <サブissue URL>`を実行
+4. 親issueのTasksセクションが自動で完了マーク
+5. 親issueのOutcomes & Retrospectivesにサブタスク完了サマリーが自動追加
+6. サブissueのFollow-up Issuesが親issueの適切なセクションに自動振り分け
+7. サブissueが自動でclose
+
+これは矛盾解消駆動開発ワークフローをサポートする横断的オペレーションです。
+
 ## 必要要件
 
 - プロジェクトに以下のセクションを含む `plan.md` ファイルが必要:
@@ -416,10 +452,16 @@ before-planフェーズでplan.mdを初期作成する時にこのコマンド�
   - **`/add-question`用**: Open Questions / 残論点
   - **`/compact-plan`用**: docs/plan-template.md（圧縮の基準として使用）
   - **`/create-task-issues`用**: Tasks, Purpose/Overview, .issync.yml（issync init完了）
+  - **`/complete-subtask`用**: Tasks, Outcomes & Retrospectives, Open Questions, Follow-up Issues, .issync/state.yml（issync watch実行中）
 - (オプション) 自動同期用のissync CLIツール
 - **`/create-task-issues`用の追加要件**:
   - `gh` CLI（GitHub Issueを作成するため）
   - `GITHUB_TOKEN`環境変数（`export GITHUB_TOKEN=$(gh auth token)`）
+- **`/complete-subtask`用の追加要件**:
+  - `gh` CLI（サブissueをcloseするため）
+  - `GITHUB_TOKEN`環境変数（`export GITHUB_TOKEN=$(gh auth token)`）
+  - 親issueのplan.mdがローカルに存在
+  - `issync watch`が実行中（親issueへの変更を自動同期するため）
 
 ## Pluginの構造
 
@@ -432,7 +474,8 @@ contradiction-tools/
 │   ├── resolve-question.md      # Open Question解消コマンド
 │   ├── add-question.md          # Open Question追加コマンド
 │   ├── compact-plan.md          # plan.md圧縮コマンド
-│   └── create-task-issues.md    # タスクのサブissue化コマンド
+│   ├── create-task-issues.md    # タスクのサブissue化コマンド
+│   └── complete-subtask.md      # サブissue完了コマンド
 └── README.md                    # このファイル
 ```
 
@@ -446,6 +489,7 @@ contradiction-tools/
    - `/add-question`: `commands/add-question.md`
    - `/compact-plan`: `commands/compact-plan.md`
    - `/create-task-issues`: `commands/create-task-issues.md`
+   - `/complete-subtask`: `commands/complete-subtask.md`
 2. メタデータを変更する場合は `plugin.json` を更新
 3. ローカルでテスト: `/plugin install contradiction-tools` で再インストール
 
