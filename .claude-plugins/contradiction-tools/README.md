@@ -4,7 +4,7 @@
 
 ## 概要
 
-このpluginは6つのスラッシュコマンドを提供し、plan.mdファイルの管理を効率化します：
+このpluginは7つのスラッシュコマンドを提供し、plan.mdファイルの管理を効率化します：
 
 ### `/plan`: before-plan実行ワークフロー
 
@@ -18,6 +18,21 @@ before-planフェーズのplan.md初期作成をガイドします。以下の6�
 6. issync pushで同期
 
 **重要**: コードベース調査を先に実施することで、Open Questionsを真に不明な点（アーキテクチャ選択・仕様の曖昧性）のみに絞ります。
+
+### `/architecture-decision`: アーキテクチャ決定ワークフロー
+
+POC完了後、POCで得た知見を基にアーキテクチャ・設計方針を決定します。以下の8ステップを自動化します：
+
+1. 現在のStatusを検証（before-architecture-decisionであることを確認）
+2. POC PR情報を取得（description, commits, diff, comments）
+3. Discoveries & Insightsを参照
+4. Decision Logを記入（技術選定、アーキテクチャ決定、トレードオフ）
+5. Specification / 仕様セクションを記入（システム仕様、アーキテクチャ、設計方針）
+6. Acceptance Criteriaの妥当性検証（POCの結果を踏まえて調整）
+7. POC PRをクローズ
+8. issync pushで同期
+
+**重要**: POCの実装結果を具体的に記録し、アーキテクチャ決定の根拠を明確にします。
 
 ### `/resolve-question`: Open Question解消ワークフロー
 
@@ -133,12 +148,13 @@ Claude Codeで以下のコマンドを実行し、GitHubから直接マーケッ
 インストール後は、どのプロジェクトでも以下のコマンドが使えます：
 
 ```bash
-/plan                 # before-plan実行ワークフロー
-/resolve-question     # Open Question解消ワークフロー
-/add-question         # Open Question追加ワークフロー
-/compact-plan         # plan.md圧縮ツール
-/create-task-issues   # タスクのサブissue化ワークフロー
-/complete-subtask     # サブissue完了ワークフロー
+/plan                   # before-plan実行ワークフロー
+/architecture-decision  # アーキテクチャ決定ワークフロー
+/resolve-question       # Open Question解消ワークフロー
+/add-question           # Open Question追加ワークフロー
+/compact-plan           # plan.md圧縮ツール
+/create-task-issues     # タスクのサブissue化ワークフロー
+/complete-subtask       # サブissue完了ワークフロー
 ```
 
 #### 更新方法
@@ -237,6 +253,43 @@ git clone https://github.com/MH4GF/issync.git
 - Purpose/Overview、Context & Direction、Acceptance Criteriaを記入
 - Open Questionsをコードで確認できないもののみ3項目に絞り込み
 - Work Plan Phase 1とTasksを初期化
+- watchモードが起動している場合は自動的にGitHub Issueに同期
+
+### `/architecture-decision`: アーキテクチャ決定
+
+#### 基本的なワークフロー
+
+1. 前提条件を確認:
+   - 現在のGitHub Issue Statusが `before-architecture-decision` である
+   - POC実装が完了し、PRが作成されている
+   - `GITHUB_TOKEN` 環境変数が設定されている（`export GITHUB_TOKEN=$(gh auth token)`）
+
+2. コマンドを実行:
+   ```
+   /architecture-decision https://github.com/owner/repo/pull/123
+   ```
+
+3. pluginが以下を自動実行:
+   - **ステップ1**: Status検証（before-architecture-decisionであることを確認）
+   - **ステップ2**: POC PR情報取得（description, commits, diff, comments）
+   - **ステップ3**: Discoveries & Insights参照
+   - **ステップ4**: Decision Log記入（技術選定、アーキテクチャ決定、トレードオフ）
+   - **ステップ5**: Specification / 仕様記入（システム仕様、アーキテクチャ、設計方針）
+   - **ステップ6**: Acceptance Criteria検証（実現可能性確認、必要に応じて調整）
+   - **ステップ7**: POC PRクローズ
+   - **ステップ8**: issync pushで同期
+
+4. 完了後、plan.mdの内容をレビューしてから Statusを `before-implement` に変更
+
+#### 実行例
+
+POC PR #456完了時：
+- PRから技術的知見を収集（chokidarの安定性、GitHub API rate limit制約）
+- Discoveries & Insightsの既存発見事項を確認
+- Decision Logにアーキテクチャ決定を記録（Watch daemon実装方針、ポーリング間隔30秒）
+- Specification / 仕様にシステム仕様を記入（mermaid図でアーキテクチャを可視化）
+- Acceptance Criteriaを調整（「1秒以内」→「30秒間隔」に変更）
+- POC PRをクローズ
 - watchモードが起動している場合は自動的にGitHub Issueに同期
 
 ### `/resolve-question`: Open Question解消
@@ -385,6 +438,15 @@ before-planフェーズでplan.mdを初期作成する時にこのコマンド�
 
 **重要**: このコマンドは、before-planステート専用です。他のステートでは使用しません。
 
+### `/architecture-decision`
+
+before-architecture-decisionステートでアーキテクチャを決定する時にこのコマンドを使用してください：
+- **POC完了後**: 技術検証が完了し、実装の知見が得られた時
+- **アーキテクチャ決定時**: 技術選定、設計方針、システム仕様を確定する時
+- **本実装前**: before-implementに進む前に、設計を固める時
+
+**重要**: このコマンドは、before-architecture-decisionステート専用です。POC PRをクローズし、Decision LogとSpecification / 仕様を記入します。
+
 ### `/resolve-question`
 
 開発のどの段階でも、Open Questionに答えた時にこのコマンドを使用してください：
@@ -448,12 +510,17 @@ before-planフェーズでplan.mdを初期作成する時にこのコマンド�
 
 - プロジェクトに以下のセクションを含む `plan.md` ファイルが必要:
   - **`/plan`用**: plan-template.mdから生成された初期構造
+  - **`/architecture-decision`用**: Discoveries & Insights, Decision Log, Specification / 仕様, Validation & Acceptance Criteria
   - **`/resolve-question`用**: Decision Log, Open Questions / 残論点, Tasks
   - **`/add-question`用**: Open Questions / 残論点
   - **`/compact-plan`用**: docs/plan-template.md（圧縮の基準として使用）
   - **`/create-task-issues`用**: Tasks, Purpose/Overview, .issync.yml（issync init完了）
   - **`/complete-subtask`用**: Tasks, Outcomes & Retrospectives, Open Questions, Follow-up Issues, .issync/state.yml（issync watch実行中）
 - (オプション) 自動同期用のissync CLIツール
+- **`/architecture-decision`用の追加要件**:
+  - `gh` CLI（PR情報取得・PRクローズのため）
+  - `GITHUB_TOKEN`環境変数（`export GITHUB_TOKEN=$(gh auth token)`）
+  - 現在のGitHub Issue Statusが `before-architecture-decision` である
 - **`/create-task-issues`用の追加要件**:
   - `gh` CLI（GitHub Issueを作成するため）
   - `GITHUB_TOKEN`環境変数（`export GITHUB_TOKEN=$(gh auth token)`）
@@ -468,15 +535,16 @@ before-planフェーズでplan.mdを初期作成する時にこのコマンド�
 ```
 contradiction-tools/
 ├── .claude-plugin/
-│   └── plugin.json              # Pluginメタデータ
+│   └── plugin.json                 # Pluginメタデータ
 ├── commands/
-│   ├── plan.md                  # before-plan実行コマンド
-│   ├── resolve-question.md      # Open Question解消コマンド
-│   ├── add-question.md          # Open Question追加コマンド
-│   ├── compact-plan.md          # plan.md圧縮コマンド
-│   ├── create-task-issues.md    # タスクのサブissue化コマンド
-│   └── complete-subtask.md      # サブissue完了コマンド
-└── README.md                    # このファイル
+│   ├── plan.md                     # before-plan実行コマンド
+│   ├── architecture-decision.md    # アーキテクチャ決定コマンド
+│   ├── resolve-question.md         # Open Question解消コマンド
+│   ├── add-question.md             # Open Question追加コマンド
+│   ├── compact-plan.md             # plan.md圧縮コマンド
+│   ├── create-task-issues.md       # タスクのサブissue化コマンド
+│   └── complete-subtask.md         # サブissue完了コマンド
+└── README.md                       # このファイル
 ```
 
 ## 開発
@@ -485,6 +553,7 @@ contradiction-tools/
 
 1. コマンドプロンプトを編集:
    - `/plan`: `commands/plan.md`
+   - `/architecture-decision`: `commands/architecture-decision.md`
    - `/resolve-question`: `commands/resolve-question.md`
    - `/add-question`: `commands/add-question.md`
    - `/compact-plan`: `commands/compact-plan.md`
