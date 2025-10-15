@@ -1,3 +1,4 @@
+<!-- issync:v1:start -->
 # issync 開発計画
 
 この実行計画は生きたドキュメントです。新しい情報が出るたびに各セクションを更新してください。各セクションは、事前知識のない初めての貢献者へのガイダンスとして扱ってください。
@@ -153,14 +154,7 @@ syncs:
 **📝 記入タイミング**: before-plan/before-pocで記入 → 各フェーズで解決
 **✍️ 記入内容**: 未解決の重要な問い。before-implementまでに実装に必要な質問を全て解決。**優先度が高い（先に解消すべき）問いを上に配置**
 
-**Q1: issync側で同期中のドキュメント一覧を表示するコマンドの追加**
-
-- **背景**: `/add-question` や `/resolve-question` を引数なしで実行する場合、`.issync/state.yml` から同期中のファイルを選択する仕組みに変更した
-- **検討事項**: 現在のところ、同期中のドキュメント一覧を確認するには `.issync/state.yml` を直接読むか、各コマンドを実行する必要がある
-- **選択肢**:
-  - **A**: `issync list` コマンドを追加し、同期中のファイル・Issue URL・最終同期時刻を一覧表示
-  - **B**: `issync status` コマンドを拡張し、一覧表示機能を含める（現在Phase 2で実装予定）
-  - **C**: 現状維持（`.issync/state.yml` を直接確認）
+現在、未解決の残論点はありません。
 
 ---
 
@@ -178,6 +172,12 @@ syncs:
 
 **📝 記入タイミング**: before-poc以降、継続的に記入
 **✍️ 記入内容**: 実装中に発見した技術的制約・複雑性・新たなタスク。失敗時は失敗原因も記録
+
+**2025-10-15: watch モードの不要なファイル書き込み問題**
+- 問題: リモートに変更がなくても毎回pullが実行され、ファイル書き込みが発生。これによりClaude CodeのEdit()操作が不安定（Read()直後にファイル内容が変わる）
+- 原因: `pullSingleSync()`がリモートハッシュとlast_synced_hashを比較せず、常にファイルを書き込んでいた
+- 解決: ハッシュ比較による早期リターンを実装（src/commands/pull.ts:56-58）。リモートに変更がない場合はファイル書き込みをスキップ
+- 効果: 不要なファイルシステムイベントが削減され、AI エージェントのEdit()操作が安定化
 
 **2025-10-14: CLI の --version が package.json と同期されていない問題**
 - 解決: `fs.readFileSync` で package.json を動的に読み込み、`.version(packageJson.version)` で参照
@@ -375,3 +375,4 @@ issync status            # 同期状態確認 (Phase 2)
 - `issync push` は last_synced_hash が一致しない限り書き込みを拒否、失敗時は `pull → 手動マージ → push` で回復
 - watch モードは AbortController と grace period により、安全に停止・再開できる
 - `.issync/state.yml` を誤って削除した場合でも、`issync init` で再生成し `issync pull` で最新状態を復旧可能
+<!-- issync:v1:end -->

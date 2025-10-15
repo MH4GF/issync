@@ -1,5 +1,5 @@
 import { afterEach, beforeEach, describe, expect, mock, spyOn, test } from 'bun:test'
-import { readFileSync } from 'node:fs'
+import { existsSync, readFileSync } from 'node:fs'
 import { mkdtemp, rm } from 'node:fs/promises'
 import { tmpdir } from 'node:os'
 import path from 'node:path'
@@ -202,5 +202,46 @@ describe('pull command - multi-sync support', () => {
 
     const pulledContent = readFileSync(path.join(tempDir, '..docs/plan.md'), 'utf-8')
     expect(pulledContent).toBe(remoteBody)
+  })
+
+  test('skips pull when content unchanged', async () => {
+    const remoteBody = '# Existing Content'
+    const remoteHash = calculateHash(remoteBody)
+    const state: IssyncState = {
+      syncs: [
+        {
+          issue_url: 'https://github.com/owner/repo/issues/1',
+          local_file: 'docs/plan.md',
+          comment_id: 111,
+          last_synced_hash: remoteHash, // Already synced
+          last_synced_at: '2025-01-01T00:00:00Z',
+        },
+      ],
+    }
+    saveConfig(state, tempDir)
+
+    const mockGitHubClient: Pick<GitHubClientInstance, 'getComment'> = {
+      getComment: () =>
+        Promise.resolve({ id: 111, body: remoteBody, updated_at: '2025-01-01T00:00:00Z' }),
+    }
+    const getCommentSpy = spyOn(mockGitHubClient, 'getComment')
+    spyOn(githubModule, 'createGitHubClient').mockReturnValue(
+      mockGitHubClient as unknown as GitHubClientInstance,
+    )
+
+    await pull({ cwd: tempDir, file: 'docs/plan.md' })
+
+    // Verify getComment was called (to fetch remote hash)
+    expect(getCommentSpy).toHaveBeenCalledTimes(1)
+
+    // Verify file was NOT written
+    const planPath = path.join(tempDir, 'docs', 'plan.md')
+    expect(existsSync(planPath)).toBe(false)
+
+    // Verify hash and timestamp were NOT updated
+    const updatedState = loadConfig(tempDir)
+    const sync = updatedState.syncs[0]
+    expect(sync.last_synced_hash).toBe(remoteHash)
+    expect(sync.last_synced_at).toBe('2025-01-01T00:00:00Z') // Unchanged
   })
 })

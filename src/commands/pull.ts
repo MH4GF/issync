@@ -52,6 +52,13 @@ async function pullSingleSync(sync: IssyncSync, cwd: string, token?: string): Pr
   // Calculate hash of remote content
   const remoteHash = calculateHash(remoteContent)
 
+  if (remoteHash === sync.last_synced_hash) {
+    if (process.env.ISSYNC_DEBUG) {
+      console.log(`[DEBUG] Skipping pull for ${sync.local_file}: content unchanged`)
+    }
+    return
+  }
+
   // Write to local file (without markers)
   await writeFile(resolvedPath, remoteContent, 'utf-8')
 
