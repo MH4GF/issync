@@ -1,4 +1,5 @@
-<!-- Template Version: 3 (2025-10-15) -->
+<!-- issync:v1:start -->
+<!-- Template Version: 4 (2025-10-15) -->
 
 # [Project Name] Development Plan
 
@@ -256,3 +257,4 @@ key: value
 
 - [考慮事項1]
 - [考慮事項2]
+<!-- issync:v1:end -->

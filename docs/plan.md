@@ -251,6 +251,18 @@ syncs:
 記入内容: POCの知見を基に技術選定、アーキテクチャ決定、トレードオフを記録
 -->
 
+**2025-10-15: plan-template.md にissyncマーカーを含める**
+- **採用**: `docs/plan-template.md` に `<!-- issync:v1:start -->` / `<!-- issync:v1:end -->` マーカーを含める
+- **理由**:
+  - issync以外のツールから開始（手動でGitHubに貼り付けてから開始）した場合に対応できる
+  - HTMLコメントなのでGitHub UIでは見えない（UX影響なし）
+  - Template Versionコメントと同様、HTMLコメントをテンプレートに含めることに違和感がない
+  - テンプレートとリモートコメントの構造が最初から一致し、一貫性が向上
+- **必要な実装変更**:
+  - `initializeFromTemplate()`: テンプレートコンテンツに`unwrapMarkers()`を適用してローカルファイルに書き込む
+  - `push`: ローカルファイル読み込み後、`unwrapMarkers()` → `wrapWithMarkers()`の順で処理（二重マーカー防止）
+- **トレードオフ**: pushの実装変更が必要（ただし影響は小さい）、後方互換性は保たれる（unwrapMarkersはマーカーなしの場合もそのまま返す）
+
 **2025-10-15: `init`コマンドのデフォルトパスをIssue番号ベースに変更**
 - **採用**: デフォルトパスを`docs/plan.md`から`.issync/docs/plan-{number}.md`に変更
 - **理由**:

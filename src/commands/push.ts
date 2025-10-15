@@ -67,7 +67,9 @@ async function pushSingleSync(sync: IssyncSync, cwd: string, token?: string): Pr
   }
 
   const localContent = await readFile(resolvedPath, 'utf-8')
-  const localHash = calculateHash(localContent)
+  // Remove markers from local content if present (prevents double wrapping)
+  const cleanLocalContent = unwrapMarkers(localContent)
+  const localHash = calculateHash(cleanLocalContent)
 
   // Parse issue URL
   const issueInfo = parseIssueUrl(sync.issue_url)
@@ -110,11 +112,11 @@ async function pushSingleSync(sync: IssyncSync, cwd: string, token?: string): Pr
     }
 
     // Update comment with markers
-    const wrappedContent = wrapWithMarkers(localContent)
+    const wrappedContent = wrapWithMarkers(cleanLocalContent)
     await client.updateComment(issueInfo.owner, issueInfo.repo, sync.comment_id, wrappedContent)
   } else {
     // Create new comment with markers
-    const wrappedContent = wrapWithMarkers(localContent)
+    const wrappedContent = wrapWithMarkers(cleanLocalContent)
     const comment = await client.createComment(
       issueInfo.owner,
       issueInfo.repo,

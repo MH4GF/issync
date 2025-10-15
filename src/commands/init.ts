@@ -205,7 +205,9 @@ async function initializeFromTemplate(
   }
   // else: No template and file exists, keep existing file (templateContent remains undefined)
 
-  ensureTargetFile(targetPath, templateContent, file)
+  // Remove markers from template content before writing to local file
+  const localContent = templateContent ? unwrapMarkers(templateContent) : templateContent
+  ensureTargetFile(targetPath, localContent, file)
 }
 
 export async function init(issueUrl: string, options: InitOptions = {}): Promise<void> {
