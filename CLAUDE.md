@@ -77,7 +77,9 @@ This project uses **Lefthook** to automatically enforce code quality before comm
 
 **`src/lib/github.ts`**: GitHub API client wrapping Octokit.
 - `parseIssueUrl()`: Extract owner/repo/issue_number from GitHub URL
-- `getComment()`, `createComment()`, `updateComment()`: CRUD operations on Issue comments
+- `getComment()`, `createComment()`, `updateComment()`, `listComments()`: CRUD operations on Issue comments
+- `wrapWithMarkers()`, `unwrapMarkers()`, `hasIssyncMarkers()`: issync comment identification using HTML comment markers
+- `findIssyncComment()`: Searches for issync-managed comment by marker detection (with comment_id fallback)
 
 **`src/lib/config.ts`**: Manages `.issync.yml` configuration file.
 - `loadConfig()`, `saveConfig()`, `configExists()`: YAML read/write operations
@@ -101,6 +103,31 @@ poll_interval: 10                   # Seconds between remote polls
 merge_strategy: section-based       # Future: smart merge (Phase 2)
 watch_daemon_pid: 12345             # PID of watch process (if running)
 ```
+
+### issync Comment Identification
+
+issync uses HTML comment markers to identify managed comments within GitHub Issues:
+
+```markdown
+<!-- issync:v1:start -->
+# Your document content here
+...
+<!-- issync:v1:end -->
+```
+
+**Design decisions:**
+- **Invisible in GitHub UI**: HTML comments don't render, maintaining readability
+- **Version-aware**: `v1` marker allows future format migrations
+- **Redundant detection**: Uses both `comment_id` (primary) and markers (fallback)
+- **Auto-repair**: If markers are deleted, `push` command automatically re-wraps content
+
+**Identification logic:**
+1. Try to fetch comment by `comment_id` from state.yml
+2. If comment has markers → use it
+3. If comment exists but no markers → search all comments for markers
+4. If no comment_id or search fails → create new comment
+
+This approach enables multiple sessions to discover the same remote comment without prior coordination.
 
 ## Testing Strategy
 
@@ -238,12 +265,22 @@ Focus on basic sync commands (init, pull, push) and simple watch mode. Skip adva
 - Config management (.issync.yml)
 - Hash utilities
 - Test infrastructure (Bun Test)
+- **Phase 1 (MVP):**
+  - `init` command with template support and existing comment detection
+  - `pull` command with hash-based sync
+  - `push` command with optimistic locking
+  - `watch` mode with bidirectional sync and safety checks
+  - Multi-sync support (multiple files per project)
+- **issync Comment Identification (2025-10-14):**
+  - HTML comment markers for automatic comment discovery
+  - Error handling for network failures
+  - Progress indicators for long-running operations
+  - Auto-repair for deleted markers
 
 **Next Steps:**
-- Implement `init` command (TDD)
-- Implement `pull` command (TDD)
-- Implement `push` command with optimistic locking (TDD)
-- Implement `watch` mode (polling + file watching)
+- Phase 2: Section-based markdown merging
+- Phase 2: Daemon mode for watch
+- Phase 2: Conflict resolution UI
 
 ## Important Files
 

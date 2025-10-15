@@ -73,6 +73,10 @@ issync init https://github.com/owner/repo/issues/123 --file docs/plan.md
 - `--file <path>`: Local file path (default: `docs/plan.md`)
 - `--template <path>`: Create file from template if it doesn't exist
 
+**Behavior:**
+- Detects existing issync-managed comments on the Issue and pulls the content
+- Creates a new file from template if no existing comment is found
+
 ### `issync pull`
 
 Pull remote changes from GitHub Issue comment to local file.
@@ -143,6 +147,23 @@ issync watch
 **Why this order matters:** The MVP's pull operation overwrites local files. If you edit before starting watch, and the remote is outdated, your changes may be lost.
 
 ## How It Works
+
+### issync Comment Identification
+
+issync uses invisible HTML comment markers to identify its managed comments in GitHub Issues:
+
+```markdown
+<!-- issync:v1:start -->
+# Your document content here
+...
+<!-- issync:v1:end -->
+```
+
+**Benefits:**
+- Multiple sessions can discover the same remote comment automatically
+- Markers are invisible in GitHub's rendered UI
+- Version-aware design (`v1`) enables future format upgrades
+- Auto-repair: If markers are accidentally deleted, `push` command restores them
 
 ### Conflict Detection (Pull side)
 
