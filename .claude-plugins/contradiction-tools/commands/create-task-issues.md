@@ -5,7 +5,7 @@ description: `(未Issue化)`マーク付きタスクを一括でGitHub Issueに�
 # /create-task-issues: タスクのサブissue化ワークフロー
 
 あなたはユーザーのplan.mdファイル内のタスクを、GitHub Issueとして作成するサポートをしています。このコマンドは以下のワークフローを自動化します：
-1. `.issync.yml`から親issue情報を取得
+1. `.issync/state.yml`から親issue情報を取得
 2. Tasksセクションから`(未Issue化)`マーク付きタスクを抽出
 3. ユーザーに確認
 4. GitHub Issueを一括作成
@@ -34,23 +34,23 @@ description: `(未Issue化)`マーク付きタスクを一括でGitHub Issueに�
 ## 前提条件
 
 実行前に以下が必要です：
-- [ ] `.issync.yml`が存在する（issync initが完了している）
+- [ ] `.issync/state.yml`が存在する（issync initが完了している）
 - [ ] plan.mdにTasksセクションがあり、`(未Issue化)`マーク付きタスクが存在する
 - [ ] `GITHUB_TOKEN`環境変数が設定されている（`export GITHUB_TOKEN=$(gh auth token)`）
 - [ ] `gh` CLIがインストールされている
 
 ## 実行ステップ
 
-### ステップ1: .issync.ymlから親issue情報を取得
+### ステップ1: .issync/state.ymlから親issue情報を取得
 
-`.issync.yml`を読み込み、以下の情報を取得：
+`.issync/state.yml`を読み込み、以下の情報を取得：
 - `issue_url`: 親issueのURL（例: `https://github.com/owner/repo/issues/123`）
 - `local_file`: plan.mdのパス（例: `.issync/docs/task-dashboard.md`）
 
 **エラーハンドリング**:
-- `.issync.yml`が存在しない場合:
+- `.issync/state.yml`が存在しない場合:
   ```
-  エラー: .issync.ymlが見つかりません。
+  エラー: .issync/state.ymlが見つかりません。
   まず `issync init <issue-url>` を実行してください。
   ```
 
@@ -215,7 +215,7 @@ issync push
 
 ### plan.mdの読み込みについて
 
-- **必ずplan.mdファイルを読んでください** - .issync.ymlから取得したlocal_fileパスを使用
+- **必ずplan.mdファイルを読んでください** - .issync/state.ymlから取得したlocal_fileパスを使用
 - **既存のフォーマットと構造を保持**してください
 - タスクが見つからない場合は、明確に報告してください
 
@@ -235,7 +235,7 @@ issync push
 
 ### エラーハンドリング
 
-- `.issync.yml`が存在しない場合 → エラーメッセージを表示して終了
+- `.issync/state.yml`が存在しない場合 → エラーメッセージを表示して終了
 - `(未Issue化)`タスクが見つからない場合 → エラーメッセージを表示して終了
 - `gh` CLIが利用できない場合 → エラーメッセージを表示して終了
 - Issue作成に失敗した場合 → どのタスクで失敗したか明確に報告し、部分的に成功したタスクも記録
@@ -258,9 +258,9 @@ issync push
 
 "タスクのサブissue化をサポートします。
 
-### ステップ1: .issync.ymlから親issue情報を取得
+### ステップ1: .issync/state.ymlから親issue情報を取得
 
-[.issync.ymlを読み込み]
+[.issync/state.ymlを読み込み]
 
 親issue: https://github.com/MH4GF/issync/issues/123
 対象ファイル: .issync/docs/task-dashboard.md
@@ -327,7 +327,7 @@ watchモードが起動しているため、自動的にGitHub Issueに同期さ
 
 ### ステップ1-3: タスク抽出とフィルタリング
 
-[.issync.ymlとplan.mdを読み込み、「自動アクション」でフィルタリング]
+[.issync/state.ymlとplan.mdを読み込み、「自動アクション」でフィルタリング]
 
 Found 1 task(s) matching "自動アクション":
 
