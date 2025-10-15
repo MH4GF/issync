@@ -4,7 +4,7 @@
 
 ## 概要
 
-このpluginは4つのスラッシュコマンドを提供し、plan.mdファイルの管理を効率化します：
+このpluginは5つのスラッシュコマンドを提供し、plan.mdファイルの管理を効率化します：
 
 ### `/plan`: before-plan実行ワークフロー
 
@@ -45,6 +45,19 @@ plan.mdファイルが大きくなりすぎた際に、情報量を保持した�
 2. 解決済みOpen Questionsの整理
 3. 完了済みPhaseの簡潔化
 4. 矛盾検出と報告
+
+### `/create-task-issues`: タスクのサブissue化ワークフロー
+
+plan.mdのTasksセクションから`(未Issue化)`マーク付きタスクを抽出し、GitHub Issueとして一括作成します。以下のプロセスを自動化します：
+
+1. .issync.ymlから親issue情報を取得
+2. Tasksセクションから`(未Issue化)`タスクを抽出
+3. ユーザーに確認（インタラクティブ）
+4. gh CLIでGitHub Issueを一括作成
+5. Tasksセクションを自動更新（`(未Issue化)` → `(#123)`）
+6. issync pushで同期
+
+**ハイブリッド方式**: 大きなタスクのみサブissue化し、小さなタスクはTasksセクションで管理することで、タスク管理の透明性と効率性を向上させます。
 
 ## インストール
 
@@ -102,10 +115,11 @@ Claude Codeで以下のコマンドを実行し、GitHubから直接マーケッ
 インストール後は、どのプロジェクトでも以下のコマンドが使えます：
 
 ```bash
-/plan                # before-plan実行ワークフロー
-/resolve-question    # Open Question解消ワークフロー
-/add-question        # Open Question追加ワークフロー
-/compact-plan        # plan.md圧縮ツール
+/plan                 # before-plan実行ワークフロー
+/resolve-question     # Open Question解消ワークフロー
+/add-question         # Open Question追加ワークフロー
+/compact-plan         # plan.md圧縮ツール
+/create-task-issues   # タスクのサブissue化ワークフロー
 ```
 
 #### 更新方法
@@ -303,6 +317,44 @@ plan.mdが779行に膨らんだ場合、pluginは：
 - 矛盾を検出してレポート
 - 結果: 779行 → 450行（42%削減）
 
+### `/create-task-issues`: タスクのサブissue化
+
+#### 基本的なワークフロー
+
+1. plan.mdのTasksセクションで大きなタスクに`(未Issue化)`マークを追加:
+   ```markdown
+   - [ ] Status変更時の自動アクション設計 (未Issue化)
+   - [ ] CI/CDパイプライン統合 (未Issue化)
+   - [ ] GitHub Projects連携 (未Issue化)
+   ```
+
+2. コマンドを実行:
+   ```bash
+   /create-task-issues              # 全ての(未Issue化)タスクを対象
+   /create-task-issues "自動アクション"  # 特定のタスクのみ対象
+   ```
+
+3. pluginが以下を実行:
+   - .issync.ymlから親issue情報を取得
+   - Tasksセクションから`(未Issue化)`タスクを抽出
+   - 抽出されたタスクリストを表示し、ユーザーに確認
+   - 承認後、gh CLIでGitHub Issueを一括作成
+   - Tasksセクションを自動更新: `(未Issue化)` → `(#123)`
+   - watchモードが起動している場合は自動的にGitHub Issueに同期
+
+4. 作成されたサブissueを確認:
+   - 各サブissueのStatusを適切に設定（before-plan等）
+   - 必要に応じて各サブissueで `/plan` コマンドを実行
+
+#### 実行例
+
+3つの大きなタスクをサブissue化する場合、pluginは：
+- .issync.ymlから親issue #123を取得
+- 3つの`(未Issue化)`タスクを抽出して表示
+- ユーザーの承認後、GitHub Issueを3件作成（#124, #125, #126）
+- Tasksセクションを自動更新（`(未Issue化)` → `(#124)`, `(#125)`, `(#126)`）
+- watchモードが起動している場合は自動的にGitHub Issueに同期
+
 ## いつ使うか
 
 ### `/plan`
@@ -343,6 +395,19 @@ before-planフェーズでplan.mdを初期作成する時にこのコマンド�
 - **before-retrospective前**: 振り返りを書く前にドキュメントを整理
 - **矛盾の疑いがある時**: 矛盾検出機能で一貫性をチェック
 
+### `/create-task-issues`
+
+開発のどの段階でも、大きなタスクをサブissue化したい時にこのコマンドを使用してください：
+- **before-plan**: 初期タスクを整理し、大きなタスクを識別した時
+- **before-architecture-decision**: アーキテクチャ決定後、実装フェーズを複数サブissueに分割したい時
+- **before-implement**: 実装前に、並行作業可能なタスクをサブissue化したい時
+
+**ハイブリッド方式**:
+- **大きなタスク**（複数日、複数PRが必要）→ サブissue化（`(未Issue化)`マークを追加 → `/create-task-issues`実行）
+- **小さなタスク**（1-2時間で完結）→ plan.mdのTasksセクションで管理（Issue番号なし）
+
+これは矛盾解消駆動開発ワークフローをサポートする横断的オペレーションです。
+
 ## 必要要件
 
 - プロジェクトに以下のセクションを含む `plan.md` ファイルが必要:
@@ -350,20 +415,25 @@ before-planフェーズでplan.mdを初期作成する時にこのコマンド�
   - **`/resolve-question`用**: Decision Log, Open Questions / 残論点, Tasks
   - **`/add-question`用**: Open Questions / 残論点
   - **`/compact-plan`用**: docs/plan-template.md（圧縮の基準として使用）
+  - **`/create-task-issues`用**: Tasks, Purpose/Overview, .issync.yml（issync init完了）
 - (オプション) 自動同期用のissync CLIツール
+- **`/create-task-issues`用の追加要件**:
+  - `gh` CLI（GitHub Issueを作成するため）
+  - `GITHUB_TOKEN`環境変数（`export GITHUB_TOKEN=$(gh auth token)`）
 
 ## Pluginの構造
 
 ```
 contradiction-tools/
 ├── .claude-plugin/
-│   └── plugin.json            # Pluginメタデータ
+│   └── plugin.json              # Pluginメタデータ
 ├── commands/
-│   ├── plan.md                # before-plan実行コマンド
-│   ├── resolve-question.md    # Open Question解消コマンド
-│   ├── add-question.md        # Open Question追加コマンド
-│   └── compact-plan.md        # plan.md圧縮コマンド
-└── README.md                  # このファイル
+│   ├── plan.md                  # before-plan実行コマンド
+│   ├── resolve-question.md      # Open Question解消コマンド
+│   ├── add-question.md          # Open Question追加コマンド
+│   ├── compact-plan.md          # plan.md圧縮コマンド
+│   └── create-task-issues.md    # タスクのサブissue化コマンド
+└── README.md                    # このファイル
 ```
 
 ## 開発
@@ -375,6 +445,7 @@ contradiction-tools/
    - `/resolve-question`: `commands/resolve-question.md`
    - `/add-question`: `commands/add-question.md`
    - `/compact-plan`: `commands/compact-plan.md`
+   - `/create-task-issues`: `commands/create-task-issues.md`
 2. メタデータを変更する場合は `plugin.json` を更新
 3. ローカルでテスト: `/plugin install contradiction-tools` で再インストール
 
