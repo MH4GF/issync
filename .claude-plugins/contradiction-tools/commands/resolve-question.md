@@ -9,6 +9,18 @@ description: 決定事項の記録、質問の解決済みマーク、タスク�
 2. Open Questionの解決済みマーク
 3. 関連タスクの更新
 
+## 使用方法
+
+```bash
+/resolve-question                    # 引数なし: .issync/state.ymlから選択
+/resolve-question <file_path>        # 明示的パス指定（後方互換性）
+```
+
+**引数**:
+- `file_path` (オプション): 対象のplan.mdファイルのパス
+  - 省略時: `.issync/state.yml`から同期中のファイルを選択
+  - 明示的指定: `/resolve-question docs/plan.md`
+
 ## コンテキスト
 
 このコマンドは「矛盾解消駆動開発」ワークフローの一部です：
@@ -19,7 +31,39 @@ description: 決定事項の記録、質問の解決済みマーク、タスク�
 
 このワークフローは**どのステートでも発生**します（before-plan、before-poc、before-architecture-decision、before-implement）- これはステート遷移とは独立した横断的オペレーションです。
 
-## 必要な入力
+## 実行フロー
+
+### ステップ1: state.ymlの確認と選択
+
+**引数が指定されている場合**: そのパスを使用し、このステップをスキップして次へ進んでください。
+
+**引数が指定されていない場合**: `.issync/state.yml`を読み込み、同期中のファイル一覧を表示してください。
+
+**state.ymlが存在しない/syncsが空の場合**:
+```
+エラー: .issync/state.ymlが見つからないか、同期中のファイルがありません。
+明示的にパスを指定してください: /resolve-question <file_path>
+```
+
+**複数ファイルがある場合**: 選択を促してください
+```
+対象のplan.mdを選択してください:
+1. .issync/docs/task-dashboard.md (最終同期: 2025-10-14T08:20:50Z, Issue: route06/liam-internal/issues/5829)
+2. docs/plan.md (最終同期: 2025-10-14T07:07:44Z, Issue: MH4GF/issync/issues/1)
+
+番号を入力してください (1-2):
+```
+
+**1つのみの場合**: 確認を表示して自動選択
+```
+対象: .issync/docs/task-dashboard.md
+  最終同期: 2025-10-14T08:20:50Z
+  Issue: route06/liam-internal/issues/5829
+
+このファイルのOpen Questionを解決しますか? (y/n)
+```
+
+### ステップ2: 必要な入力の収集
 
 ユーザーに以下の情報を尋ねてください：
 
@@ -35,9 +79,7 @@ description: 決定事項の記録、質問の解決済みマーク、タスク�
    - この決定から生まれた新しいタスクはありますか？
    - 不要になった既存のタスクはありますか？
 
-## 実行ステップ
-
-### ステップ1: Decision Logを更新
+### ステップ3: Decision Logを更新
 
 plan.mdの**Decision Log**セクションに新しいエントリを追加：
 
@@ -53,7 +95,7 @@ plan.mdの**Decision Log**セクションに新しいエントリを追加：
 - **Open Question**: [Question ID] を解決
 ```
 
-### ステップ2: Open Questionを解決済みとしてマーク
+### ステップ4: Open Questionを解決済みとしてマーク
 
 **Open Questions / 残論点**セクションでOpen Questionを見つけて更新：
 
@@ -73,7 +115,7 @@ plan.mdの**Decision Log**セクションに新しいエントリを追加：
 - **詳細**: Decision Log参照
 ```
 
-### ステップ3: タスクを更新
+### ステップ5: タスクを更新
 
 **Tasks**セクションで：
 
@@ -81,7 +123,7 @@ plan.mdの**Decision Log**セクションに新しいエントリを追加：
 2. もはや関連性のない**タスクを削除または完了マーク**（あれば）
 3. タスクリストをフェーズごとに整理して保つ
 
-### ステップ4: 自動同期
+### ステップ6: 自動同期
 
 **注意**: issyncのwatchモードが起動している場合は、ファイルの変更が自動的にGitHub Issueに同期されます。明示的なpushコマンドは不要です。
 
@@ -108,7 +150,7 @@ plan.mdの**Decision Log**セクションに新しいエントリを追加：
 
 ## 重要な注意事項
 
-- 変更を行う前に**必ずplan.mdを読んでください**
+- 変更を行う前に**必ず対象のplan.mdファイルを読んでください**
 - 各セクションの**既存のフォーマットと構造を保持**してください
 - タイムスタンプには**今日の日付を使用**してください（YYYY-MM-DD形式）
 - ユーザーの決定内容に詳細が不足している場合は、続行する前に**明確化の質問をしてください**
