@@ -90,7 +90,7 @@ program
 program
   .command('watch')
   .description('Watch for changes and sync automatically (foreground process)')
-  .option('-i, --interval <seconds>', 'Polling interval in seconds', '10')
+  .option('-i, --interval <seconds>', 'Polling interval in seconds', '30')
   .option('-f, --file <path>', 'Select sync target by local file path')
   .option('--issue <url>', 'Select sync target by issue URL')
   .action(async (options: { interval: string; file?: string; issue?: string }) => {
@@ -108,7 +108,7 @@ program
       console.error(
         `Error: interval must be between ${MIN_INTERVAL_SECONDS} and ${MAX_INTERVAL_SECONDS} seconds`,
       )
-      console.error('Recommended: 10-60 seconds (GitHub API rate limit: 5000 req/hour)')
+      console.error('Recommended: 30-60 seconds (GitHub API rate limit: 5000 req/hour)')
       process.exit(1)
     }
     await watch({ interval, file: options.file, issue: options.issue })
