@@ -1,4 +1,3 @@
-<!-- issync:v1:start -->
 # issync 開発計画
 
 この実行計画は生きたドキュメントです。新しい情報が出るたびに各セクションを更新してください。各セクションは、事前知識のない初めての貢献者へのガイダンスとして扱ってください。
@@ -137,6 +136,9 @@ syncs:
 
 ---
 
+**Phase 1 完了タスク:**
+- [x] watch モードの不要なファイル書き込み問題を修正（ハッシュ比較による早期リターン）
+
 **Phase 2 残タスク:**
 - [ ] docs/plan.md を git 管理から除外
 - [ ] watch --daemon / issync stop / issync status の実装
@@ -172,12 +174,6 @@ syncs:
 
 **📝 記入タイミング**: before-poc以降、継続的に記入
 **✍️ 記入内容**: 実装中に発見した技術的制約・複雑性・新たなタスク。失敗時は失敗原因も記録
-
-**2025-10-15: watch モードの不要なファイル書き込み問題**
-- 問題: リモートに変更がなくても毎回pullが実行され、ファイル書き込みが発生。これによりClaude CodeのEdit()操作が不安定（Read()直後にファイル内容が変わる）
-- 原因: `pullSingleSync()`がリモートハッシュとlast_synced_hashを比較せず、常にファイルを書き込んでいた
-- 解決: ハッシュ比較による早期リターンを実装（src/commands/pull.ts:56-58）。リモートに変更がない場合はファイル書き込みをスキップ
-- 効果: 不要なファイルシステムイベントが削減され、AI エージェントのEdit()操作が安定化
 
 **2025-10-14: CLI の --version が package.json と同期されていない問題**
 - 解決: `fs.readFileSync` で package.json を動的に読み込み、`.version(packageJson.version)` で参照
@@ -375,4 +371,3 @@ issync status            # 同期状態確認 (Phase 2)
 - `issync push` は last_synced_hash が一致しない限り書き込みを拒否、失敗時は `pull → 手動マージ → push` で回復
 - watch モードは AbortController と grace period により、安全に停止・再開できる
 - `.issync/state.yml` を誤って削除した場合でも、`issync init` で再生成し `issync pull` で最新状態を復旧可能
-<!-- issync:v1:end -->
