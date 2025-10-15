@@ -1,6 +1,56 @@
 import { Octokit } from '@octokit/rest'
 import type { CommentData, GitHubIssueInfo } from '../types/index.js'
-import { GitHubTokenMissingError, InvalidIssueUrlError } from './errors.js'
+import {
+  GitHubAuthenticationError,
+  GitHubTokenMissingError,
+  InvalidIssueUrlError,
+} from './errors.js'
+
+// Type guard for Octokit request errors
+interface RequestError {
+  status: number
+}
+
+// issync comment markers for identification
+export const ISSYNC_MARKER_START = '<!-- issync:v1:start -->'
+export const ISSYNC_MARKER_END = '<!-- issync:v1:end -->'
+
+/**
+ * Wraps content with issync markers
+ */
+export function wrapWithMarkers(content: string): string {
+  return `${ISSYNC_MARKER_START}\n${content}\n${ISSYNC_MARKER_END}`
+}
+
+/**
+ * Checks if a comment body contains issync markers
+ */
+export function hasIssyncMarkers(body: string): boolean {
+  return body.includes(ISSYNC_MARKER_START) && body.includes(ISSYNC_MARKER_END)
+}
+
+/**
+ * Extracts content from within issync markers
+ * Returns the content as-is if no markers are found
+ */
+export function unwrapMarkers(body: string): string {
+  const startIndex = body.indexOf(ISSYNC_MARKER_START)
+  const endIndex = body.indexOf(ISSYNC_MARKER_END)
+
+  // No markers at all - normal case
+  if (startIndex === -1 && endIndex === -1) {
+    return body
+  }
+
+  // Invalid marker structure (partial markers or wrong order)
+  if (startIndex === -1 || endIndex === -1 || startIndex >= endIndex) {
+    console.warn('⚠️  Invalid marker structure, treating as unmarked content')
+    return body
+  }
+
+  const contentStart = startIndex + ISSYNC_MARKER_START.length
+  return body.slice(contentStart, endIndex).trim()
+}
 
 export function parseIssueUrl(url: string): GitHubIssueInfo {
   // Robust regex that handles:
@@ -104,6 +154,73 @@ export class GitHubClient {
       body: data.body ?? '',
       updated_at: data.updated_at,
     }
+  }
+
+  async listComments(owner: string, repo: string, issue_number: number): Promise<CommentData[]> {
+    const { data } = await this.octokit.rest.issues.listComments({
+      owner,
+      repo,
+      issue_number,
+    })
+
+    return data.map((comment) => ({
+      id: comment.id,
+      body: comment.body ?? '',
+      updated_at: comment.updated_at,
+    }))
+  }
+
+  /**
+   * Handles errors from getComment, re-throwing authentication errors
+   * Returns true if should fall through to search (404 or no markers)
+   */
+  private handleGetCommentError(error: unknown): void {
+    const isRequestError = (err: unknown): err is RequestError =>
+      typeof err === 'object' && err !== null && 'status' in err
+
+    if (isRequestError(error)) {
+      if (error.status === 401 || error.status === 403) {
+        throw new GitHubAuthenticationError()
+      }
+      if (error.status === 404) {
+        return // Fall through to search
+      }
+      throw error // Unexpected error (network failure, rate limit, etc.)
+    }
+    throw error
+  }
+
+  /**
+   * Finds an issync comment by marker detection
+   * Uses a two-step approach:
+   * 1. If comment_id is provided, verify it has markers
+   * 2. Otherwise, search all comments for markers
+   */
+  async findIssyncComment(
+    owner: string,
+    repo: string,
+    issue_number: number,
+    comment_id?: number,
+  ): Promise<CommentData | null> {
+    // Step 1: If comment_id provided, verify it has markers
+    if (comment_id) {
+      try {
+        const comment = await this.getComment(owner, repo, comment_id)
+        if (hasIssyncMarkers(comment.body)) {
+          return comment
+        }
+        // Comment exists but doesn't have markers - fall through to search
+      } catch (error) {
+        this.handleGetCommentError(error)
+        // If no error was thrown, fall through to search
+      }
+    }
+
+    // Step 2: Search all comments for markers
+    const comments = await this.listComments(owner, repo, issue_number)
+    const issyncComment = comments.find((comment) => hasIssyncMarkers(comment.body))
+
+    return issyncComment ?? null
   }
 }
 

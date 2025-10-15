@@ -70,3 +70,17 @@ export class SyncAlreadyExistsError extends IssyncError {
     this.name = 'SyncAlreadyExistsError'
   }
 }
+
+export class GitHubAuthenticationError extends IssyncError {
+  constructor(message = 'GitHub authentication failed. Check GITHUB_TOKEN.') {
+    super(message)
+    this.name = 'GitHubAuthenticationError'
+  }
+}
+
+export class CommentNotFoundError extends IssyncError {
+  constructor(commentId: number) {
+    super(`Comment ${commentId} not found`)
+    this.name = 'CommentNotFoundError'
+  }
+}

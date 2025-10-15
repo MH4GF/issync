@@ -1,15 +1,20 @@
+// Node.js built-in modules
 import { existsSync, mkdirSync, readFileSync, statSync, writeFileSync } from 'node:fs'
 import path from 'node:path'
+
+// Project modules (alphabetical order)
 import { configExists, loadConfig, saveConfig } from '../lib/config.js'
 import {
   FileAlreadyExistsError,
   FileNotFoundError,
+  GitHubAuthenticationError,
   InvalidFilePathError,
   SyncAlreadyExistsError,
 } from '../lib/errors.js'
-import { parseIssueUrl } from '../lib/github.js'
+import { createGitHubClient, parseIssueUrl, unwrapMarkers } from '../lib/github.js'
+import { calculateHash } from '../lib/hash.js'
 import { resolvePathWithinBase } from '../lib/path.js'
-import type { IssyncState, IssyncSync } from '../types/index.js'
+import type { CommentData, GitHubIssueInfo, IssyncState, IssyncSync } from '../types/index.js'
 
 const _DEFAULT_TEMPLATE_URL =
   'https://raw.githubusercontent.com/MH4GF/issync/refs/heads/main/docs/plan-template.md'
@@ -18,6 +23,7 @@ interface InitOptions {
   file?: string
   cwd?: string
   template?: string
+  token?: string
 }
 
 function _isUrl(str: string): boolean {
@@ -109,17 +115,71 @@ function assertSyncAvailability(
   }
 }
 
-export async function init(issueUrl: string, options: InitOptions = {}): Promise<void> {
-  const { file = 'docs/plan.md', cwd, template } = options
-  const workingDir = cwd ?? process.cwd()
+/**
+ * Checks for existing issync comment on remote Issue
+ * Returns null if not found or if network error occurs
+ */
+async function fetchRemoteCommentIfExists(
+  issueInfo: GitHubIssueInfo,
+  token?: string,
+): Promise<CommentData | null> {
+  console.log('Checking for existing comment...')
+  const client = createGitHubClient(token)
+  try {
+    return await client.findIssyncComment(issueInfo.owner, issueInfo.repo, issueInfo.issue_number)
+  } catch (error) {
+    // Re-throw authentication errors (already wrapped in GitHubAuthenticationError)
+    if (error instanceof GitHubAuthenticationError) {
+      throw error
+    }
 
-  // Validate Issue URL by parsing it
-  parseIssueUrl(issueUrl)
+    // For other errors (network, not found, etc.), fall back to template
+    const errorMessage = error instanceof Error ? error.message : String(error)
+    console.warn(`Failed to check for existing comment: ${errorMessage}`)
+    console.warn('Continuing with template initialization...')
+    return null
+  }
+}
 
-  const basePath = path.resolve(workingDir)
-  const targetPath = resolvePathWithinBase(basePath, file, file)
+/**
+ * Pulls remote content to local file and updates sync metadata
+ */
+function pullRemoteContent(
+  existingComment: CommentData,
+  targetPath: string,
+  sync: IssyncSync,
+  file: string,
+): void {
+  const remoteContent = unwrapMarkers(existingComment.body)
+  const remoteHash = calculateHash(remoteContent)
 
-  // Determine template source and fetch content
+  // Ensure parent directory exists
+  const parentDir = path.dirname(targetPath)
+  if (!existsSync(parentDir)) {
+    mkdirSync(parentDir, { recursive: true })
+  }
+
+  // Write remote content to local file
+  writeFileSync(targetPath, remoteContent, 'utf-8')
+
+  // Set sync metadata from remote
+  sync.comment_id = existingComment.id
+  sync.last_synced_hash = remoteHash
+  sync.last_synced_at = new Date().toISOString()
+
+  console.log(`✅ Pulled from remote comment (ID: ${existingComment.id}) → ${file}`)
+}
+
+/**
+ * Initializes local file from template (URL, local file, or default template)
+ */
+async function initializeFromTemplate(
+  targetPath: string,
+  basePath: string,
+  file: string,
+  template?: string,
+): Promise<void> {
+  console.log('No existing comment found, initializing from template...')
   let templateContent: string | undefined
 
   if (template) {
@@ -146,14 +206,36 @@ export async function init(issueUrl: string, options: InitOptions = {}): Promise
   // else: No template and file exists, keep existing file (templateContent remains undefined)
 
   ensureTargetFile(targetPath, templateContent, file)
+}
+
+export async function init(issueUrl: string, options: InitOptions = {}): Promise<void> {
+  const { file = 'docs/plan.md', cwd, template, token } = options
+  const workingDir = cwd ?? process.cwd()
+
+  // Validate Issue URL by parsing it
+  const issueInfo = parseIssueUrl(issueUrl)
+
+  const basePath = path.resolve(workingDir)
+  const targetPath = resolvePathWithinBase(basePath, file, file)
 
   const state = loadState(cwd)
   assertSyncAvailability(state, issueUrl, file, basePath)
 
-  // Create initial config
+  // Create initial sync config
   const newSync: IssyncSync = {
     issue_url: issueUrl,
     local_file: file,
+  }
+
+  // Check if remote issync comment already exists
+  const existingComment = await fetchRemoteCommentIfExists(issueInfo, token)
+
+  if (existingComment) {
+    // Remote comment exists - pull content to local file
+    pullRemoteContent(existingComment, targetPath, newSync, file)
+  } else {
+    // No remote comment - initialize from template
+    await initializeFromTemplate(targetPath, basePath, file, template)
   }
 
   state.syncs.push(newSync)
