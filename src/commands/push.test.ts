@@ -5,6 +5,7 @@ import path from 'node:path'
 import { loadConfig, saveConfig } from '../lib/config.js'
 import * as githubModule from '../lib/github.js'
 import { calculateHash } from '../lib/hash.js'
+import { expectNthCallContent } from '../lib/test-helpers.js'
 import type { IssyncState } from '../types/index.js'
 import { push } from './push.js'
 
@@ -57,7 +58,11 @@ describe('push command - multi-sync support', () => {
     )
     const mockGitHubClient: Pick<GitHubClientInstance, 'getComment' | 'updateComment'> = {
       getComment: () =>
-        Promise.resolve({ id: 222, body: previousBody, updated_at: '2025-01-01T00:00:00Z' }),
+        Promise.resolve({
+          id: 222,
+          body: githubModule.wrapWithMarkers(previousBody),
+          updated_at: '2025-01-01T00:00:00Z',
+        }),
       updateComment: (...args: Parameters<GitHubClientInstance['updateComment']>) =>
         updateComment(...args),
     }
@@ -77,7 +82,7 @@ describe('push command - multi-sync support', () => {
     const [owner, repo, commentId, content] = firstCall
     expect(`${owner}/${repo}`).toBe('owner/repo')
     expect(commentId).toBe(222)
-    expect(content).toBe(localBody)
+    expect(content).toBe(githubModule.wrapWithMarkers(localBody))
 
     const updatedState = loadConfig(tempDir)
     const sync = updatedState.syncs.find((entry) => entry.local_file === 'docs/two.md')
@@ -120,7 +125,11 @@ describe('push command - multi-sync support', () => {
     )
     const mockGitHubClient: Pick<GitHubClientInstance, 'getComment' | 'updateComment'> = {
       getComment: (_, __, commentId) =>
-        Promise.resolve({ id: commentId, body: previousBody, updated_at: '2025-01-01T00:00:00Z' }),
+        Promise.resolve({
+          id: commentId,
+          body: githubModule.wrapWithMarkers(previousBody),
+          updated_at: '2025-01-01T00:00:00Z',
+        }),
       updateComment: (...args: Parameters<GitHubClientInstance['updateComment']>) =>
         updateComment(...args),
     }
@@ -174,7 +183,7 @@ describe('push command - multi-sync support', () => {
         if (commentId === 111) {
           return Promise.resolve({
             id: 111,
-            body: previousBody,
+            body: githubModule.wrapWithMarkers(previousBody),
             updated_at: '2025-01-01T00:00:00Z',
           })
         }
@@ -232,7 +241,11 @@ describe('push command - multi-sync support', () => {
     )
     const mockGitHubClient: Pick<GitHubClientInstance, 'getComment' | 'updateComment'> = {
       getComment: () =>
-        Promise.resolve({ id: 999, body: '# Remote Content', updated_at: '2025-01-01T00:00:00Z' }),
+        Promise.resolve({
+          id: 999,
+          body: githubModule.wrapWithMarkers('# Remote Content'),
+          updated_at: '2025-01-01T00:00:00Z',
+        }),
       updateComment: (...args: Parameters<GitHubClientInstance['updateComment']>) =>
         updateComment(...args),
     }
@@ -247,5 +260,54 @@ describe('push command - multi-sync support', () => {
     const updatedState = loadConfig(tempDir)
     const sync = updatedState.syncs[0]
     expect(sync?.last_synced_hash).toBe(calculateHash(localBody))
+  })
+
+  test('auto-repairs remote comment when markers are missing', async () => {
+    const previousBody = '# Content without markers'
+    const localBody = '# Updated Content'
+    const state: IssyncState = {
+      syncs: [
+        {
+          issue_url: 'https://github.com/owner/repo/issues/1',
+          local_file: 'docs/plan.md',
+          comment_id: 123,
+          last_synced_hash: calculateHash(previousBody),
+        },
+      ],
+    }
+    saveConfig(state, tempDir)
+
+    await mkdir(path.join(tempDir, 'docs'), { recursive: true })
+    await writeFile(path.join(tempDir, 'docs/plan.md'), localBody, 'utf-8')
+
+    const updateComment = mock<GitHubClientInstance['updateComment']>(() =>
+      Promise.resolve({
+        id: 123,
+        body: '',
+        updated_at: '2025-01-01T00:00:00Z',
+      }),
+    )
+    const mockGitHubClient: Pick<GitHubClientInstance, 'getComment' | 'updateComment'> = {
+      getComment: () =>
+        Promise.resolve({
+          id: 123,
+          body: previousBody, // No markers
+          updated_at: '2025-01-01T00:00:00Z',
+        }),
+      updateComment: (...args: Parameters<GitHubClientInstance['updateComment']>) =>
+        updateComment(...args),
+    }
+
+    spyOn(githubModule, 'createGitHubClient').mockReturnValue(
+      mockGitHubClient as unknown as GitHubClientInstance,
+    )
+
+    // Act
+    await push({ cwd: tempDir })
+
+    // Assert
+    expect(updateComment).toHaveBeenCalledTimes(2)
+    expectNthCallContent(updateComment, 0, githubModule.wrapWithMarkers(previousBody))
+    expectNthCallContent(updateComment, 1, githubModule.wrapWithMarkers(localBody))
   })
 })

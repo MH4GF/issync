@@ -1,9 +1,13 @@
-import { afterEach, beforeEach, describe, expect, test } from 'bun:test'
+import { afterEach, beforeEach, describe, expect, mock, spyOn, test } from 'bun:test'
 import { existsSync, mkdirSync, readFileSync, writeFileSync } from 'node:fs'
 import { mkdir, rm } from 'node:fs/promises'
 import path from 'node:path'
 import { loadConfig } from '../lib/config'
 import { FileAlreadyExistsError, InvalidFilePathError } from '../lib/errors'
+import * as githubModule from '../lib/github'
+import { calculateHash } from '../lib/hash'
+import { createMockGitHubClient } from '../lib/test-helpers'
+import type { CommentData } from '../types/index'
 import { init } from './init'
 
 const TEST_DIR = path.join(import.meta.dir, '../../.test-tmp/init-test')
@@ -13,11 +17,15 @@ describe('init command', () => {
     // Create clean test directory
     await rm(TEST_DIR, { recursive: true, force: true })
     await mkdir(TEST_DIR, { recursive: true })
+
+    // Default: no existing comment
+    spyOn(githubModule, 'createGitHubClient').mockReturnValue(createMockGitHubClient())
   })
 
   afterEach(async () => {
     // Cleanup
     await rm(TEST_DIR, { recursive: true, force: true })
+    mock.restore()
   })
 
   test('creates .issync directory and state.yml with valid Issue URL', async () => {
@@ -220,5 +228,69 @@ describe('init command', () => {
     await init(issueUrl, { cwd: TEST_DIR })
 
     expect(existsSync(issyncDir)).toBe(true)
+  })
+
+  test('pulls existing comment when remote issync comment exists', async () => {
+    // Arrange
+    const issueUrl = 'https://github.com/owner/repo/issues/1'
+    const localFile = 'test.md'
+    const targetPath = path.join(TEST_DIR, localFile)
+    const existingContent = '# Existing Content'
+    const wrappedContent = githubModule.wrapWithMarkers(existingContent)
+
+    const mockComment: CommentData = {
+      id: 123,
+      body: wrappedContent,
+      updated_at: '2025-01-01T00:00:00Z',
+    }
+
+    // Mock createGitHubClient to return a client with the existing comment
+    spyOn(githubModule, 'createGitHubClient').mockReturnValue(
+      createMockGitHubClient({
+        findIssyncComment: mock(() => Promise.resolve(mockComment)),
+      }),
+    )
+
+    // Act
+    await init(issueUrl, { file: localFile, cwd: TEST_DIR })
+
+    // Assert
+    expect(existsSync(targetPath)).toBe(true)
+    expect(readFileSync(targetPath, 'utf-8')).toBe(existingContent) // unwrapped
+
+    const state = loadConfig(TEST_DIR)
+    const sync = state.syncs[0]
+    expect(sync).toBeDefined()
+    expect(sync?.comment_id).toBe(123)
+    expect(sync?.last_synced_hash).toBe(calculateHash(existingContent))
+    expect(sync?.last_synced_at).toBeDefined()
+  })
+
+  test('fallback to template when remote comment fetch fails', async () => {
+    // Arrange
+    const issueUrl = 'https://github.com/owner/repo/issues/1'
+    const localFile = 'test.md'
+    const targetPath = path.join(TEST_DIR, localFile)
+
+    // Mock createGitHubClient to throw an error (network failure)
+    spyOn(githubModule, 'createGitHubClient').mockReturnValue(
+      createMockGitHubClient({
+        findIssyncComment: mock(() => Promise.reject(new Error('Network error'))),
+      }),
+    )
+
+    // Act
+    await init(issueUrl, { file: localFile, cwd: TEST_DIR })
+
+    // Assert - should fall back to template initialization
+    expect(existsSync(targetPath)).toBe(true)
+    const content = readFileSync(targetPath, 'utf-8')
+    expect(content).toBeTruthy() // Has content from template
+
+    const state = loadConfig(TEST_DIR)
+    const sync = state.syncs[0]
+    expect(sync).toBeDefined()
+    expect(sync?.comment_id).toBeUndefined() // No comment_id since pull failed
+    expect(sync?.last_synced_hash).toBeUndefined()
   })
 })

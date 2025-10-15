@@ -4,7 +4,7 @@ import path from 'node:path'
 import type { SyncSelector } from '../lib/config.js'
 import { loadConfig, saveConfig, selectSync } from '../lib/config.js'
 import { SyncNotFoundError } from '../lib/errors.js'
-import { createGitHubClient, parseIssueUrl } from '../lib/github.js'
+import { createGitHubClient, parseIssueUrl, unwrapMarkers } from '../lib/github.js'
 import { calculateHash } from '../lib/hash.js'
 import { resolvePathWithinBase } from '../lib/path.js'
 import { reportSyncResults } from '../lib/sync-reporter.js'
@@ -46,11 +46,14 @@ async function pullSingleSync(sync: IssyncSync, cwd: string, token?: string): Pr
   const client = createGitHubClient(token)
   const comment = await client.getComment(issueInfo.owner, issueInfo.repo, sync.comment_id)
 
-  // Calculate hash of remote content
-  const remoteHash = calculateHash(comment.body)
+  // Unwrap markers from remote content
+  const remoteContent = unwrapMarkers(comment.body)
 
-  // Write to local file
-  await writeFile(resolvedPath, comment.body, 'utf-8')
+  // Calculate hash of remote content
+  const remoteHash = calculateHash(remoteContent)
+
+  // Write to local file (without markers)
+  await writeFile(resolvedPath, remoteContent, 'utf-8')
 
   // Update sync metadata
   sync.last_synced_hash = remoteHash

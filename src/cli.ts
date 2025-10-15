@@ -46,7 +46,7 @@ program
 
 program
   .command('init <issue-url>')
-  .description('Initialize issync with a GitHub Issue URL')
+  .description('Initialize issync (detects existing comments automatically)')
   .option('-f, --file <path>', 'Local file path', 'docs/plan.md')
   .option(
     '-t, --template <path>',

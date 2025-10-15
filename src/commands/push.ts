@@ -4,7 +4,13 @@ import path from 'node:path'
 import type { SyncSelector } from '../lib/config.js'
 import { loadConfig, saveConfig, selectSync } from '../lib/config.js'
 import { FileNotFoundError, SyncNotFoundError } from '../lib/errors.js'
-import { createGitHubClient, parseIssueUrl } from '../lib/github.js'
+import {
+  createGitHubClient,
+  hasIssyncMarkers,
+  parseIssueUrl,
+  unwrapMarkers,
+  wrapWithMarkers,
+} from '../lib/github.js'
 import { calculateHash } from '../lib/hash.js'
 import { resolvePathWithinBase } from '../lib/path.js'
 import { reportSyncResults } from '../lib/sync-reporter.js'
@@ -22,6 +28,27 @@ export class OptimisticLockError extends Error {
     super('Remote comment has been updated since last sync. Please run "issync pull" first.')
     this.name = 'OptimisticLockError'
   }
+}
+
+/**
+ * Ensures remote comment has issync markers, auto-repairs if missing
+ */
+async function ensureRemoteHasMarkers(
+  client: ReturnType<typeof createGitHubClient>,
+  owner: string,
+  repo: string,
+  commentId: number,
+  currentBody: string,
+): Promise<string> {
+  if (hasIssyncMarkers(currentBody)) {
+    return currentBody
+  }
+
+  console.warn('⚠️  Remote markers missing, re-wrapping...')
+  const reWrappedContent = wrapWithMarkers(currentBody)
+  await client.updateComment(owner, repo, commentId, reWrappedContent)
+  console.log('✅ Markers restored')
+  return reWrappedContent
 }
 
 /**
@@ -63,22 +90,36 @@ async function pushSingleSync(sync: IssyncSync, cwd: string, token?: string): Pr
 
     // Fetch current remote comment
     const remoteComment = await client.getComment(issueInfo.owner, issueInfo.repo, sync.comment_id)
-    const remoteHash = calculateHash(remoteComment.body)
+
+    // Auto-repair: Ensure remote comment has markers
+    const normalizedBody = await ensureRemoteHasMarkers(
+      client,
+      issueInfo.owner,
+      issueInfo.repo,
+      sync.comment_id,
+      remoteComment.body,
+    )
+
+    // Unwrap markers from remote content before hash calculation
+    const remoteContent = unwrapMarkers(normalizedBody)
+    const remoteHash = calculateHash(remoteContent)
 
     // Check if remote has been updated since last sync
     if (sync.last_synced_hash && remoteHash !== sync.last_synced_hash) {
       throw new OptimisticLockError()
     }
 
-    // Update comment
-    await client.updateComment(issueInfo.owner, issueInfo.repo, sync.comment_id, localContent)
+    // Update comment with markers
+    const wrappedContent = wrapWithMarkers(localContent)
+    await client.updateComment(issueInfo.owner, issueInfo.repo, sync.comment_id, wrappedContent)
   } else {
-    // Create new comment
+    // Create new comment with markers
+    const wrappedContent = wrapWithMarkers(localContent)
     const comment = await client.createComment(
       issueInfo.owner,
       issueInfo.repo,
       issueInfo.issue_number,
-      localContent,
+      wrappedContent,
     )
     sync.comment_id = comment.id
   }
