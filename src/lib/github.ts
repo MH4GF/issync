@@ -12,44 +12,65 @@ interface RequestError {
 }
 
 // issync comment markers for identification
-export const ISSYNC_MARKER_START = '<!-- issync:v1:start -->'
-export const ISSYNC_MARKER_END = '<!-- issync:v1:end -->'
+export const ISSYNC_MARKER = '<!-- issync:v1 -->'
+
+// Legacy markers for backward compatibility
+const ISSYNC_MARKER_START = '<!-- issync:v1:start -->'
+const ISSYNC_MARKER_END = '<!-- issync:v1:end -->'
 
 /**
- * Wraps content with issync markers
+ * Adds issync marker to the beginning of content
  */
-export function wrapWithMarkers(content: string): string {
-  return `${ISSYNC_MARKER_START}\n${content}\n${ISSYNC_MARKER_END}`
+export function addMarker(content: string): string {
+  return `${ISSYNC_MARKER}\n${content}`
 }
 
 /**
- * Checks if a comment body contains issync markers
+ * Checks if a comment body has issync marker
+ * Supports both new single marker format and legacy start/end format
  */
-export function hasIssyncMarkers(body: string): boolean {
-  return body.includes(ISSYNC_MARKER_START) && body.includes(ISSYNC_MARKER_END)
+export function hasIssyncMarker(body: string): boolean {
+  // New format: single marker at the beginning
+  if (body.startsWith(`${ISSYNC_MARKER}\n`) || body === ISSYNC_MARKER) {
+    return true
+  }
+
+  // Legacy format: start/end markers (backward compatibility)
+  if (body.includes(ISSYNC_MARKER_START) && body.includes(ISSYNC_MARKER_END)) {
+    return true
+  }
+
+  return false
 }
 
 /**
- * Extracts content from within issync markers
- * Returns the content as-is if no markers are found
+ * Removes issync marker from content
+ * Returns the content as-is if no marker is found
+ * Supports both new single marker format and legacy start/end format
  */
-export function unwrapMarkers(body: string): string {
+export function removeMarker(body: string): string {
+  // New format: marker at the beginning with trailing newline
+  if (body.startsWith(`${ISSYNC_MARKER}\n`)) {
+    return body.slice(ISSYNC_MARKER.length + 1) // +1 for '\n'
+  }
+
+  // New format: marker only (no trailing newline)
+  if (body === ISSYNC_MARKER) {
+    return ''
+  }
+
+  // Legacy format: start/end markers (backward compatibility)
   const startIndex = body.indexOf(ISSYNC_MARKER_START)
   const endIndex = body.indexOf(ISSYNC_MARKER_END)
-
-  // No markers at all - normal case
-  if (startIndex === -1 && endIndex === -1) {
-    return body
+  if (startIndex !== -1 && endIndex !== -1 && startIndex < endIndex) {
+    const contentStart = startIndex + ISSYNC_MARKER_START.length
+    const content = body.slice(contentStart, endIndex)
+    // Remove leading/trailing newlines from extracted content
+    return content.replace(/^\n+/, '').replace(/\n+$/, '')
   }
 
-  // Invalid marker structure (partial markers or wrong order)
-  if (startIndex === -1 || endIndex === -1 || startIndex >= endIndex) {
-    console.warn('⚠️  Invalid marker structure, treating as unmarked content')
-    return body
-  }
-
-  const contentStart = startIndex + ISSYNC_MARKER_START.length
-  return body.slice(contentStart, endIndex).trim()
+  // No marker - return as-is
+  return body
 }
 
 export function parseIssueUrl(url: string): GitHubIssueInfo {
@@ -206,7 +227,7 @@ export class GitHubClient {
     if (comment_id) {
       try {
         const comment = await this.getComment(owner, repo, comment_id)
-        if (hasIssyncMarkers(comment.body)) {
+        if (hasIssyncMarker(comment.body)) {
           return comment
         }
         // Comment exists but doesn't have markers - fall through to search
@@ -218,7 +239,7 @@ export class GitHubClient {
 
     // Step 2: Search all comments for markers
     const comments = await this.listComments(owner, repo, issue_number)
-    const issyncComment = comments.find((comment) => hasIssyncMarkers(comment.body))
+    const issyncComment = comments.find((comment) => hasIssyncMarker(comment.body))
 
     return issyncComment ?? null
   }

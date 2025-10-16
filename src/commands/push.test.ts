@@ -60,7 +60,7 @@ describe('push command - multi-sync support', () => {
       getComment: () =>
         Promise.resolve({
           id: 222,
-          body: githubModule.wrapWithMarkers(previousBody),
+          body: githubModule.addMarker(previousBody),
           updated_at: '2025-01-01T00:00:00Z',
         }),
       updateComment: (...args: Parameters<GitHubClientInstance['updateComment']>) =>
@@ -82,7 +82,7 @@ describe('push command - multi-sync support', () => {
     const [owner, repo, commentId, content] = firstCall
     expect(`${owner}/${repo}`).toBe('owner/repo')
     expect(commentId).toBe(222)
-    expect(content).toBe(githubModule.wrapWithMarkers(localBody))
+    expect(content).toBe(githubModule.addMarker(localBody))
 
     const updatedState = loadConfig(tempDir)
     const sync = updatedState.syncs.find((entry) => entry.local_file === 'docs/two.md')
@@ -127,7 +127,7 @@ describe('push command - multi-sync support', () => {
       getComment: (_, __, commentId) =>
         Promise.resolve({
           id: commentId,
-          body: githubModule.wrapWithMarkers(previousBody),
+          body: githubModule.addMarker(previousBody),
           updated_at: '2025-01-01T00:00:00Z',
         }),
       updateComment: (...args: Parameters<GitHubClientInstance['updateComment']>) =>
@@ -183,7 +183,7 @@ describe('push command - multi-sync support', () => {
         if (commentId === 111) {
           return Promise.resolve({
             id: 111,
-            body: githubModule.wrapWithMarkers(previousBody),
+            body: githubModule.addMarker(previousBody),
             updated_at: '2025-01-01T00:00:00Z',
           })
         }
@@ -243,7 +243,7 @@ describe('push command - multi-sync support', () => {
       getComment: () =>
         Promise.resolve({
           id: 999,
-          body: githubModule.wrapWithMarkers('# Remote Content'),
+          body: githubModule.addMarker('# Remote Content'),
           updated_at: '2025-01-01T00:00:00Z',
         }),
       updateComment: (...args: Parameters<GitHubClientInstance['updateComment']>) =>
@@ -307,7 +307,7 @@ describe('push command - multi-sync support', () => {
 
     // Assert
     expect(updateComment).toHaveBeenCalledTimes(2)
-    expectNthCallContent(updateComment, 0, githubModule.wrapWithMarkers(previousBody))
-    expectNthCallContent(updateComment, 1, githubModule.wrapWithMarkers(localBody))
+    expectNthCallContent(updateComment, 0, githubModule.addMarker(previousBody))
+    expectNthCallContent(updateComment, 1, githubModule.addMarker(localBody))
   })
 })

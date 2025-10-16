@@ -5,11 +5,11 @@ import type { SyncSelector } from '../lib/config.js'
 import { loadConfig, saveConfig, selectSync } from '../lib/config.js'
 import { FileNotFoundError, SyncNotFoundError } from '../lib/errors.js'
 import {
+  addMarker,
   createGitHubClient,
-  hasIssyncMarkers,
+  hasIssyncMarker,
   parseIssueUrl,
-  unwrapMarkers,
-  wrapWithMarkers,
+  removeMarker,
 } from '../lib/github.js'
 import { calculateHash } from '../lib/hash.js'
 import { resolvePathWithinBase } from '../lib/path.js'
@@ -40,12 +40,12 @@ async function ensureRemoteHasMarkers(
   commentId: number,
   currentBody: string,
 ): Promise<string> {
-  if (hasIssyncMarkers(currentBody)) {
+  if (hasIssyncMarker(currentBody)) {
     return currentBody
   }
 
   console.warn('⚠️  Remote markers missing, re-wrapping...')
-  const reWrappedContent = wrapWithMarkers(currentBody)
+  const reWrappedContent = addMarker(currentBody)
   await client.updateComment(owner, repo, commentId, reWrappedContent)
   console.log('✅ Markers restored')
   return reWrappedContent
@@ -68,8 +68,8 @@ async function pushSingleSync(sync: IssyncSync, cwd: string, token?: string): Pr
 
   const localContent = await readFile(resolvedPath, 'utf-8')
   // Remove markers from local content if present (prevents double wrapping)
-  const cleanLocalContent = unwrapMarkers(localContent)
-  const localHash = calculateHash(cleanLocalContent)
+  const localContentWithoutMarker = removeMarker(localContent)
+  const localHash = calculateHash(localContentWithoutMarker)
 
   // Parse issue URL
   const issueInfo = parseIssueUrl(sync.issue_url)
@@ -102,8 +102,8 @@ async function pushSingleSync(sync: IssyncSync, cwd: string, token?: string): Pr
       remoteComment.body,
     )
 
-    // Unwrap markers from remote content before hash calculation
-    const remoteContent = unwrapMarkers(normalizedBody)
+    // Remove markers from remote content before hash calculation
+    const remoteContent = removeMarker(normalizedBody)
     const remoteHash = calculateHash(remoteContent)
 
     // Check if remote has been updated since last sync
@@ -112,11 +112,11 @@ async function pushSingleSync(sync: IssyncSync, cwd: string, token?: string): Pr
     }
 
     // Update comment with markers
-    const wrappedContent = wrapWithMarkers(cleanLocalContent)
+    const wrappedContent = addMarker(localContentWithoutMarker)
     await client.updateComment(issueInfo.owner, issueInfo.repo, sync.comment_id, wrappedContent)
   } else {
     // Create new comment with markers
-    const wrappedContent = wrapWithMarkers(cleanLocalContent)
+    const wrappedContent = addMarker(localContentWithoutMarker)
     const comment = await client.createComment(
       issueInfo.owner,
       issueInfo.repo,

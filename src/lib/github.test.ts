@@ -1,11 +1,5 @@
 import { describe, expect, spyOn, test } from 'bun:test'
-import {
-  GitHubClient,
-  hasIssyncMarkers,
-  parseIssueUrl,
-  unwrapMarkers,
-  wrapWithMarkers,
-} from './github'
+import { addMarker, GitHubClient, hasIssyncMarker, parseIssueUrl, removeMarker } from './github'
 
 describe('parseIssueUrl', () => {
   test('can parse standard GitHub Issue URL', () => {
@@ -97,118 +91,138 @@ describe('GitHubClient constructor', () => {
 })
 
 describe('issync marker utilities', () => {
-  describe('wrapWithMarkers', () => {
-    test('wraps content with start and end markers', () => {
+  describe('addMarker', () => {
+    test('adds marker to the beginning of content', () => {
       const content = 'Hello World'
-      const result = wrapWithMarkers(content)
+      const result = addMarker(content)
 
-      expect(result).toBe(`<!-- issync:v1:start -->\nHello World\n<!-- issync:v1:end -->`)
+      expect(result).toBe(`<!-- issync:v1 -->\nHello World`)
     })
 
     test('handles empty content', () => {
-      const result = wrapWithMarkers('')
+      const result = addMarker('')
 
-      expect(result).toBe(`<!-- issync:v1:start -->\n\n<!-- issync:v1:end -->`)
+      expect(result).toBe(`<!-- issync:v1 -->\n`)
     })
 
     test('handles multiline content', () => {
       const content = 'Line 1\nLine 2\nLine 3'
-      const result = wrapWithMarkers(content)
+      const result = addMarker(content)
 
+      expect(result).toStartWith('<!-- issync:v1 -->')
       expect(result).toContain(content)
-      expect(result).toStartWith('<!-- issync:v1:start -->')
-      expect(result).toEndWith('<!-- issync:v1:end -->')
     })
   })
 
-  describe('hasIssyncMarkers', () => {
-    test('returns true when both markers are present', () => {
-      const body = '<!-- issync:v1:start -->\nContent\n<!-- issync:v1:end -->'
+  describe('hasIssyncMarker', () => {
+    test('returns true when marker is at the beginning', () => {
+      const body = '<!-- issync:v1 -->\nContent here'
 
-      expect(hasIssyncMarkers(body)).toBe(true)
+      expect(hasIssyncMarker(body)).toBe(true)
     })
 
-    test('returns false when only start marker is present', () => {
-      const body = '<!-- issync:v1:start -->\nContent'
-
-      expect(hasIssyncMarkers(body)).toBe(false)
-    })
-
-    test('returns false when only end marker is present', () => {
-      const body = 'Content\n<!-- issync:v1:end -->'
-
-      expect(hasIssyncMarkers(body)).toBe(false)
-    })
-
-    test('returns false when no markers are present', () => {
+    test('returns false when no marker is present', () => {
       const body = 'Regular comment content'
 
-      expect(hasIssyncMarkers(body)).toBe(false)
+      expect(hasIssyncMarker(body)).toBe(false)
     })
 
-    test('returns true when markers appear multiple times', () => {
-      const body =
-        '<!-- issync:v1:start -->Content1<!-- issync:v1:end --><!-- issync:v1:start -->Content2<!-- issync:v1:end -->'
+    test('returns false when marker is not at the beginning', () => {
+      const body = 'Some content\n<!-- issync:v1 -->\nMore content'
 
-      // Current implementation uses includes(), so this returns true
-      // This is acceptable for MVP - unwrapMarkers will extract the first occurrence
-      expect(hasIssyncMarkers(body)).toBe(true)
-    })
-
-    test('returns true when markers are in wrong order', () => {
-      const body = '<!-- issync:v1:end -->Content<!-- issync:v1:start -->'
-
-      // hasIssyncMarkers only checks for presence, not order
-      // unwrapMarkers handles this edge case
-      expect(hasIssyncMarkers(body)).toBe(true)
+      expect(hasIssyncMarker(body)).toBe(false)
     })
   })
 
-  describe('unwrapMarkers', () => {
-    test('extracts content from within markers', () => {
-      const body = '<!-- issync:v1:start -->\nHello World\n<!-- issync:v1:end -->'
-      const result = unwrapMarkers(body)
+  describe('removeMarker', () => {
+    test('removes marker from the beginning', () => {
+      const body = '<!-- issync:v1 -->\nHello World'
+      const result = removeMarker(body)
 
       expect(result).toBe('Hello World')
     })
 
-    test('returns content as-is when no markers are present', () => {
-      const body = 'Regular comment content'
-      const result = unwrapMarkers(body)
-
-      expect(result).toBe(body)
-    })
-
     test('handles multiline content', () => {
       const content = 'Line 1\nLine 2\nLine 3'
-      const body = `<!-- issync:v1:start -->\n${content}\n<!-- issync:v1:end -->`
-      const result = unwrapMarkers(body)
+      const body = `<!-- issync:v1 -->\n${content}`
+      const result = removeMarker(body)
 
       expect(result).toBe(content)
     })
 
-    test('returns original when only start marker is present', () => {
-      const body = '<!-- issync:v1:start -->\nContent'
-      const result = unwrapMarkers(body)
+    test('returns content as-is when no marker is present', () => {
+      const body = 'Regular comment content'
+      const result = removeMarker(body)
 
       expect(result).toBe(body)
     })
+  })
 
-    test('returns original when markers are in wrong order', () => {
-      const body = '<!-- issync:v1:end -->Content<!-- issync:v1:start -->'
-      const result = unwrapMarkers(body)
+  describe('removeMarker idempotency', () => {
+    test('removeMarker(removeMarker(x)) === removeMarker(x) for various inputs', () => {
+      const testCases = [
+        'Content only',
+        '<!-- issync:v1 -->\nContent',
+        '',
+        'Line 1\nLine 2\nLine 3',
+      ]
 
-      // startIndex >= endIndex, so returns original
-      expect(result).toBe(body)
+      for (const body of testCases) {
+        const once = removeMarker(body)
+        const twice = removeMarker(once)
+        expect(twice).toBe(once)
+      }
+    })
+  })
+
+  describe('removeMarker edge cases', () => {
+    test('handles marker-only content (no content after marker)', () => {
+      const body = '<!-- issync:v1 -->\n'
+      const result = removeMarker(body)
+
+      // Should return empty string
+      expect(result).toBe('')
     })
 
-    test('extracts content from first occurrence when multiple markers exist', () => {
-      const body =
-        '<!-- issync:v1:start -->\nContent1\n<!-- issync:v1:end --><!-- issync:v1:start -->Content2<!-- issync:v1:end -->'
-      const result = unwrapMarkers(body)
+    test('handles marker with only whitespace content', () => {
+      const body = '<!-- issync:v1 -->\n   \n  \n'
+      const result = removeMarker(body)
 
-      // unwrapMarkers uses indexOf, which finds the first occurrence
-      expect(result).toBe('Content1')
+      // Should preserve whitespace (no trim for new format)
+      expect(result).toBe('   \n  \n')
+    })
+
+    test('preserves trailing newlines in new format', () => {
+      const body = '<!-- issync:v1 -->\nContent with trailing newlines\n\n'
+      const result = removeMarker(body)
+
+      // Should preserve original formatting
+      expect(result).toBe('Content with trailing newlines\n\n')
+    })
+
+    test('handles empty body', () => {
+      const body = ''
+      const result = removeMarker(body)
+
+      expect(result).toBe('')
+    })
+  })
+
+  describe('hasIssyncMarker edge cases', () => {
+    test('returns false for empty string', () => {
+      expect(hasIssyncMarker('')).toBe(false)
+    })
+
+    test('rejects marker with leading whitespace', () => {
+      const body = '  <!-- issync:v1 -->\nContent'
+
+      expect(hasIssyncMarker(body)).toBe(false)
+    })
+
+    test('rejects marker with trailing content on same line', () => {
+      const body = '<!-- issync:v1 --> extra text\nContent'
+
+      expect(hasIssyncMarker(body)).toBe(false)
     })
   })
 })
@@ -216,11 +230,11 @@ describe('issync marker utilities', () => {
 describe('GitHubClient.findIssyncComment', () => {
   const VALID_TOKEN = `ghp_${'a'.repeat(36)}`
 
-  test('returns comment when comment_id is provided and has markers', async () => {
+  test('returns comment when comment_id is provided and has marker', async () => {
     const client = new GitHubClient(VALID_TOKEN)
     const mockComment = {
       id: 123,
-      body: '<!-- issync:v1:start -->\nContent\n<!-- issync:v1:end -->',
+      body: '<!-- issync:v1 -->\nContent',
       updated_at: '2025-01-01T00:00:00Z',
     }
 
@@ -243,7 +257,7 @@ describe('GitHubClient.findIssyncComment', () => {
     }
     const commentWithMarkers = {
       id: 456,
-      body: '<!-- issync:v1:start -->\nContent\n<!-- issync:v1:end -->',
+      body: '<!-- issync:v1 -->\nContent',
       updated_at: '2025-01-01T00:00:00Z',
     }
 
@@ -266,7 +280,7 @@ describe('GitHubClient.findIssyncComment', () => {
     const client = new GitHubClient(VALID_TOKEN)
     const commentWithMarkers = {
       id: 456,
-      body: '<!-- issync:v1:start -->\nContent\n<!-- issync:v1:end -->',
+      body: '<!-- issync:v1 -->\nContent',
       updated_at: '2025-01-01T00:00:00Z',
     }
 
@@ -302,7 +316,7 @@ describe('GitHubClient.findIssyncComment', () => {
     const client = new GitHubClient(VALID_TOKEN)
     const commentWithMarkers = {
       id: 456,
-      body: '<!-- issync:v1:start -->\nContent\n<!-- issync:v1:end -->',
+      body: '<!-- issync:v1 -->\nContent',
       updated_at: '2025-01-01T00:00:00Z',
     }
 
@@ -318,5 +332,122 @@ describe('GitHubClient.findIssyncComment', () => {
 
     getCommentSpy.mockRestore()
     listCommentsSpy.mockRestore()
+  })
+})
+
+describe('backward compatibility with legacy markers', () => {
+  describe('hasIssyncMarker with legacy format', () => {
+    test('returns true for legacy start/end format', () => {
+      const body = '<!-- issync:v1:start -->\nContent\n<!-- issync:v1:end -->'
+
+      expect(hasIssyncMarker(body)).toBe(true)
+    })
+
+    test('returns false when only start marker is present', () => {
+      const body = '<!-- issync:v1:start -->\nContent'
+
+      expect(hasIssyncMarker(body)).toBe(false)
+    })
+
+    test('returns false when only end marker is present', () => {
+      const body = 'Content\n<!-- issync:v1:end -->'
+
+      expect(hasIssyncMarker(body)).toBe(false)
+    })
+
+    test('returns true even when markers are in wrong order', () => {
+      const body = '<!-- issync:v1:end -->Content<!-- issync:v1:start -->'
+
+      // hasIssyncMarker only checks for presence, removeMarker handles order
+      expect(hasIssyncMarker(body)).toBe(true)
+    })
+  })
+
+  describe('removeMarker with legacy format', () => {
+    test('extracts content from legacy start/end format', () => {
+      const body = '<!-- issync:v1:start -->\nHello World\n<!-- issync:v1:end -->'
+      const result = removeMarker(body)
+
+      expect(result).toBe('Hello World')
+    })
+
+    test('handles multiline content in legacy format', () => {
+      const content = 'Line 1\nLine 2\nLine 3'
+      const body = `<!-- issync:v1:start -->\n${content}\n<!-- issync:v1:end -->`
+      const result = removeMarker(body)
+
+      expect(result).toBe(content)
+    })
+
+    test('returns original when only start marker is present', () => {
+      const body = '<!-- issync:v1:start -->\nContent'
+      const result = removeMarker(body)
+
+      expect(result).toBe(body)
+    })
+
+    test('returns original when markers are in wrong order', () => {
+      const body = '<!-- issync:v1:end -->Content<!-- issync:v1:start -->'
+      const result = removeMarker(body)
+
+      expect(result).toBe(body)
+    })
+
+    test('extracts content from first occurrence when multiple markers exist', () => {
+      const body =
+        '<!-- issync:v1:start -->\nContent1\n<!-- issync:v1:end --><!-- issync:v1:start -->Content2<!-- issync:v1:end -->'
+      const result = removeMarker(body)
+
+      expect(result).toBe('Content1')
+    })
+
+    test('handles legacy format without surrounding newlines', () => {
+      const body = '<!-- issync:v1:start -->Hello World<!-- issync:v1:end -->'
+      const result = removeMarker(body)
+
+      expect(result).toBe('Hello World')
+    })
+  })
+
+  describe('findIssyncComment with legacy markers', () => {
+    const VALID_TOKEN = `ghp_${'a'.repeat(36)}`
+
+    test('finds comment with legacy markers when searching', async () => {
+      const client = new GitHubClient(VALID_TOKEN)
+      const legacyComment = {
+        id: 456,
+        body: '<!-- issync:v1:start -->\nContent\n<!-- issync:v1:end -->',
+        updated_at: '2025-01-01T00:00:00Z',
+      }
+
+      const listCommentsSpy = spyOn(client, 'listComments').mockResolvedValue([
+        { id: 123, body: 'Regular comment', updated_at: '2025-01-01T00:00:00Z' },
+        legacyComment,
+      ])
+
+      const result = await client.findIssyncComment('owner', 'repo', 1)
+
+      expect(result).toEqual(legacyComment)
+
+      listCommentsSpy.mockRestore()
+    })
+
+    test('finds comment with legacy markers by comment_id', async () => {
+      const client = new GitHubClient(VALID_TOKEN)
+      const legacyComment = {
+        id: 123,
+        body: '<!-- issync:v1:start -->\nContent\n<!-- issync:v1:end -->',
+        updated_at: '2025-01-01T00:00:00Z',
+      }
+
+      const getCommentSpy = spyOn(client, 'getComment').mockResolvedValue(legacyComment)
+
+      const result = await client.findIssyncComment('owner', 'repo', 1, 123)
+
+      expect(result).toEqual(legacyComment)
+      expect(getCommentSpy).toHaveBeenCalledWith('owner', 'repo', 123)
+
+      getCommentSpy.mockRestore()
+    })
   })
 })

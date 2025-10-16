@@ -11,7 +11,7 @@ import {
   InvalidFilePathError,
   SyncAlreadyExistsError,
 } from '../lib/errors.js'
-import { createGitHubClient, parseIssueUrl, unwrapMarkers } from '../lib/github.js'
+import { createGitHubClient, parseIssueUrl, removeMarker } from '../lib/github.js'
 import { calculateHash } from '../lib/hash.js'
 import { resolvePathWithinBase } from '../lib/path.js'
 import type { CommentData, GitHubIssueInfo, IssyncState, IssyncSync } from '../types/index.js'
@@ -150,7 +150,7 @@ function pullRemoteContent(
   sync: IssyncSync,
   file: string,
 ): void {
-  const remoteContent = unwrapMarkers(existingComment.body)
+  const remoteContent = removeMarker(existingComment.body)
   const remoteHash = calculateHash(remoteContent)
 
   // Ensure parent directory exists
@@ -206,7 +206,7 @@ async function initializeFromTemplate(
   // else: No template and file exists, keep existing file (templateContent remains undefined)
 
   // Remove markers from template content before writing to local file
-  const localContent = templateContent ? unwrapMarkers(templateContent) : templateContent
+  const localContent = templateContent ? removeMarker(templateContent) : templateContent
   ensureTargetFile(targetPath, localContent, file)
 }
 

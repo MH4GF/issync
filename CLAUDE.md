@@ -78,7 +78,7 @@ This project uses **Lefthook** to automatically enforce code quality before comm
 **`src/lib/github.ts`**: GitHub API client wrapping Octokit.
 - `parseIssueUrl()`: Extract owner/repo/issue_number from GitHub URL
 - `getComment()`, `createComment()`, `updateComment()`, `listComments()`: CRUD operations on Issue comments
-- `wrapWithMarkers()`, `unwrapMarkers()`, `hasIssyncMarkers()`: issync comment identification using HTML comment markers
+- `addMarker()`, `removeMarker()`, `hasIssyncMarker()`: issync comment identification using HTML comment markers
 - `findIssyncComment()`: Searches for issync-managed comment by marker detection (with comment_id fallback)
 
 **`src/lib/config.ts`**: Manages `.issync.yml` configuration file.

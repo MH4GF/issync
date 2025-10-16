@@ -236,7 +236,7 @@ describe('init command', () => {
     const localFile = 'test.md'
     const targetPath = path.join(TEST_DIR, localFile)
     const existingContent = '# Existing Content'
-    const wrappedContent = githubModule.wrapWithMarkers(existingContent)
+    const wrappedContent = githubModule.addMarker(existingContent)
 
     const mockComment: CommentData = {
       id: 123,
