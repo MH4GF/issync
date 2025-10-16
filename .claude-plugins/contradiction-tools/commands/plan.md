@@ -34,73 +34,32 @@ description: before-planフェーズのプロセスを標準化し、コード�
 
 ### ステップ1: 前提条件確認 & ファイル名決定 & issync init（必要な場合）
 
-まず、現在の状態とGitHub Issue URLを確認してください。
+#### ファイル名決定プロセス
 
-#### 1.1 GitHub Issue URL の確認とファイル名決定
-
-ユーザーにGitHub Issue URLを確認してください：
-
+ユーザーにGitHub Issue URLを確認：
 ```
 GitHub Issue URLを教えてください（例: https://github.com/owner/repo/issues/123）
 ```
 
-Issue URLから番号を抽出し、Issueタイトルを取得してslugを生成します：
+**命名規則**: `.issync/docs/plan-{番号}-{slug}.md`
+- 番号: Issue URLから抽出（`/issues/123` → `123`）
+- slug: Issueタイトルから生成（小文字・ハイフン区切り・2-4単語）
+  - 例: "Implement watch daemon mode" → `watch-daemon`
 
-**ファイル名決定プロセス**:
-1. GitHub Issue URLから番号を抽出（例: `/issues/123` → `123`）
-2. GitHub Issueのタイトルを読み取る
-3. タイトルから内容を表すslugを生成（AIが提案）
-   - 小文字、ハイフン区切り
-   - 英数字のみ
-   - 簡潔で内容を表現（2-4単語程度）
-4. ユーザーに提案し、承認または修正してもらう
+#### 初期化フロー
 
-**slug生成例**:
-- Issue: "Implement watch daemon mode" → slug: `watch-daemon`
-- Issue: "Add multi-sync support" → slug: `multi-sync-support`
-- Issue: "Fix optimistic lock error" → slug: `fix-optimistic-lock`
+状態を確認し、以下のいずれかを実行：
 
-**最終ファイル名**: `.issync/docs/plan-{番号}-{slug}.md`
-
-#### 1.2 .issync/state.yml の確認
-
+**ケース A: issync未初期化** (`.issync/state.yml` 不存在)
 ```bash
-# .issync/state.yml が存在するか確認
-ls .issync/state.yml
+issync init <Issue URL> --file .issync/docs/plan-{番号}-{slug}.md
 ```
 
-#### 1.3 issync未初期化の場合
+**ケース B: plan.md不存在** (state.yml存在、plan.md不存在)
+- 新規sync追加: 上記`issync init`を実行
+- 既存commentから取得: `issync pull --issue <Issue URL>`
 
-`.issync/state.yml` が存在しない場合、以下を実行：
-
-```bash
-issync init <GitHub Issue URL> --file .issync/docs/plan-{番号}-{slug}.md
-```
-
-**例**:
-```bash
-issync init https://github.com/owner/repo/issues/123 --file .issync/docs/plan-123-watch-daemon.md
-```
-
-**注**: `--template` オプションは不要です（デフォルトテンプレートを使用）
-
-#### 1.4 plan-{番号}-{slug}.md 不存在の場合
-
-`.issync/state.yml` は存在するが `plan-{番号}-{slug}.md` が存在しない場合：
-
-**新規sync追加の場合**:
-```bash
-issync init <GitHub Issue URL> --file .issync/docs/plan-{番号}-{slug}.md
-```
-
-**既存Issue commentから取得の場合**:
-```bash
-issync pull --issue <GitHub Issue URL>
-```
-
-#### 1.5 すべて準備完了の場合
-
-`.issync/state.yml` と `.issync/docs/plan-{番号}-{slug}.md` が両方存在する場合、ステップ2に進みます。
+**ケース C: すべて準備完了** → ステップ2へ
 
 ---
 
@@ -144,61 +103,21 @@ Read: README.md, CLAUDE.md, docs/
 
 #### Discoveries & Insightsへの記録
 
-調査で発見した内容を以下の形式でDiscoveries & Insightsセクションに記録：
+調査で発見した内容をDiscoveries & Insightsセクションに記録。
 
-```markdown
-**YYYY-MM-DD: [タスク名]のコードベース調査**
-
-- **発見**: [発見した技術的事実]
-- **学び**: [この発見が実装にどう影響するか]
-- **影響**: [Work PlanやOpen Questionsへの影響]
-```
+**フォーマット**: テンプレートの「Discoveries & Insights」セクションを参照
 
 ---
 
 ### ステップ4: plan.md基本セクションの記入
 
-以下のセクションを記入してください：
+`issync init`でコピーされた`docs/plan-template.md`のテンプレートに従って、以下のセクションを記入：
 
-#### 4.1 Purpose / Overview
+- **Purpose / Overview** - タスクの目的、解決する問題、コアバリュー
+- **Context & Direction** - 問題の背景、設計哲学
+- **Validation & Acceptance Criteria** - テスト可能な受け入れ基準、テストシナリオ
 
-```markdown
-## Purpose / Overview
-
-[Issueの要求を踏まえて、タスクの目的を1-2段落で記述]
-
-**コアバリュー:**
-- [コアバリュー1: 具体的な価値]
-- [コアバリュー2: 具体的な価値]
-- [コアバリュー3: 具体的な価値]
-```
-
-#### 4.2 Context & Direction
-
-```markdown
-## Context & Direction
-
-**問題のコンテキスト:**
-[なぜこのタスクが必要か？現状の課題は何か？]
-
-**設計哲学:**
-- [設計方針1]
-- [設計方針2]
-```
-
-#### 4.3 Validation & Acceptance Criteria
-
-```markdown
-## Validation & Acceptance Criteria
-
-**受け入れ基準:**
-- [テスト可能な受け入れ基準1]
-- [テスト可能な受け入れ基準2]
-- [テスト可能な受け入れ基準3]
-
-**テスト方針:**
-- [テスト戦略（単体/統合/E2E）]
-```
+**注**: 各セクションの詳細なフォーマットはテンプレートファイル内のガイダンスを参照してください
 
 ---
 
@@ -210,62 +129,27 @@ Read: README.md, CLAUDE.md, docs/
 
 #### Open Questions記載基準
 
-✅ **記載すべき**:
-- アーキテクチャ上の選択肢（複数の実装方法がある場合）
-- 仕様の曖昧性（Issueの記述だけでは判断できない）
-- 外部システムとの連携方法
-- パフォーマンス・スケーラビリティの考慮事項
+| 記載すべき ✅ | 記載すべきでない ❌ |
+|-------------|------------------|
+| アーキテクチャ上の選択肢 | コードを読めばわかる実装詳細 |
+| 仕様の曖昧性 | ドキュメント記載済みの情報 |
+| 外部システム連携方法 | 簡単な調査で解決可能な疑問 |
+| パフォーマンス考慮事項 | |
 
-❌ **記載すべきでない**:
-- コードを読めばわかる実装詳細
-- ドキュメントに記載されている情報
-- 簡単な調査で解決できる技術的疑問
+**⚠️ 目標**: 5-10項目に絞る
 
-**⚠️ 目標**: Open Questionsは5-10項目程度に絞ってください。
-
-#### 記載フォーマット
-
-```markdown
-## Open Questions / 残論点
-
-**Q1: [質問のタイトル]**
-
-- [質問の詳細]
-- [検討すべき選択肢（あれば）]
-
-**Q2: [質問のタイトル]**
-
-- [質問の詳細]
-```
+**フォーマット**: テンプレートの「Open Questions / 残論点」セクションを参照
 
 #### 5.2 Tasksの初期化
 
-Tasksセクションを初期化し、Phase 1のゴール・タスク・スコープ外を記載：
+Tasksセクションを初期化し、具体的なタスクを箇条書きで記載。
 
-```markdown
-## Tasks
+**記法**（テンプレート参照）:
+- `- [ ] タスク名` - 未完了の小タスク
+- `- [ ] タスク名 (#123)` - サブissueとして管理中
+- `- [ ] タスク名 (未Issue化)` - サブissue化を検討中
 
-### Phase 1: [初期フェーズ名]
-
-**ゴール:** [Phase 1のゴール]
-
-**タスク:**
-- [ ] [具体的なタスク1]
-- [ ] [具体的なタスク2]
-- [ ] [具体的なタスク3]
-
-**スコープ外（Phase 2以降）:**
-- [後回しにする項目1]
-- [後回しにする項目2]
-
-### Phase 2: [フェーズ名]（未着手）
-
-TBD（POC後に決定）
-
-### Phase 3: [フェーズ名]（未着手）
-
-TBD（POC後に決定）
-```
+**注**: フォーマット詳細はテンプレートの「Tasks」セクションを参照
 
 ---
 
@@ -311,38 +195,12 @@ issync push
 
 ## 重要な注意事項
 
-### ファイル命名規則
-
-- **必ず `.issync/docs/plan-{番号}-{slug}.md` 形式**を使用してください
-- Issue番号はGitHub Issue URLから抽出（例: `/issues/123` → `123`）
-- slugはIssueタイトルから生成した内容を表す短い英語名
-  - 小文字、ハイフン区切り
-  - 英数字のみ
-  - 簡潔で内容を表現（2-4単語程度）
-  - 例: `watch-daemon`, `multi-sync-support`, `fix-optimistic-lock`
-- 複数Issueを管理する場合、それぞれ独立したファイルとして作成
-- ファイル名から内容が読み取れるようにする（可読性重視）
-
-### コードベース調査について
-
-- **ステップ3を省略しないでください**: コードベース調査を行わずにOpen Questionsを記載すると、大量の不要な質問が生成されます
-- **Discoveries & Insightsへの記録は必須**: 調査結果を必ず記録してください。これは後のフェーズで参照されます
-
-### Open Questionsについて
-
-- **記載基準を厳格に守ってください**: コードで確認可能な情報は記載しない
-- **5-10項目に絞り込んでください**: 大量のOpen Questionsは管理不能になります
-
-### セクションの構造について
-
-- **既存のフォーマットと構造を保持**してください
-- **タイムスタンプには今日の日付を使用**してください（YYYY-MM-DD形式）
-
-### エラーハンドリング
-
-- GitHub Issue URLが不明な場合、ユーザーに確認してください
-- `issync init` 実行時にエラーが発生した場合、エラー内容を明確に報告してください
-- その他の問題が発生した場合も、**明確に報告**してガイダンスを求めてください
+- **ファイル命名**: ステップ1の命名規則を厳守（詳細はステップ1参照）
+- **コードベース調査**: ステップ3を省略しない（省略すると不要なOpen Questionsが大量発生）
+- **Discoveries記録**: 調査結果は必ず記録（後フェーズで参照）
+- **Open Questions**: コードで確認可能な情報は記載しない、5-10項目に絞る
+- **日付形式**: YYYY-MM-DD形式を使用
+- **エラー時**: 明確に報告し、ガイダンスを求める
 
 ---
 
@@ -350,113 +208,43 @@ issync push
 
 **ユーザー:** `/plan`
 
-**アシスタント:** "before-planフェーズの実行をサポートします。
+**アシスタント:** "before-planフェーズを開始します。
 
-### ステップ1: 前提条件確認とファイル名決定
-
-GitHub Issue URLを教えてください（例: https://github.com/owner/repo/issues/123）
+### ステップ1: GitHub Issue URLを教えてください
+例: https://github.com/owner/repo/issues/123
 
 **ユーザー:** `https://github.com/owner/repo/issues/123`
 
 **アシスタント:**
-Issue番号: 123
+Issue #123: "Implement watch daemon mode"
+提案slug: `watch-daemon`
+ファイル: `.issync/docs/plan-123-watch-daemon.md`
+問題ないですか？
 
-[GitHub Issueのタイトルを読み取る]
-Issueタイトル: "Implement watch daemon mode"
-
-タイトルから以下のslugを提案します：
-- **提案**: `watch-daemon`
-- 理由: タイトルの主要なキーワード "watch" と "daemon" を使用
-
-このファイル名で問題ないですか？
-- `.issync/docs/plan-123-watch-daemon.md`
-
-別のslugを希望する場合は教えてください。
-
-**ユーザー:** `問題ないです`
+**ユーザー:** `はい`
 
 **アシスタント:**
-ファイル名を決定しました: `.issync/docs/plan-123-watch-daemon.md`
+[state.yml確認 → 不存在 → issync init実行]
+[ステップ2-3: Issue確認とコードベース調査]
+[ステップ4: 基本セクション記入]
+[ステップ5: Open Questions 3項目、Tasks初期化]
+[ステップ6: watchモードで自動同期]
 
-[.issync/state.yml の存在を確認]
-→ 存在しないため、issync init を実行します。
-
-```bash
-issync init https://github.com/owner/repo/issues/123 --file .issync/docs/plan-123-watch-daemon.md
-```
-
-[issync init実行完了、.issync/docs/plan-123-watch-daemon.md が作成されました]
-
-### ステップ2: GitHub Issue内容確認
-
-[GitHub Issueを読んで内容を理解]
-
-タスクの目的: [...]
-解決すべき問題: [...]
-
-### ステップ3: コードベース調査
-
-[Glob/Grepツールで類似機能を検索]
-[README.md、CLAUDE.mdを読んで技術スタックを確認]
-[既存のテストコードを確認]
-
-調査結果をDiscoveries & Insightsに記録しました：
-- 発見1: [...]
-- 発見2: [...]
-
-### ステップ4: 基本セクション記入
-
-[Purpose/Overview、Context & Direction、Acceptance Criteriaを記入]
-
-### ステップ5: Open Questions精査とTasks初期化
-
-Open Questionsを精査します。コードベース調査の結果、以下の3つの質問のみが真に不明な点です：
-- Q1: [...]
-- Q2: [...]
-- Q3: [...]
-
-Tasksを初期化しました：
-- Phase 1のゴール: [...]
-- Phase 1のタスク: 5項目
-- スコープ外: 2項目
-
-### ステップ6: 同期
-
-watchモードが起動しているため、自動的にGitHub Issueに同期されます。
-
-[サマリー出力]"
+完了しました。[サマリー出力]"
 
 ---
 
 ## 補足: ステートマシンとの統合
 
-このコマンド実行後の流れ：
-
+**ワークフロー**:
 ```
 GitHub Issue作成
    ↓
-/plan コマンド実行 (このコマンド)
-   ├─ GitHub Issue URL確認
-   ├─ Issue番号抽出 & タイトル読み取り
-   ├─ slug生成 & ユーザー確認
-   ├─ issync init <issue-url> --file .issync/docs/plan-{番号}-{slug}.md（未初期化の場合）
-   ├─ コードベース調査
-   ├─ plan-{番号}-{slug}.md記入
-   └─ issync push（自動同期）
+/plan実行 → コードベース調査 → plan-{番号}-{slug}.md作成
    ↓
-plan-{番号}-{slug}.md完成、before-plan完了
-   ↓
-人間がplan-{番号}-{slug}.mdをレビュー
-   ↓
-Statusを before-poc に変更
-   ↓
-Devin起動、POC実装開始
+人間レビュー → Statusをbefore-pocに変更 → Devin起動
 ```
 
-**重要**: before-plan完了後、必ず人間がplan-{番号}-{slug}.mdの内容をレビューし、承認してからStatusを変更してください。
+**重要**: before-plan完了後、人間レビューと承認後にStatusを変更
 
-**ファイル配置**:
-- すべてのplan.mdファイルは `.issync/docs/` ディレクトリに配置
-- ファイル名は `plan-{番号}-{slug}.md` 形式（例: `plan-123-watch-daemon.md`）
-- 複数のIssueを同時管理する場合、それぞれ独立したファイルとして管理
-- slugによりファイル名から内容が把握可能
+**ファイル配置**: `.issync/docs/plan-{番号}-{slug}.md` 形式で管理
