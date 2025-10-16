@@ -8,10 +8,11 @@ description: `(未Issue化)`マーク付きタスクを一括でGitHub Issueに�
 1. `.issync/state.yml`から親issue情報を取得
 2. Tasksセクションから`(未Issue化)`マーク付きタスクを抽出
 3. ユーザーに確認
-4. GitHub Issueを一括作成
-5. Sub-issues APIで親issueと紐づけ + Tasksの順序を維持
-6. Tasksセクションを自動更新
-7. issync pushで同期
+4. **LLMが親issueのコンテキストを理解し、各タスクのissue本文を生成**
+5. GitHub Issueを一括作成
+6. Sub-issues APIで親issueと紐づけ + Tasksの順序を維持
+7. Tasksセクションを自動更新
+8. issync pushで同期
 
 ## コンテキスト
 
@@ -58,9 +59,9 @@ description: `(未Issue化)`マーク付きタスクを一括でGitHub Issueに�
 
 ### ステップ2: plan.mdを読み込み、Tasksセクションをパース
 
-`local_file`を読み込み、以下を抽出：
-1. **Tasksセクション全体**
-2. **Purpose/Overviewセクション**の最初の段落（Issue本文に引用）
+`local_file`（親issueのplan.md）を**全体読み込み**し、以下を抽出：
+1. **plan.md全体の内容**（LLMがissue本文生成時に使用）
+2. **Tasksセクション全体**
 3. `(未Issue化)`マーク付きタスクのリスト
 
 **タスク抽出ロジック**:
@@ -108,94 +109,57 @@ Found {N} task(s) marked as (未Issue化):
 - `y`: 次のステップへ進む
 - `n`: 処理を中止
 
-### ステップ5: GitHub Issueを一括作成とSub-issues紐づけ・順序設定
+### ステップ4.5: LLMによるissue本文の生成
 
-各タスクに対して、以下の形式でIssueを作成し、親issueとSub-issues APIで紐づけ、さらにTasksセクションの順序を維持します：
+**入力情報**: 親issueのplan.md全体、タスク名、親issue番号とURL
 
-**Issue作成コマンド**:
-```bash
-# 前のタスクの内部IDを記録する変数（初期値は空）
-PREV_SUB_ISSUE_ID=""
-
-# タスクごとにループ処理
-for TASK_NAME in "${TASK_NAMES[@]}"; do
-  # 1. Issueを作成してIssue番号を取得
-  ISSUE_URL=$(gh issue create \
-    --repo {owner}/{repo} \
-    --title "$TASK_NAME" \
-    --body "$(cat <<'EOF'
+**生成テンプレート**:
+```markdown
 Part of #{親issue番号}
 
-## Context
-{親issueのPurpose/Overviewセクションから最初の段落を引用}
+## Goal
+{このタスクの具体的な目的（1-2文）}
+
+## Background
+{親issueのコンテキストから関連情報のみを抽出・要約（2-4段落）}
 
 ## Acceptance Criteria
-- TBD (to be defined during before-plan phase)
+- [ ] {具体的な完了条件（3-5項目）}
+- [ ] Code review completed
+- [ ] Documentation updated
 
 ## Related
 - Parent issue: #{親issue番号}
-- Progress document: [View in parent issue]({親issueのURL})
-EOF
-)")
+- Full context: [View in parent issue]({親issueのURL})
+```
 
-  # Issue番号を抽出（例: https://github.com/owner/repo/issues/124 → 124）
+**生成ポイント**: タスク固有の情報のみ抽出、具体的な内容、過不足ない情報量
+
+**ユーザー確認**: 生成した本文を提示し、承認を得てから次へ進む
+
+### ステップ5: GitHub Issueを一括作成とSub-issues紐づけ・順序設定
+
+**処理フロー** (Tasksセクションの順序を維持):
+1. `gh issue create`でサブissue作成（ステップ4.5のテンプレート使用）
+2. Issue番号を抽出: `echo $ISSUE_URL | grep -o '[0-9]*$'`
+3. 内部IDを取得: `gh api /repos/{owner}/{repo}/issues/{番号} --jq .id`
+4. Sub-issues APIで紐づけ: `POST /repos/{owner}/{repo}/issues/{親issue番号}/sub_issues`
+5. 2つ目以降は順序設定: `PATCH .../sub_issues/priority` with `after_id={前タスクID}`
+
+**コマンド例**:
+```bash
+PREV_SUB_ISSUE_ID=""
+for TASK_NAME in "${TASK_NAMES[@]}"; do
+  ISSUE_URL=$(gh issue create --repo {owner}/{repo} --title "$TASK_NAME" --body "...")
   ISSUE_NUMBER=$(echo $ISSUE_URL | grep -o '[0-9]*$')
-
-  # 2. 作成されたissueの内部IDを取得
   SUB_ISSUE_ID=$(gh api /repos/{owner}/{repo}/issues/$ISSUE_NUMBER --jq .id)
-
-  # 3. GitHub Sub-issues APIで親issueと紐づけ
-  gh api \
-    --method POST \
-    -H "Accept: application/vnd.github+json" \
-    -H "X-GitHub-Api-Version: 2022-11-28" \
-    /repos/{owner}/{repo}/issues/{親issue番号}/sub_issues \
-    -F "sub_issue_id=$SUB_ISSUE_ID"
-
-  # 4. 2つ目以降のタスクは順序を設定（前のタスクの後に配置）
-  if [ -n "$PREV_SUB_ISSUE_ID" ]; then
-    gh api \
-      --method PATCH \
-      -H "Accept: application/vnd.github+json" \
-      -H "X-GitHub-Api-Version: 2022-11-28" \
-      /repos/{owner}/{repo}/issues/{親issue番号}/sub_issues/priority \
-      -F "sub_issue_id=$SUB_ISSUE_ID" \
-      -F "after_id=$PREV_SUB_ISSUE_ID"
-  fi
-
-  # 次のループのために現在の内部IDを保存
+  gh api --method POST .../sub_issues -F "sub_issue_id=$SUB_ISSUE_ID"
+  [ -n "$PREV_SUB_ISSUE_ID" ] && gh api --method PATCH .../sub_issues/priority -F "sub_issue_id=$SUB_ISSUE_ID" -F "after_id=$PREV_SUB_ISSUE_ID"
   PREV_SUB_ISSUE_ID=$SUB_ISSUE_ID
 done
 ```
 
-**作成されるIssueの例**:
-- **タイトル**: "Status変更時の自動アクション設計"
-- **本文**:
-  ```markdown
-  Part of #123
-
-  ## Context
-  issyncを活用し、GitHub Projects StatusフィールドのステートマシンとAIエージェントによる完全リモート開発ワークフローを構築する。
-
-  ## Acceptance Criteria
-  - TBD (to be defined during before-plan phase)
-
-  ## Related
-  - Parent issue: #123
-  - Progress document: [View in parent issue](https://github.com/owner/repo/issues/123)
-  ```
-
-**作成・紐づけ・順序設定の流れ**:
-1. `gh issue create`でサブissueを作成
-2. 作成されたissueのURLからIssue番号を抽出
-3. `gh api .../issues/{番号} --jq .id`で内部IDを取得
-4. Sub-issues APIで親issueと紐づけ
-5. **2つ目以降のタスクは、前のタスクの後に配置**（`after_id`を使用）
-
-**重要**: Tasksセクションの上から順に処理することで、Sub-issuesの順序がTasksの順序（優先順位）と一致します。
-
-**作成結果の記録**:
-各Issue作成後、Issue番号とSub-issues紐づけ・順序設定を記録：
+**出力例**:
 ```
 Created issue #124: Status変更時の自動アクション設計
   → Linked to parent issue #123 as sub-issue (position: 1)
@@ -205,32 +169,13 @@ Created issue #125: /create-task-issues実装
 
 ### ステップ6: Tasksセクションを更新
 
-作成したIssue番号を使って、Tasksセクションを更新：
+`(未Issue化)` → `(#{issue_number})`に置換（Editツールで1タスクずつ）
 
-**変更前**:
-```markdown
-- [ ] Status変更時の自動アクション設計 (未Issue化)
-- [ ] /create-task-issues実装 (未Issue化)
-```
-
-**変更後**:
-```markdown
-- [ ] Status変更時の自動アクション設計 (#124)
-- [ ] /create-task-issues実装 (#125)
-```
-
-**Edit tool使用**:
-- 各タスクについて、`(未Issue化)` → `(#{issue_number})`に置換
-- 1タスクずつEditツールを呼び出す
+**例**: `- [ ] Status変更時の自動アクション設計 (未Issue化)` → `- [ ] Status変更時の自動アクション設計 (#124)`
 
 ### ステップ7: issync pushで同期
 
-**注意**: issyncのwatchモードが起動している場合は、ファイルの変更が自動的にGitHub Issueに同期されます。明示的なpushコマンドは不要です。
-
-watchモードが起動していない場合は、以下を実行：
-```bash
-issync push
-```
+watchモード起動中は自動同期、未起動時は `issync push` を実行
 
 ---
 
@@ -265,173 +210,55 @@ issync push
 
 ## 重要な注意事項
 
-### plan.mdの読み込みについて
+### 必須要件
+- plan.mdを必ず読む（.issync/state.ymlのlocal_fileパスを使用）
+- 既存のフォーマットと構造を保持
+- gh CLIを使用（GitHub API直接使用NG）
+- issue本文はLLM生成（ステップ4.5参照）、ユーザー確認必須
+- 内部ID使用（Issue番号ではなく）: `gh api .../issues/{番号} --jq .id`
 
-- **必ずplan.mdファイルを読んでください** - .issync/state.ymlから取得したlocal_fileパスを使用
-- **既存のフォーマットと構造を保持**してください
-- タスクが見つからない場合は、明確に報告してください
+### Sub-issues API
+- 作成直後に実行: Issue作成→内部ID取得→Sub-issues API
+- 順序維持: 1つ目は紐づけのみ、2つ目以降は`after_id`で前タスクの後に配置
+- エラーハンドリング: API失敗時も処理継続、ユーザーに報告
 
-### Issue作成について
-
-- **gh CLIを使用**してIssueを作成（GitHub API直接使用ではない）
-- **親issue番号は必ず含める**（"Part of #{親issue番号}"形式）
-- **Context引用は最初の段落のみ**（長すぎる場合は省略可）
-- **Acceptance Criteriaは"TBD"**で統一（詳細は各サブissueのbefore-planフェーズで定義）
-
-### Sub-issues API紐づけと順序設定について
-
-- **内部ID（node ID）を使用**: Issue番号（#123）ではなく、GitHubの内部IDが必要
-  - 内部ID取得: `gh api /repos/{owner}/{repo}/issues/{issue_number} --jq .id`
-- **紐づけは作成直後に実行**: Issue作成→内部ID取得→Sub-issues APIの順
-- **順序の維持**: Tasksセクションの順序（優先順位）を反映
-  - 1つ目のタスク: 紐づけのみ（順序設定不要）
-  - 2つ目以降: `after_id`パラメータで前のタスクの後に配置
-  - 並び替えAPI: `PATCH /repos/{owner}/{repo}/issues/{親issue番号}/sub_issues/priority`
-- **エラーハンドリング**:
-  - Sub-issues API呼び出しが失敗しても、Issueは作成済みのため処理は継続
-  - 順序設定に失敗した場合も処理は継続（GitHub UIで手動並び替え可能）
-  - 失敗した場合はユーザーに報告し、手動での紐づけ・並び替えを促す
-
-### Tasksセクション更新について
-
-- **`(未Issue化)` → `(#{issue_number})`の置換のみ**を行う
-- **タスク名は変更しない**
-- **チェックボックス状態は維持**（`- [ ]`のまま）
-- **他のタスクに影響を与えない**
+### Tasksセクション更新
+- `(未Issue化)` → `(#{issue_number})`のみ置換
+- タスク名、チェックボックス状態は維持
 
 ### エラーハンドリング
-
-- `.issync/state.yml`が存在しない場合 → エラーメッセージを表示して終了
-- `(未Issue化)`タスクが見つからない場合 → エラーメッセージを表示して終了
-- `gh` CLIが利用できない場合 → エラーメッセージを表示して終了
-- Issue作成に失敗した場合 → どのタスクで失敗したか明確に報告し、部分的に成功したタスクも記録
+- `.issync/state.yml`不在、`(未Issue化)`タスク不在、`gh` CLI不在 → エラー表示して終了
+- Issue作成失敗 → 失敗タスクを明示、部分成功も記録
 
 ### その他
-
-- **issync pushは最後に1回のみ**実行（各タスク更新後ではない）
-- **watchモード起動中は自動同期**されるため、明示的なpushは不要
-- **作成したIssue番号は必ず記録**し、ユーザーに報告
-- **Tasksの順序を保つ**: 上から順に処理し、`after_id`で前のタスクの後に配置
-- **内部IDを記録**: 各タスク処理時に内部IDを保存し、次のタスクの順序設定に使用
+- issync pushは最後に1回のみ（watchモード時は自動同期）
+- 内部IDを記録し、次タスクの順序設定に使用
 
 ---
 
 ## 実行例
 
-### 例1: 全ての(未Issue化)タスクを作成
+### 例1: 全タスクを作成
 
-**ユーザー:** `/create-task-issues`
+**入力**: `/create-task-issues`
 
-**アシスタント:**
+**処理**:
+1. state.yml読み込み → 親issue #123確認
+2. plan.md読み込み → 2件の`(未Issue化)`タスク抽出
+3. ユーザー確認 → `y`
+4. issue本文生成 → ユーザー確認 → `y`
+5. Issue作成+Sub-issues紐づけ → #124, #125
+6. Tasksセクション更新 → `(未Issue化)` → `(#124)`, `(#125)`
 
-"タスクのサブissue化をサポートします。
+**出力**: 作成されたサブissue 2件、Tasksセクション更新完了、次のアクション提示
 
-### ステップ1: .issync/state.ymlから親issue情報を取得
+### 例2: 特定タスクのみ作成
 
-[.issync/state.ymlを読み込み]
+**入力**: `/create-task-issues "自動アクション"`
 
-親issue: https://github.com/MH4GF/issync/issues/123
-対象ファイル: .issync/docs/task-dashboard.md
+**処理**: 例1と同様だが、「自動アクション」でフィルタリング → 1件のみ作成
 
-### ステップ2: plan.mdからタスクを抽出
-
-[.issync/docs/task-dashboard.mdを読み込み、Tasksセクションをパース]
-
-Found 2 task(s) marked as (未Issue化):
-
-1. [ ] Status変更時の自動アクション設計
-2. [ ] /create-task-issues実装
-
-親issue: #123 (https://github.com/MH4GF/issync/issues/123)
-
-これらのタスクをサブissueとして作成しますか？ (y/n):"
-
-**ユーザー:** `y`
-
-**アシスタント:**
-
-"### ステップ5: GitHub Issueを作成とSub-issues紐づけ・順序設定
-
-[gh issue createを2回実行し、それぞれSub-issues APIで紐づけ、順序を設定]
-
-Created issue #124: Status変更時の自動アクション設計
-  → Linked to parent issue #123 as sub-issue (position: 1)
-Created issue #125: /create-task-issues実装
-  → Linked to parent issue #123 as sub-issue (position: 2, after #124)
-
-### ステップ6: Tasksセクションを更新
-
-[Editツールで`(未Issue化)` → `(#124)`, `(#125)`に置換]
-
-### ステップ7: 同期
-
-watchモードが起動しているため、自動的にGitHub Issueに同期されます。
-
-## /create-task-issues 実行結果
-
-### 作成されたサブissue
-- #124: Status変更時の自動アクション設計
-  - ✅ Sub-issueとして親issue #123に紐づけ完了（position: 1）
-- #125: /create-task-issues実装
-  - ✅ Sub-issueとして親issue #123に紐づけ完了（position: 2, after #124）
-
-合計: 2件
-
-### 更新内容
-- ✅ Tasksセクション更新: 2件のタスクに Issue番号を追加 (task-dashboard.md:343-348)
-- ✅ Sub-issues API紐づけ完了: 2件のサブissueが親issueと紐づけられました
-- ✅ Sub-issues順序設定完了: Tasksセクションの順序と一致
-- ✅ issync push完了（watchモードで自動同期）
-
-### 次のアクション
-- [ ] 作成されたサブissueを確認してください
-- [ ] 各サブissueのStatusを適切に設定してください（before-plan等）
-- [ ] 必要に応じて各サブissueで `/plan` コマンドを実行してください
-"
-
----
-
-### 例2: 特定のタスクのみ作成
-
-**ユーザー:** `/create-task-issues "自動アクション"`
-
-**アシスタント:**
-
-"タスクのサブissue化をサポートします。
-
-### ステップ1-3: タスク抽出とフィルタリング
-
-[.issync/state.ymlとplan.mdを読み込み、「自動アクション」でフィルタリング]
-
-Found 1 task(s) matching "自動アクション":
-
-1. [ ] Status変更時の自動アクション設計
-
-親issue: #123 (https://github.com/MH4GF/issync/issues/123)
-
-このタスクをサブissueとして作成しますか？ (y/n):"
-
-**ユーザー:** `y`
-
-**アシスタント:**
-
-"[Issue作成とTasksセクション更新を実行]
-
-## /create-task-issues 実行結果
-
-### 作成されたサブissue
-- #124: Status変更時の自動アクション設計
-  - ✅ Sub-issueとして親issue #123に紐づけ完了（position: 1）
-
-合計: 1件
-
-### 更新内容
-- ✅ Tasksセクション更新: 1件のタスクに Issue番号を追加 (task-dashboard.md:343)
-- ✅ Sub-issues API紐づけ完了: 1件のサブissueが親issueと紐づけられました
-- ✅ issync push完了（watchモードで自動同期）
-
-**Note**: 1件のみ作成の場合は順序設定は不要です。
-"
+**出力**: 作成されたサブissue 1件（Note: 1件のみの場合、順序設定不要）
 
 ---
 
