@@ -69,7 +69,63 @@ describe('init command', () => {
     expect(state.syncs).toHaveLength(1)
     const config = state.syncs[0]
 
-    expect(config?.local_file).toBe('docs/plan.md')
+    expect(config?.local_file).toBe('.issync/docs/plan-123.md')
+
+    // Verify file was actually created at the expected path
+    const expectedFilePath = path.join(TEST_DIR, '.issync/docs/plan-123.md')
+    expect(existsSync(expectedFilePath)).toBe(true)
+  })
+
+  test('uses user-provided file path when --file option is specified', async () => {
+    const issueUrl = 'https://github.com/owner/repo/issues/123'
+    const customPath = 'custom/path/plan.md'
+
+    await init(issueUrl, { file: customPath, cwd: TEST_DIR })
+
+    const state = loadConfig(TEST_DIR)
+    expect(state.syncs).toHaveLength(1)
+    const config = state.syncs[0]
+
+    expect(config?.local_file).toBe(customPath)
+
+    // Verify file was actually created at the custom path
+    const createdFile = path.join(TEST_DIR, customPath)
+    expect(existsSync(createdFile)).toBe(true)
+  })
+
+  test('generates unique paths for different issue numbers', async () => {
+    await init('https://github.com/owner/repo/issues/1', { cwd: TEST_DIR })
+    await init('https://github.com/owner/repo/issues/999', { cwd: TEST_DIR })
+
+    const state = loadConfig(TEST_DIR)
+    expect(state.syncs).toHaveLength(2)
+    expect(state.syncs[0]?.local_file).toBe('.issync/docs/plan-1.md')
+    expect(state.syncs[1]?.local_file).toBe('.issync/docs/plan-999.md')
+
+    // Verify both files were created
+    expect(existsSync(path.join(TEST_DIR, '.issync/docs/plan-1.md'))).toBe(true)
+    expect(existsSync(path.join(TEST_DIR, '.issync/docs/plan-999.md'))).toBe(true)
+  })
+
+  test('dynamic default path works with template option', async () => {
+    const issueUrl = 'https://github.com/owner/repo/issues/456'
+    const templateContent = '# Template Content\n\nSome content here'
+    const templatePath = path.join(TEST_DIR, 'template.md')
+
+    writeFileSync(templatePath, templateContent, 'utf-8')
+
+    await init(issueUrl, { cwd: TEST_DIR, template: 'template.md' })
+
+    const state = loadConfig(TEST_DIR)
+    const targetFile = state.syncs[0]?.local_file
+    expect(targetFile).toBe('.issync/docs/plan-456.md')
+
+    // Verify template content was used
+    if (!targetFile) {
+      throw new Error('targetFile is undefined')
+    }
+    const content = readFileSync(path.join(TEST_DIR, targetFile), 'utf-8')
+    expect(content).toBe(templateContent)
   })
 
   test('creates file from template when provided', async () => {

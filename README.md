@@ -70,7 +70,9 @@ issync init https://github.com/owner/repo/issues/123 --file docs/plan.md
 ```
 
 **Options:**
-- `--file <path>`: Local file path (default: `docs/plan.md`)
+- `--file <path>`: Local file path (default: `.issync/docs/plan-{issue-number}.md`)
+  - Example: For issue #123, the default will be `.issync/docs/plan-123.md`
+  - This allows tracking multiple issues without file name conflicts
 - `--template <path>`: Create file from template if it doesn't exist
 
 **Behavior:**

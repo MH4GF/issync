@@ -22,12 +22,13 @@ const program = new Command()
 
 async function _handleCommand(
   commandFn: (() => void) | (() => Promise<void>),
-  successMessage?: string,
+  successMessage?: string | (() => string),
 ): Promise<void> {
   try {
     await commandFn()
     if (successMessage) {
-      console.log(successMessage)
+      const message = typeof successMessage === 'function' ? successMessage() : successMessage
+      console.log(message)
     }
   } catch (error) {
     if (error instanceof Error) {
@@ -47,17 +48,22 @@ program
 program
   .command('init <issue-url>')
   .description('Initialize issync (detects existing comments automatically)')
-  .option('-f, --file <path>', 'Local file path', 'docs/plan.md')
+  .option('-f, --file <path>', 'Local file path (default: .issync/docs/plan-{issue-number}.md)')
   .option(
     '-t, --template <path>',
     'Template file path or URL to initialize from (defaults to official template if file does not exist)',
   )
-  .action(async (issueUrl: string, options: { file: string; template?: string }) => {
+  .action(async (issueUrl: string, options: { file?: string; template?: string }) => {
     const { init } = await import('./commands/init.js')
     const templateLine = options.template ? `\n  Template: ${options.template}` : ''
+    let actualFilePath = ''
+
     await _handleCommand(
-      async () => init(issueUrl, { file: options.file, template: options.template }),
-      `✓ Initialized issync\n  Issue: ${issueUrl}\n  File:  ${options.file}${templateLine}\n\nRecommended: Add .issync/ to your .gitignore`,
+      async () => {
+        actualFilePath = await init(issueUrl, { file: options.file, template: options.template })
+      },
+      () =>
+        `✓ Initialized issync\n  Issue: ${issueUrl}\n  File:  ${actualFilePath}${templateLine}\n\nRecommended: Add .issync/ to your .gitignore`,
     )
   })
 

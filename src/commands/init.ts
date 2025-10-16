@@ -210,23 +210,26 @@ async function initializeFromTemplate(
   ensureTargetFile(targetPath, localContent, file)
 }
 
-export async function init(issueUrl: string, options: InitOptions = {}): Promise<void> {
-  const { file = 'docs/plan.md', cwd, template, token } = options
+export async function init(issueUrl: string, options: InitOptions = {}): Promise<string> {
+  const { file, cwd, template, token } = options
   const workingDir = cwd ?? process.cwd()
 
   // Validate Issue URL by parsing it
   const issueInfo = parseIssueUrl(issueUrl)
 
+  // Use dynamic default based on issue number if no file is provided
+  const targetFile = file ?? `.issync/docs/plan-${issueInfo.issue_number}.md`
+
   const basePath = path.resolve(workingDir)
-  const targetPath = resolvePathWithinBase(basePath, file, file)
+  const targetPath = resolvePathWithinBase(basePath, targetFile, targetFile)
 
   const state = loadState(cwd)
-  assertSyncAvailability(state, issueUrl, file, basePath)
+  assertSyncAvailability(state, issueUrl, targetFile, basePath)
 
   // Create initial sync config
   const newSync: IssyncSync = {
     issue_url: issueUrl,
-    local_file: file,
+    local_file: targetFile,
   }
 
   // Check if remote issync comment already exists
@@ -234,14 +237,16 @@ export async function init(issueUrl: string, options: InitOptions = {}): Promise
 
   if (existingComment) {
     // Remote comment exists - pull content to local file
-    pullRemoteContent(existingComment, targetPath, newSync, file)
+    pullRemoteContent(existingComment, targetPath, newSync, targetFile)
   } else {
     // No remote comment - initialize from template
-    await initializeFromTemplate(targetPath, basePath, file, template)
+    await initializeFromTemplate(targetPath, basePath, targetFile, template)
   }
 
   state.syncs.push(newSync)
 
   // Save config (will create .issync directory)
   saveConfig(state, cwd)
+
+  return targetFile
 }
