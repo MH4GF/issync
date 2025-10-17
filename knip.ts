@@ -5,8 +5,7 @@ const config: KnipConfig = {
   ignore: ['dist/**', '.issync/**'],
   ignoreDependencies: [],
   // tsc: TypeScript compiler used in type-check script
-  // wait: bash built-in command used in check:ci script
-  ignoreBinaries: ['tsc', 'wait'],
+  ignoreBinaries: ['tsc'],
 }
 
 export default config

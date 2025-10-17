@@ -12,7 +12,7 @@ interface RequestError {
 }
 
 // issync comment markers for identification
-export const ISSYNC_MARKER = '<!-- issync:v1 -->'
+const ISSYNC_MARKER = '<!-- issync:v1 -->'
 
 // Legacy markers for backward compatibility
 const ISSYNC_MARKER_START = '<!-- issync:v1:start -->'

@@ -1,5 +1,5 @@
 <!-- issync:v1:start -->
-<!-- Template Version: 6 (2025-10-16) -->
+<!-- Template Version: 7 (2025-10-17) -->
 
 # [Project Name] Development Plan
 
@@ -257,4 +257,16 @@ key: value
 
 - [考慮事項1]
 - [考慮事項2]
+
+---
+
+## Inbox
+
+<!--
+📝 Guidance for AI
+記入タイミング: **人間が記入** - AIは記入しない
+記入内容: 整理前のメモ、リンク、一時的な情報など。人間が後で適切なセクションに整理する
+-->
+
+[人間が記入する整理前の情報やメモ]
 <!-- issync:v1:end -->

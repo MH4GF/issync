@@ -77,10 +77,3 @@ export class GitHubAuthenticationError extends IssyncError {
     this.name = 'GitHubAuthenticationError'
   }
 }
-
-export class CommentNotFoundError extends IssyncError {
-  constructor(commentId: number) {
-    super(`Comment ${commentId} not found`)
-    this.name = 'CommentNotFoundError'
-  }
-}

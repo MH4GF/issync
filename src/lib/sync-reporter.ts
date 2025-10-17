@@ -1,6 +1,6 @@
 import type { IssyncSync } from '../types/index.js'
 
-export interface SyncFailure {
+interface SyncFailure {
   sync: IssyncSync
   reason: unknown
 }
