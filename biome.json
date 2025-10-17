@@ -39,6 +39,10 @@
         "noUnusedVariables": {
           "level": "error",
           "fix": "none"
+        },
+        "noUnusedFunctionParameters": {
+          "level": "error",
+          "fix": "none"
         }
       }
     }
