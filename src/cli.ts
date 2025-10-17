@@ -85,11 +85,15 @@ program
   .description('Push local changes to GitHub Issue comment')
   .option('-f, --file <path>', 'Select sync target by local file path')
   .option('--issue <url>', 'Select sync target by issue URL')
-  .action(async (options: { file?: string; issue?: string }) => {
+  .option('--force', 'Skip optimistic lock check and force overwrite remote')
+  .action(async (options: { file?: string; issue?: string; force?: boolean }) => {
     const { push } = await import('./commands/push.js')
+    const successMessage = options.force
+      ? '✓ Force pushed changes to remote'
+      : '✓ Pushed changes to remote'
     await _handleCommand(
-      async () => push({ file: options.file, issue: options.issue }),
-      '✓ Pushed changes to remote',
+      async () => push({ file: options.file, issue: options.issue, force: options.force }),
+      successMessage,
     )
   })
 

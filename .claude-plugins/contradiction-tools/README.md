@@ -6,9 +6,9 @@
 
 このpluginは7つのスラッシュコマンドを提供し、plan.mdファイルの管理を効率化します：
 
-### `/plan`: before-plan実行ワークフロー
+### `/plan`: plan実行ワークフロー
 
-before-planフェーズのplan.md初期作成をガイドします。以下の6ステップを自動化します：
+planフェーズのplan.md初期作成をガイドします。以下の6ステップを自動化します：
 
 1. GitHub Issue内容の確認
 2. コードベース調査（CRITICAL）
@@ -23,7 +23,7 @@ before-planフェーズのplan.md初期作成をガイドします。以下の6�
 
 POC完了後、POCで得た知見を基にアーキテクチャ・設計方針を決定します。以下の8ステップを自動化します：
 
-1. 現在のStatusを検証（before-architecture-decisionであることを確認）
+1. 現在のStatusを検証（architecture-decisionであることを確認）
 2. POC PR情報を取得（description, commits, diff, comments）
 3. Discoveries & Insightsを参照
 4. Decision Logを記入（技術選定、アーキテクチャ決定、トレードオフ）
@@ -148,7 +148,7 @@ Claude Codeで以下のコマンドを実行し、GitHubから直接マーケッ
 インストール後は、どのプロジェクトでも以下のコマンドが使えます：
 
 ```bash
-/plan                   # before-plan実行ワークフロー
+/plan                   # plan実行ワークフロー
 /architecture-decision  # アーキテクチャ決定ワークフロー
 /resolve-question       # Open Question解消ワークフロー
 /add-question           # Open Question追加ワークフロー
@@ -221,7 +221,7 @@ git clone https://github.com/MH4GF/issync.git
 
 ## 使い方
 
-### `/plan`: before-plan実行
+### `/plan`: plan実行
 
 #### 基本的なワークフロー
 
@@ -243,7 +243,7 @@ git clone https://github.com/MH4GF/issync.git
    - **ステップ5**: Tasks初期化
    - **ステップ6**: issync pushで同期
 
-4. 完了後、plan.mdの内容をレビューしてから Statusを `before-poc` に変更
+4. 完了後、plan.mdの内容をレビューしてから Statusを `poc` に変更
 
 #### 実行例
 
@@ -260,7 +260,7 @@ git clone https://github.com/MH4GF/issync.git
 #### 基本的なワークフロー
 
 1. 前提条件を確認:
-   - 現在のGitHub Issue Statusが `before-architecture-decision` である
+   - 現在のGitHub Issue Statusが `architecture-decision` である
    - POC実装が完了し、PRが作成されている
    - `GITHUB_TOKEN` 環境変数が設定されている（`export GITHUB_TOKEN=$(gh auth token)`）
 
@@ -270,7 +270,7 @@ git clone https://github.com/MH4GF/issync.git
    ```
 
 3. pluginが以下を自動実行:
-   - **ステップ1**: Status検証（before-architecture-decisionであることを確認）
+   - **ステップ1**: Status検証（architecture-decisionであることを確認）
    - **ステップ2**: POC PR情報取得（description, commits, diff, comments）
    - **ステップ3**: Discoveries & Insights参照
    - **ステップ4**: Decision Log記入（技術選定、アーキテクチャ決定、トレードオフ）
@@ -279,7 +279,7 @@ git clone https://github.com/MH4GF/issync.git
    - **ステップ7**: POC PRクローズ
    - **ステップ8**: issync pushで同期
 
-4. 完了後、plan.mdの内容をレビューしてから Statusを `before-implement` に変更
+4. 完了後、plan.mdの内容をレビューしてから Statusを `implement` に変更
 
 #### 実行例
 
@@ -415,7 +415,7 @@ plan.mdが779行に膨らんだ場合、pluginは：
    - watchモードが起動している場合は自動的にGitHub Issueに同期
 
 4. 作成されたサブissueを確認:
-   - 各サブissueのStatusを適切に設定（before-plan等）
+   - 各サブissueのStatusを適切に設定（plan等）
    - 必要に応じて各サブissueで `/plan` コマンドを実行
 
 #### 実行例
@@ -431,39 +431,39 @@ plan.mdが779行に膨らんだ場合、pluginは：
 
 ### `/plan`
 
-before-planフェーズでplan.mdを初期作成する時にこのコマンドを使用してください：
+planフェーズでplan.mdを初期作成する時にこのコマンドを使用してください：
 - **新規タスクのplan.md作成時**: GitHub Issue作成後、`issync init --template` の直後
 - **コードベース調査を徹底したい時**: 既存パターンや技術スタックを事前に確認
 - **Open Questionsを適切に絞り込みたい時**: コードで確認可能な情報を質問にしない
 
-**重要**: このコマンドは、before-planステート専用です。他のステートでは使用しません。
+**重要**: このコマンドは、planステート専用です。他のステートでは使用しません。
 
 ### `/architecture-decision`
 
-before-architecture-decisionステートでアーキテクチャを決定する時にこのコマンドを使用してください：
+architecture-decisionステートでアーキテクチャを決定する時にこのコマンドを使用してください：
 - **POC完了後**: 技術検証が完了し、実装の知見が得られた時
 - **アーキテクチャ決定時**: 技術選定、設計方針、システム仕様を確定する時
-- **本実装前**: before-implementに進む前に、設計を固める時
+- **本実装前**: implementに進む前に、設計を固める時
 
-**重要**: このコマンドは、before-architecture-decisionステート専用です。POC PRをクローズし、Decision LogとSpecification / 仕様を記入します。
+**重要**: このコマンドは、architecture-decisionステート専用です。POC PRをクローズし、Decision LogとSpecification / 仕様を記入します。
 
 ### `/resolve-question`
 
 開発のどの段階でも、Open Questionに答えた時にこのコマンドを使用してください：
-- **before-plan**: 初期設計の質問を解決する時
-- **before-poc**: 技術的実現可能性の質問に答える時
-- **before-architecture-decision**: アーキテクチャの選択を行う時
-- **before-implement**: 実装の詳細を明確にする時
+- **plan**: 初期設計の質問を解決する時
+- **poc**: 技術的実現可能性の質問に答える時
+- **architecture-decision**: アーキテクチャの選択を行う時
+- **implement**: 実装の詳細を明確にする時
 
 これは矛盾解消駆動開発ワークフローをサポートする横断的オペレーションです。
 
 ### `/add-question`
 
 開発のどの段階でも、新しいOpen Questionを追加したい時にこのコマンドを使用してください：
-- **before-plan**: 初期設計で新たな質問が見つかった時
-- **before-poc**: 技術検証中に新しい疑問が生まれた時
-- **before-architecture-decision**: アーキテクチャ検討で追加の選択肢が見つかった時
-- **before-implement**: 実装準備中に新たな検討事項が発生した時
+- **plan**: 初期設計で新たな質問が見つかった時
+- **poc**: 技術検証中に新しい疑問が生まれた時
+- **architecture-decision**: アーキテクチャ検討で追加の選択肢が見つかった時
+- **implement**: 実装準備中に新たな検討事項が発生した時
 
 このコマンドは、質問の優先度を自動評価し、最適な配置位置を提案することで、Open Questionsセクションの整合性を保ちます。
 
@@ -473,15 +473,15 @@ before-architecture-decisionステートでアーキテクチャを決定する�
 - **plan.mdが500行以上に膨らんだ時**: 読みづらくなる前に定期的に圧縮
 - **Phaseが完了した時**: 完了フェーズの詳細を簡潔化
 - **Open Questionsが大量に解決された時**: 解決済み質問を整理
-- **before-retrospective前**: 振り返りを書く前にドキュメントを整理
+- **retrospective前**: 振り返りを書く前にドキュメントを整理
 - **矛盾の疑いがある時**: 矛盾検出機能で一貫性をチェック
 
 ### `/create-sub-issue`
 
 開発のどの段階でも、大きなタスクをサブissue化したい時にこのコマンドを使用してください：
-- **before-plan**: 初期タスクを整理し、大きなタスクを識別した時
-- **before-architecture-decision**: アーキテクチャ決定後、実装フェーズを複数サブissueに分割したい時
-- **before-implement**: 実装前に、並行作業可能なタスクをサブissue化したい時
+- **plan**: 初期タスクを整理し、大きなタスクを識別した時
+- **architecture-decision**: アーキテクチャ決定後、実装フェーズを複数サブissueに分割したい時
+- **implement**: 実装前に、並行作業可能なタスクをサブissue化したい時
 
 **ハイブリッド方式**:
 - **大きなタスク**（複数日、複数PRが必要）→ サブissue化（`(未Issue化)`マークを追加 → `/create-sub-issue`実行）
@@ -492,11 +492,11 @@ before-architecture-decisionステートでアーキテクチャを決定する�
 ### `/complete-sub-issue`
 
 サブissueが完了し、親issueに成果を反映したい時にこのコマンドを使用してください：
-- **before-retrospective**: サブissueの振り返り記入後、親issueに完了情報を反映する時
+- **retrospective**: サブissueの振り返り記入後、親issueに完了情報を反映する時
 - **サブissueのclose時**: 完了サマリーとFollow-up事項を親issueに自動転記したい時
 
 **運用フロー**:
-1. サブissueで開発完了（before-plan → before-retrospective）
+1. サブissueで開発完了（plan → retrospective）
 2. サブissueのplan.mdにOutcomes & RetrospectivesとFollow-up Issuesを記入
 3. `/complete-sub-issue <サブissue URL>`を実行
 4. 親issueのTasksセクションが自動で完了マーク
@@ -520,7 +520,7 @@ before-architecture-decisionステートでアーキテクチャを決定する�
 - **`/architecture-decision`用の追加要件**:
   - `gh` CLI（PR情報取得・PRクローズのため）
   - `GITHUB_TOKEN`環境変数（`export GITHUB_TOKEN=$(gh auth token)`）
-  - 現在のGitHub Issue Statusが `before-architecture-decision` である
+  - 現在のGitHub Issue Statusが `architecture-decision` である
 - **`/create-sub-issue`用の追加要件**:
   - `gh` CLI（GitHub Issueを作成するため）
   - `GITHUB_TOKEN`環境変数（`export GITHUB_TOKEN=$(gh auth token)`）
@@ -537,7 +537,7 @@ contradiction-tools/
 ├── .claude-plugin/
 │   └── plugin.json                 # Pluginメタデータ
 ├── commands/
-│   ├── plan.md                     # before-plan実行コマンド
+│   ├── plan.md                     # plan実行コマンド
 │   ├── architecture-decision.md    # アーキテクチャ決定コマンド
 │   ├── resolve-question.md         # Open Question解消コマンド
 │   ├── add-question.md             # Open Question追加コマンド

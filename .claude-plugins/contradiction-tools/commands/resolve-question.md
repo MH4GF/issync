@@ -29,7 +29,7 @@ description: 決定事項の記録、質問の解決済みマーク、タスク�
 - 決定事項は体系的に記録されます
 - タスクは新たな発見に基づいて更新されます
 
-このワークフローは**どのステートでも発生**します（before-plan、before-poc、before-architecture-decision、before-implement）- これはステート遷移とは独立した横断的オペレーションです。
+このワークフローは**どのステートでも発生**します（plan、poc、architecture-decision、implement）- これはステート遷移とは独立した横断的オペレーションです。
 
 ## 実行フロー
 

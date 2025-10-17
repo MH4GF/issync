@@ -75,12 +75,12 @@
 - アーキテクチャの根本に関わる選択
 
 **高優先度:**
-- before-implement までに解決必須
+- implement までに解決必須
 - 実装方針に直接影響する
 - 複数のタスクに影響を与える
 
 **中優先度:**
-- before-architecture-decision で解決推奨
+- architecture-decision で解決推奨
 - 品質・保守性に関わる
 - 一部のタスクに影響を与える
 

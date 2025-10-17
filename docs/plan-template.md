@@ -1,5 +1,5 @@
 <!-- issync:v1:start -->
-<!-- Template Version: 7 (2025-10-17) -->
+<!-- Template Version: 9 (2025-10-17) -->
 
 # [Project Name] Development Plan
 
@@ -33,7 +33,7 @@
 
 <!--
 📝 Guidance for AI
-記入タイミング: before-plan
+記入タイミング: plan
 記入内容: タスクの目的、解決する問題、コアバリューを明確に定義。AIエージェントがこのタスクの方向性を理解するための最重要セクション
 -->
 
@@ -49,7 +49,7 @@
 
 <!--
 📝 Guidance for AI
-記入タイミング: before-plan
+記入タイミング: plan
 記入内容: 問題の背景、設計哲学を記述。コードベース調査や既存ドキュメント確認の結果を反映
 -->
 
@@ -65,7 +65,7 @@
 
 <!--
 📝 Guidance for AI
-記入タイミング: before-planで初期記入 → before-architecture-decisionで妥当性検証・更新
+記入タイミング: planで初期記入 → architecture-decisionで妥当性検証・更新
 記入内容: テスト可能な受け入れ基準を定義。POC後に実現可能性を確認し、必要に応じて調整
 -->
 
@@ -81,7 +81,7 @@
 
 <!--
 📝 Guidance for AI
-記入タイミング: before-architecture-decision
+記入タイミング: architecture-decision
 記入内容: POCの知見を基にシステム仕様、アーキテクチャ、設計方針を具体化
 -->
 
@@ -101,8 +101,8 @@
 
 <!--
 📝 Guidance for AI
-記入タイミング: before-plan/before-pocで記入 → 各フェーズで解決
-記入内容: 未解決の重要な問い。before-implementまでに実装に必要な質問を全て解決。優先度が高い（先に解消すべき）問いを上に配置
+記入タイミング: plan/pocで記入 → 各フェーズで解決
+記入内容: 未解決の重要な問い。implementまでに実装に必要な質問を全て解決。優先度が高い（先に解消すべき）問いを上に配置
 -->
 
 このセクションでは、プロジェクト推進にあたって未解決の重要な問いを記録します。各Phaseで順次解決していきます。
@@ -137,7 +137,7 @@
 
 <!--
 📝 Guidance for AI
-記入タイミング: before-poc以降、継続的に記入
+記入タイミング: poc以降、継続的に記入
 記入内容: 実装中に発見した技術的制約・複雑性・新たなタスク。失敗時は失敗原因も記録
 -->
 
@@ -153,7 +153,7 @@
 
 <!--
 📝 Guidance for AI
-記入タイミング: before-architecture-decision
+記入タイミング: architecture-decision
 記入内容: POCの知見を基に技術選定、アーキテクチャ決定、トレードオフを記録
 -->
 
@@ -172,7 +172,7 @@
 
 <!--
 📝 Guidance for AI
-記入タイミング: before-retrospective
+記入タイミング: retrospective
 記入内容: 実装完了内容、品質改善、発見、次のステップ。プロジェクト改善提案も含む
 -->
 

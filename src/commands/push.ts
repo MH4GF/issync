@@ -21,6 +21,7 @@ export interface PushOptions {
   token?: string
   file?: string
   issue?: string
+  force?: boolean
 }
 
 export class OptimisticLockError extends Error {
@@ -28,6 +29,48 @@ export class OptimisticLockError extends Error {
     super('Remote comment has been updated since last sync. Please run "issync pull" first.')
     this.name = 'OptimisticLockError'
   }
+}
+
+export class ForcePushCancelledError extends Error {
+  constructor() {
+    super('Force push cancelled by user')
+    this.name = 'ForcePushCancelledError'
+  }
+}
+
+interface ConfirmOptions {
+  message: string
+  question?: string
+}
+
+/**
+ * Confirms an action with the user in interactive mode
+ * Returns true if confirmed (or in non-interactive mode), false if cancelled
+ */
+export async function confirmAction(
+  options: ConfirmOptions,
+  inputStream = process.stdin,
+  outputStream = process.stdout,
+): Promise<boolean> {
+  console.warn(options.message)
+
+  // In non-interactive mode, always proceed
+  if (!inputStream.isTTY) {
+    return true
+  }
+
+  const readline = await import('node:readline')
+  const rl = readline.createInterface({
+    input: inputStream,
+    output: outputStream,
+  })
+
+  const answer = await new Promise<string>((resolve) => {
+    rl.question(options.question ?? 'Continue? [y/N] ', resolve)
+  })
+  rl.close()
+
+  return answer.toLowerCase() === 'y'
 }
 
 /**
@@ -54,7 +97,12 @@ async function ensureRemoteHasMarkers(
 /**
  * Push a single sync to remote
  */
-async function pushSingleSync(sync: IssyncSync, cwd: string, token?: string): Promise<void> {
+async function pushSingleSync(
+  sync: IssyncSync,
+  cwd: string,
+  token?: string,
+  force = false,
+): Promise<void> {
   const baseDir = cwd ?? process.cwd()
 
   // Validate and read local file
@@ -106,8 +154,8 @@ async function pushSingleSync(sync: IssyncSync, cwd: string, token?: string): Pr
     const remoteContent = removeMarker(normalizedBody)
     const remoteHash = calculateHash(remoteContent)
 
-    // Check if remote has been updated since last sync
-    if (sync.last_synced_hash && remoteHash !== sync.last_synced_hash) {
+    // Check if remote has been updated since last sync (skip if force is true)
+    if (!force && sync.last_synced_hash && remoteHash !== sync.last_synced_hash) {
       throw new OptimisticLockError()
     }
 
@@ -139,6 +187,7 @@ async function pushAllSyncs(
   baseDir: string,
   cwd: string,
   token?: string,
+  force = false,
 ): Promise<void> {
   if (state.syncs.length === 0) {
     throw new SyncNotFoundError()
@@ -146,7 +195,7 @@ async function pushAllSyncs(
 
   // Push all syncs in parallel
   const results = await Promise.allSettled(
-    state.syncs.map((sync) => pushSingleSync(sync, baseDir, token)),
+    state.syncs.map((sync) => pushSingleSync(sync, baseDir, token, force)),
   )
 
   // Collect failures
@@ -164,15 +213,26 @@ async function pushAllSyncs(
 }
 
 export async function push(options: PushOptions = {}): Promise<void> {
-  const { cwd, token, file, issue } = options
+  const { cwd, token, file, issue, force } = options
   const baseDir = cwd ?? process.cwd()
+
+  // Display warning and ask for confirmation if force is enabled
+  if (force) {
+    const confirmed = await confirmAction({
+      message: '⚠️  Force push will overwrite any concurrent remote changes.',
+    })
+
+    if (!confirmed) {
+      throw new ForcePushCancelledError()
+    }
+  }
 
   // Load config
   const state = loadConfig(cwd)
 
   // If no selector provided, push all syncs
   if (!file && !issue) {
-    await pushAllSyncs(state, baseDir, baseDir, token)
+    await pushAllSyncs(state, baseDir, baseDir, token, force)
     return
   }
 
@@ -183,6 +243,6 @@ export async function push(options: PushOptions = {}): Promise<void> {
   }
   const { sync } = selectSync(state, selector, baseDir)
 
-  await pushSingleSync(sync, baseDir, token)
+  await pushSingleSync(sync, baseDir, token, force)
   saveConfig(state, cwd)
 }

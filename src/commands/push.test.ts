@@ -2,12 +2,13 @@ import { afterEach, beforeEach, describe, expect, mock, spyOn, test } from 'bun:
 import { mkdir, mkdtemp, rm, writeFile } from 'node:fs/promises'
 import { tmpdir } from 'node:os'
 import path from 'node:path'
+import { Readable, Writable } from 'node:stream'
 import { loadConfig, saveConfig } from '../lib/config.js'
 import * as githubModule from '../lib/github.js'
 import { calculateHash } from '../lib/hash.js'
 import { expectNthCallContent } from '../lib/test-helpers.js'
 import type { IssyncState } from '../types/index.js'
-import { push } from './push.js'
+import { confirmAction, push } from './push.js'
 
 type GitHubClientInstance = ReturnType<typeof githubModule.createGitHubClient>
 
@@ -309,5 +310,150 @@ describe('push command - multi-sync support', () => {
     expect(updateComment).toHaveBeenCalledTimes(2)
     expectNthCallContent(updateComment, 0, githubModule.addMarker(previousBody))
     expectNthCallContent(updateComment, 1, githubModule.addMarker(localBody))
+  })
+
+  test('force push skips optimistic lock check when remote hash differs', async () => {
+    const previousBody = '# Remote Content'
+    const remoteBody = '# Remote Content (modified by another session)'
+    const localBody = '# Updated Content'
+    const state: IssyncState = {
+      syncs: [
+        {
+          issue_url: 'https://github.com/owner/repo/issues/1',
+          local_file: 'docs/plan.md',
+          comment_id: 123,
+          last_synced_hash: calculateHash(previousBody),
+        },
+      ],
+    }
+    saveConfig(state, tempDir)
+
+    await mkdir(path.join(tempDir, 'docs'), { recursive: true })
+    await writeFile(path.join(tempDir, 'docs/plan.md'), localBody, 'utf-8')
+
+    const updateComment = mock<GitHubClientInstance['updateComment']>(() =>
+      Promise.resolve({
+        id: 123,
+        body: '',
+        updated_at: '2025-01-01T00:00:00Z',
+      }),
+    )
+    const mockGitHubClient: Pick<GitHubClientInstance, 'getComment' | 'updateComment'> = {
+      getComment: () =>
+        Promise.resolve({
+          id: 123,
+          body: githubModule.addMarker(remoteBody),
+          updated_at: '2025-01-01T00:00:00Z',
+        }),
+      updateComment: (...args: Parameters<GitHubClientInstance['updateComment']>) =>
+        updateComment(...args),
+    }
+
+    spyOn(githubModule, 'createGitHubClient').mockReturnValue(
+      mockGitHubClient as unknown as GitHubClientInstance,
+    )
+
+    // Mock stdin as non-TTY to auto-confirm force push
+    const originalIsTTY = process.stdin.isTTY
+    ;(process.stdin as { isTTY?: boolean }).isTTY = false
+
+    try {
+      // Act - force push should succeed
+      await push({ cwd: tempDir, force: true })
+
+      // Assert
+      expect(updateComment).toHaveBeenCalledTimes(1)
+      expectNthCallContent(updateComment, 0, githubModule.addMarker(localBody))
+
+      const updatedState = loadConfig(tempDir)
+      const sync = updatedState.syncs[0]
+      expect(sync?.last_synced_hash).toBe(calculateHash(localBody))
+    } finally {
+      // Restore original isTTY value
+      ;(process.stdin as { isTTY?: boolean }).isTTY = originalIsTTY
+    }
+  })
+
+  test('force push works even when remote hash matches', async () => {
+    const previousBody = '# Content'
+    const localBody = '# Updated Content'
+    const state: IssyncState = {
+      syncs: [
+        {
+          issue_url: 'https://github.com/owner/repo/issues/1',
+          local_file: 'docs/plan.md',
+          comment_id: 123,
+          last_synced_hash: calculateHash(previousBody),
+        },
+      ],
+    }
+    saveConfig(state, tempDir)
+
+    await mkdir(path.join(tempDir, 'docs'), { recursive: true })
+    await writeFile(path.join(tempDir, 'docs/plan.md'), localBody, 'utf-8')
+
+    const updateComment = mock<GitHubClientInstance['updateComment']>(() =>
+      Promise.resolve({
+        id: 123,
+        body: '',
+        updated_at: '2025-01-01T00:00:00Z',
+      }),
+    )
+    const mockGitHubClient: Pick<GitHubClientInstance, 'getComment' | 'updateComment'> = {
+      getComment: () =>
+        Promise.resolve({
+          id: 123,
+          body: githubModule.addMarker(previousBody),
+          updated_at: '2025-01-01T00:00:00Z',
+        }),
+      updateComment: (...args: Parameters<GitHubClientInstance['updateComment']>) =>
+        updateComment(...args),
+    }
+
+    spyOn(githubModule, 'createGitHubClient').mockReturnValue(
+      mockGitHubClient as unknown as GitHubClientInstance,
+    )
+
+    // Mock stdin as non-TTY to auto-confirm force push
+    const originalIsTTY = process.stdin.isTTY
+    ;(process.stdin as { isTTY?: boolean }).isTTY = false
+
+    try {
+      // Act
+      await push({ cwd: tempDir, force: true })
+
+      // Assert
+      expect(updateComment).toHaveBeenCalledTimes(1)
+      expectNthCallContent(updateComment, 0, githubModule.addMarker(localBody))
+    } finally {
+      // Restore original isTTY value
+      ;(process.stdin as { isTTY?: boolean }).isTTY = originalIsTTY
+    }
+  })
+})
+
+describe('confirmAction - force push confirmation prompt', () => {
+  test('returns true in non-TTY mode (no user interaction required)', async () => {
+    // Arrange - Mock non-TTY input stream (CI environment)
+    const mockInput = new Readable({
+      read() {},
+    })
+    ;(mockInput as unknown as { isTTY: boolean }).isTTY = false
+
+    const mockOutput = new Writable({
+      write(_chunk, _encoding, callback) {
+        callback()
+      },
+    })
+
+    // Act
+    const result = await confirmAction(
+      { message: '⚠️  Test warning' },
+      mockInput as typeof process.stdin,
+      mockOutput as typeof process.stdout,
+    )
+
+    // Assert - In non-TTY mode, always returns true
+    expect(result).toBe(true)
   })
 })

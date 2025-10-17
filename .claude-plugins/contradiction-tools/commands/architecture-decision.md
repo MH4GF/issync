@@ -17,7 +17,7 @@ description: POCの知見を基にアーキテクチャ・設計方針を決定�
 
 ## コンテキスト
 
-このコマンドは「矛盾解消駆動開発」ワークフローの**before-architecture-decisionステート**で使用されます：
+このコマンドは「矛盾解消駆動開発」ワークフローの**architecture-decisionステート**で使用されます：
 - POC実装が完了し、PRが作成されている状態から開始
 - POCで得た技術的知見（実現可能性、複雑性、制約）を基にアーキテクチャを決定
 - Decision Log、Specification / 仕様、Acceptance Criteriaを記入
@@ -26,7 +26,7 @@ description: POCの知見を基にアーキテクチャ・設計方針を決定�
 ## 前提条件
 
 実行前に必要なものは以下です：
-- [ ] 現在のGitHub Issue Statusが `before-architecture-decision` である
+- [ ] 現在のGitHub Issue Statusが `architecture-decision` である
 - [ ] POC実装が完了し、PRが作成されている
 - [ ] `GITHUB_TOKEN` 環境変数が設定されている（`export GITHUB_TOKEN=$(gh auth token)`）
 - [ ] plan.mdファイルがローカルに存在する
@@ -44,8 +44,8 @@ gh issue view <issue-url> --json projectItems --jq '.projectItems[].fieldValues[
 ```
 
 **Status検証**:
-- ✅ `before-architecture-decision` → 続行
-- ❌ それ以外 → エラー終了（"現在のStatusがbefore-architecture-decisionではありません。before-pocステートを完了してから実行してください。"）
+- ✅ `architecture-decision` → 続行
+- ❌ それ以外 → エラー終了（"現在のStatusがarchitecture-decisionではありません。pocステートを完了してから実行してください。"）
 
 ---
 
@@ -242,7 +242,7 @@ Acceptance Criteriaが妥当であると判断した場合、変更は不要で�
 POC PRをクローズします：
 
 ```bash
-gh pr close <PR URL> --comment "POC完了。アーキテクチャ決定をplan.mdに記録しました。before-implementフェーズに進みます。"
+gh pr close <PR URL> --comment "POC完了。アーキテクチャ決定をplan.mdに記録しました。implementフェーズに進みます。"
 ```
 
 **PRが既にクローズ済みの場合**:
@@ -277,7 +277,7 @@ issync push
 ## /architecture-decision 実行結果
 
 ### 完了したステップ
-- ✅ ステップ1: Status検証（現在: before-architecture-decision）
+- ✅ ステップ1: Status検証（現在: architecture-decision）
 - ✅ ステップ2: POC PR情報取得（PR #123: [PR Title]）
 - ✅ ステップ3: Discoveries & Insights参照（[X]項目を確認）
 - ✅ ステップ4: Decision Log記入（[Y]個の決定事項を記録）
@@ -294,8 +294,8 @@ issync push
 ### 次のアクション
 - [ ] plan.mdの内容（Decision Log、Specification、Acceptance Criteria）をレビューしてください
 - [ ] アーキテクチャ決定が適切か確認してください
-- [ ] 承認後、Statusを `before-implement` に変更してください
-- [ ] before-implementのチェックリストを確認し、本実装を開始してください
+- [ ] 承認後、Statusを `implement` に変更してください
+- [ ] implementのチェックリストを確認し、本実装を開始してください
 ```
 
 ---
@@ -304,7 +304,7 @@ issync push
 
 ### Status検証について
 
-- **ステップ1を省略しないでください**: `before-architecture-decision`以外のステートでこのコマンドを実行すると、ワークフローが破綻します
+- **ステップ1を省略しないでください**: `architecture-decision`以外のステートでこのコマンドを実行すると、ワークフローが破綻します
 - エラーが発生した場合は、現在のStatusを確認し、適切なステートに遷移してから再実行してください
 
 ### Decision Logの記入について
@@ -332,7 +332,7 @@ issync push
 
 | ケース | 対応 |
 |--------|------|
-| 現在のStatusが`before-architecture-decision`でない | ❌ エラー終了（"現在のStatusがbefore-architecture-decisionではありません"） |
+| 現在のStatusが`architecture-decision`でない | ❌ エラー終了（"現在のStatusがarchitecture-decisionではありません"） |
 | POC PR URLが無効 | ❌ エラー終了（"無効なPR URLです"） |
 | POC PRが既にクローズ済み | ⚠️ 警告を出して続行（Decision Log記入のみ実行） |
 | POCの知見が不足（Discoveries & Insightsが空） | ⚠️ 警告を出して続行（最小限の記入を実施） |
@@ -349,7 +349,7 @@ issync push
 
 現在のGitHub Issue Statusを確認します...
 
-✅ 現在のStatus: `before-architecture-decision`（検証OK）
+✅ 現在のStatus: `architecture-decision`（検証OK）
 
 ---
 
@@ -425,7 +425,7 @@ watchモードが起動しているため、自動的にGitHub Issueに同期さ
 ## /architecture-decision 実行結果
 
 ### 完了したステップ
-- ✅ ステップ1: Status検証（現在: before-architecture-decision）
+- ✅ ステップ1: Status検証（現在: architecture-decision）
 - ✅ ステップ2: POC PR情報取得（PR #456: "POC: Watch daemon implementation"）
 - ✅ ステップ3: Discoveries & Insights参照（3項目を確認）
 - ✅ ステップ4: Decision Log記入（3個の決定事項を記録）
@@ -442,8 +442,8 @@ watchモードが起動しているため、自動的にGitHub Issueに同期さ
 ### 次のアクション
 - [ ] plan.mdの内容（Decision Log、Specification、Acceptance Criteria）をレビューしてください
 - [ ] アーキテクチャ決定が適切か確認してください
-- [ ] 承認後、Statusを `before-implement` に変更してください
-- [ ] before-implementのチェックリストを確認し、本実装を開始してください
+- [ ] 承認後、Statusを `implement` に変更してください
+- [ ] implementのチェックリストを確認し、本実装を開始してください
 
 ---
 
@@ -452,11 +452,11 @@ watchモードが起動しているため、自動的にGitHub Issueに同期さ
 このコマンド実行後の流れ：
 
 ```
-before-pocステート完了
+pocステート完了
    ↓
 POC実装 & PR作成
    ↓
-Statusを before-architecture-decision に変更
+Statusを architecture-decision に変更
    ↓
 /architecture-decision コマンド実行 (このコマンド)
    ├─ Status検証
@@ -472,7 +472,7 @@ Statusを before-architecture-decision に変更
    ↓
 人間がplan.mdをレビュー
    ↓
-承認後、Statusを before-implement に変更
+承認後、Statusを implement に変更
    ↓
 本実装開始
 ```

@@ -24,7 +24,7 @@ description: サブissue完了時に親issueのplan.mdを自動更新し、完�
 ## コンテキスト
 
 このコマンドは「矛盾解消駆動開発」ワークフローの**横断的オペレーション**です：
-- **実行タイミング**: `before-retrospective`ステート（サブissueの振り返り記入後）
+- **実行タイミング**: `retrospective`ステート（サブissueの振り返り記入後）
 - サブissue完了時に親issueへ完了情報を自動反映
 - Follow-up事項を適切なセクション（Open Questions、Follow-up Issues）に振り分け
 - 大きなタスクのサブissue化と完了フローの自動化
@@ -276,7 +276,7 @@ plan.md不在時は「（記載なし）」として記録し、手動追記を�
 
 - **運用フロー**:
   1. `/create-sub-issue`でサブissue作成
-  2. サブissueで開発（before-plan → before-retrospective）
+  2. サブissueで開発（plan → retrospective）
   3. サブissueのplan.mdにOutcomes & RetrospectivesとFollow-up Issuesを記入
   4. `/complete-sub-issue`で親issueに自動反映＆サブissueclose
 

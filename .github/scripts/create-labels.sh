@@ -19,39 +19,39 @@ create_label_if_not_exists() {
   fi
 }
 
-# before-plan: 計画フェーズ
+# plan: 計画フェーズ
 create_label_if_not_exists \
-  "before-plan" \
+  "plan" \
   "d4c5f9" \
   "進捗ドキュメント(plan.md)のセットアップ。Purpose/Overview、Context & Direction、Validation & Acceptance Criteriaを記入"
 
-# before-poc: 検証フェーズ
+# poc: 検証フェーズ
 create_label_if_not_exists \
-  "before-poc" \
+  "poc" \
   "fbca04" \
   "技術検証のための実装。技術的実現可能性・複雑性・制約を明らかにする（POC後はPRをclose）"
 
-# before-architecture-decision: 設計決定（人間承認必要）
+# architecture-decision: 設計決定（人間承認必要）
 create_label_if_not_exists \
-  "before-architecture-decision" \
+  "architecture-decision" \
   "0e8a16" \
   "アーキテクチャ・設計方針の決定。POCで得た知見をもとにDecision Logを記録（人間承認必要）"
 
-# before-implement: 実装フェーズ
+# implement: 実装フェーズ
 create_label_if_not_exists \
-  "before-implement" \
+  "implement" \
   "1d76db" \
   "本実装開始前のチェック。Work Plan・Acceptance Criteria充足度を確認し、CI成功までを完了条件とする"
 
-# before-merge: レビューフェーズ（人間承認必要）
+# merge: レビューフェーズ（人間承認必要）
 create_label_if_not_exists \
-  "before-merge" \
+  "merge" \
   "0e8a16" \
   "実装完了後のレビュー。CI通過後、人間がコードレビューを実施（人間承認必要）"
 
-# before-retrospective: 振り返りフェーズ
+# retrospective: 振り返りフェーズ
 create_label_if_not_exists \
-  "before-retrospective" \
+  "retrospective" \
   "5319e7" \
   "振り返りと知見の記録。Discoveries & Insights、Outcomes & Retrospectivesを更新"
 

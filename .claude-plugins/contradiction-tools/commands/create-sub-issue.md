@@ -14,7 +14,7 @@ description: 新規タスクをGitHub Issueとして作成し、親issueとの�
 ## コンテキスト
 
 このコマンドは「矛盾解消駆動開発」ワークフローの**横断的オペレーション**です：
-- **どのステートでも実行可能**（before-plan、before-poc、before-architecture-decision、before-implement）
+- **どのステートでも実行可能**（plan、poc、architecture-decision、implement）
 - GitHub Sub-issuesを完全なSSOTとし、plan.mdのTasksセクションは使用しない（Template v7で完全移行）
 - LLM生成のissue本文により、各サブissueが親issueのコンテキストを継承
 - 作成されたサブissueは自動的に親issueとリンク
@@ -176,11 +176,11 @@ Created issue #125: /create-sub-issue実装
 
 ### ステップ7: GitHub Projects Statusを設定（オプション）
 
-作成されたissueの初期Statusを`before-plan`に設定：
+作成されたissueの初期Statusを`plan`に設定：
 
 ```bash
 # Projects情報を取得して設定（gh CLIで可能な場合）
-gh issue edit $ISSUE_NUMBER --add-project "{ProjectName}" --project-field "Status=before-plan"
+gh issue edit $ISSUE_NUMBER --add-project "{ProjectName}" --project-field "Status=plan"
 ```
 
 **注**: この機能がgh CLIで利用不可の場合はスキップし、手動設定を促す
@@ -209,7 +209,7 @@ gh issue edit $ISSUE_NUMBER --add-project "{ProjectName}" --project-field "Statu
 
 ### 次のアクション
 - [ ] 作成されたサブissueを確認してください
-- [ ] 各サブissueのStatusを`before-plan`に設定してください（GitHub Projects経由）
+- [ ] 各サブissueのStatusを`plan`に設定してください（GitHub Projects経由）
 - [ ] 必要に応じて各サブissueで `/plan` コマンドを実行してplan.mdを初期化してください
 ```
 
@@ -273,7 +273,7 @@ gh issue edit $ISSUE_NUMBER --add-project "{ProjectName}" --project-field "Statu
 
 - **完全移行**: GitHub Sub-issuesが完全なSSoT、plan.mdのTasksセクションは使用しない
 - **新ワークフロー**:
-  1. before-architecture-decision後、実装タスクが明確になったら`/create-sub-issue`を実行
+  1. architecture-decision後、実装タスクが明確になったら`/create-sub-issue`を実行
   2. LLMが親issueコンテキストを理解し、各サブissueに適切なGoal/Background/Acceptance Criteriaを生成
   3. 自動でSub-issues APIで親issueに紐づけ
   4. 各サブissueで`/plan`を実行してplan.mdを初期化、開発開始

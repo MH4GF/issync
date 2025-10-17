@@ -1,8 +1,8 @@
 ---
-description: before-planフェーズのプロセスを標準化し、コードベース調査を強制することで高品質なplan.md作成を実現
+description: planフェーズのプロセスを標準化し、コードベース調査を強制することで高品質なplan.md作成を実現
 ---
 
-# /plan: before-plan実行ワークフロー
+# /plan: plan実行ワークフロー
 
 あなたはユーザーの `.issync/docs/plan-{番号}-{slug}.md` ファイルを初期作成するサポートをしています。このコマンドは以下の5ステップのワークフローを自動化します：
 1. 前提条件確認 & ファイル名決定 & 必要なら issync init 実行
@@ -16,7 +16,7 @@ description: before-planフェーズのプロセスを標準化し、コード�
 
 ## コンテキスト
 
-このコマンドは「矛盾解消駆動開発」ワークフローの**before-planステート**で使用されます：
+このコマンドは「矛盾解消駆動開発」ワークフローの**planステート**で使用されます：
 - GitHub Issueが作成されている状態から開始
 - Issue URLから番号を抽出し、Issueタイトルからslugを生成して `.issync/docs/plan-{番号}-{slug}.md` ファイルを作成
 - slugは内容を表す短い英語名（小文字、ハイフン区切り、例: `watch-daemon`, `multi-sync-support`）
@@ -168,7 +168,7 @@ issync push
 ### 次のアクション
 - [ ] `.issync/docs/plan-{番号}-{slug}.md` の内容をレビューしてください
 - [ ] Open Questionsが適切に絞り込まれているか確認してください
-- [ ] 準備が整ったら、Statusを `before-poc` に変更してください
+- [ ] 準備が整ったら、Statusを `poc` に変更してください
 - [ ] アーキテクチャ決定後、必要に応じて `/create-sub-issue` コマンドでタスクをGitHub Sub-issuesとして作成してください
 ```
 
@@ -201,9 +201,9 @@ GitHub Issue作成
    ↓
 /plan実行 → コードベース調査 → plan-{番号}-{slug}.md作成
    ↓
-人間レビュー → Statusをbefore-pocに変更 → Devin起動
+人間レビュー → Statusをpocに変更 → Devin起動
 ```
 
-**重要**: before-plan完了後、人間レビューと承認後にStatusを変更
+**重要**: plan完了後、人間レビューと承認後にStatusを変更
 
 **ファイル配置**: `.issync/docs/plan-{番号}-{slug}.md` 形式で管理

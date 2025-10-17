@@ -93,6 +93,31 @@ Push local changes to GitHub Issue comment.
 
 ```bash
 issync push
+
+# Force push (skip optimistic lock check)
+issync push --force
+```
+
+**Options:**
+- `--force`: Skip optimistic lock check and force overwrite remote changes
+  - ⚠️ **WARNING**: Concurrent remote changes will be permanently lost
+  - Displays warning and asks for confirmation before execution
+  - Use cases:
+    - Resolving conflicts when you're certain local version is correct
+    - Recovering from corrupted remote state
+  - Similar to `git push --force`
+  - **Best practice**: Always verify remote content before using this option
+
+**Example workflow with force:**
+```bash
+# 1. Check remote content first
+issync pull
+
+# 2. Review the changes
+cat docs/plan.md
+
+# 3. If local is correct and you want to overwrite remote
+issync push --force
 ```
 
 ### `issync watch`
