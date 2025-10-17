@@ -201,7 +201,12 @@ describe('watch command (chokidar mocked)', () => {
 
     await startWatch()
 
-    expect(chokidarSpy.mock.calls.length).toBe(2)
+    // Expect watch calls: 2 for sync files + 1 for state.yml monitoring
+    const EXPECTED_SYNC_FILE_WATCHES = 2
+    const STATE_FILE_WATCH_COUNT = 1
+    const TOTAL_EXPECTED_WATCHES = EXPECTED_SYNC_FILE_WATCHES + STATE_FILE_WATCH_COUNT
+
+    expect(chokidarSpy.mock.calls.length).toBe(TOTAL_EXPECTED_WATCHES)
     const watchedPaths = chokidarSpy.mock.calls.map((call: unknown[]) => call[0])
     expect(watchedPaths).toContain(path.resolve(process.cwd(), relativeFile))
     expect(watchedPaths).toContain(path.resolve(process.cwd(), secondRelative))

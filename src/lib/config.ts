@@ -4,7 +4,7 @@ import yaml from 'js-yaml'
 import type { IssyncState, IssyncSync } from '../types/index.js'
 import { AmbiguousSyncError, ConfigNotFoundError, SyncNotFoundError } from './errors.js'
 
-function getStatePath(cwd = process.cwd()): { stateDir: string; stateFile: string } {
+export function getStatePath(cwd = process.cwd()): { stateDir: string; stateFile: string } {
   return {
     stateDir: path.join(cwd, '.issync'),
     stateFile: path.join(cwd, '.issync', 'state.yml'),

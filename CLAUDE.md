@@ -247,6 +247,10 @@ In our own development, we lost 45 lines of progress because:
 ### Watch Mode Implementation
 - **Remote polling**: setInterval to fetch comment every `poll_interval` seconds
 - **Local file watching**: Use `chokidar` to detect file changes
+- **Dynamic file addition**: Monitors `.issync/state.yml` for changes and automatically adds new sync entries to watch targets without requiring restart
+  - New syncs are validated with safety checks before being added
+  - Maintains partial failure tolerance using Promise.allSettled
+  - Requires new syncs to have `comment_id` (must run `push` after `init`)
 - **Daemon process**: Fork/spawn background process, store PID in config
 - **Rate limiting**: GitHub API has 5000 req/hour limit (360 req/hour at 10s intervals per watch process)
 
@@ -271,6 +275,7 @@ Focus on basic sync commands (init, pull, push) and simple watch mode. Skip adva
   - `push` command with optimistic locking
   - `watch` mode with bidirectional sync and safety checks
   - Multi-sync support (multiple files per project)
+  - Dynamic file addition to watch mode (automatically detects new syncs)
 - **issync Comment Identification (2025-10-14):**
   - HTML comment markers for automatic comment discovery
   - Error handling for network failures

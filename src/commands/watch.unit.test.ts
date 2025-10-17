@@ -42,7 +42,7 @@ describe('watch command - unit tests', () => {
       }
 
       return expect(_performSafetyCheck(mockConfig)).rejects.toThrow(
-        'No comment_id found in config. Please run "issync push" first to create a comment.',
+        `No comment_id found for sync "${mockConfig.issue_url}". Please run "issync push" for this sync before starting watch mode.`,
       )
     })
 

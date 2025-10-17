@@ -1,7 +1,6 @@
 import { existsSync, readFileSync } from 'node:fs'
 import path from 'node:path'
-import chokidar, { type FSWatcher } from 'chokidar'
-import { loadConfig, selectSync } from '../lib/config.js'
+import { getStatePath, loadConfig, selectSync } from '../lib/config.js'
 import {
   AmbiguousSyncError,
   ConfigNotFoundError,
@@ -12,7 +11,14 @@ import { createGitHubClient, parseIssueUrl } from '../lib/github.js'
 import { calculateHash } from '../lib/hash.js'
 import type { IssyncState, IssyncSync } from '../types/index.js'
 import { pull } from './pull.js'
-import { OptimisticLockError, push } from './push.js'
+import { push } from './push.js'
+import {
+  formatError,
+  reportPreparationFailures,
+  reportSessionStartupFailures,
+} from './watch/errorReporter.js'
+import { SessionManager } from './watch/SessionManager.js'
+import { StateFileWatcher } from './watch/StateFileWatcher.js'
 
 /**
  * Error thrown when both local and remote have changes since last sync
@@ -38,25 +44,40 @@ interface WatchOptions {
   issue?: string
 }
 
+/**
+ * A target prepared for watching with resolved path and sync configuration
+ */
+type PreparedTarget = {
+  sync: IssyncSync
+  resolvedPath: string
+}
+
 // Constants
 const DEFAULT_POLL_INTERVAL_SECONDS = 30
-const BACKOFF_BASE_MS = 1000
-const BACKOFF_MAX_MS = 60000
-const FILE_STABILITY_THRESHOLD_MS = 500
-const FILE_POLL_INTERVAL_MS = 100
-/**
- * Grace period to ignore file changes after pull completion.
- * This prevents pull-push loops where chokidar detects file changes
- * made by pull() itself.
- *
- * Value rationale:
- * - chokidar's awaitWriteFinish uses 500ms stability threshold
- * - Adding 500ms buffer for OS I/O delays
- * - Total: 1000ms provides safe margin while being short enough
- *   to not significantly delay legitimate user edits
- */
-const PULL_GRACE_PERIOD_MS = 1000
 
+/**
+ * Resolve and validate local file path to prevent directory traversal attacks
+ *
+ * This function ensures that the resolved path is within the project directory (cwd)
+ * and cannot escape to parent directories using patterns like "../../../etc/passwd".
+ *
+ * Security: Validates against path traversal attacks by checking that the resolved
+ * absolute path starts with the base directory path.
+ *
+ * @param localFile - The local file path from sync configuration
+ * @param cwd - The current working directory (base path)
+ * @returns Validated absolute file path
+ * @throws {InvalidFilePathError} If path traversal is detected
+ *
+ * @example
+ * ```typescript
+ * // Valid: resolves to /project/.issync/docs/plan.md
+ * resolveLocalFilePath('.issync/docs/plan.md', '/project')
+ *
+ * // Invalid: throws InvalidFilePathError
+ * resolveLocalFilePath('../../../etc/passwd', '/project')
+ * ```
+ */
 function resolveLocalFilePath(localFile: string, cwd: string): string {
   const basePath = path.resolve(cwd)
   const resolvedPath = path.resolve(basePath, localFile)
@@ -80,7 +101,8 @@ export async function _performSafetyCheck(
 ): Promise<void> {
   if (!sync.comment_id) {
     throw new Error(
-      'No comment_id found in config. Please run "issync push" first to create a comment.',
+      `No comment_id found for sync "${sync.issue_url}". ` +
+        `Please run "issync push" for this sync before starting watch mode.`,
     )
   }
 
@@ -143,10 +165,7 @@ function determineSyncs(state: IssyncState, options: WatchOptions, cwd: string):
   return state.syncs
 }
 
-async function prepareTargets(
-  options: WatchOptions,
-  cwd: string,
-): Promise<Array<{ sync: IssyncSync; resolvedPath: string }>> {
+async function prepareTargets(options: WatchOptions, cwd: string): Promise<PreparedTarget[]> {
   const state = loadConfig(cwd)
   const syncs = determineSyncs(state, options, cwd)
 
@@ -154,7 +173,7 @@ async function prepareTargets(
     throw new SyncNotFoundError()
   }
 
-  const targets = syncs.map((sync) => ({
+  const targets: PreparedTarget[] = syncs.map((sync) => ({
     sync,
     resolvedPath: resolveLocalFilePath(sync.local_file, cwd),
   }))
@@ -193,275 +212,135 @@ function handleWatchSetupError(error: unknown): void {
 }
 
 /**
- * Manages a watch session that syncs local files with remote GitHub Issue comments
+ * Find syncs that are not currently being watched
+ *
+ * Compares the current state from state.yml against the set of tracked issue URLs
+ * to identify new syncs that need to be added to watch mode.
+ *
+ * @param currentState - The current state loaded from state.yml
+ * @param trackedIssueUrls - Set of issue URLs currently being watched
+ * @returns Array of syncs that need to be added to watch mode
+ *
+ * @example
+ * ```typescript
+ * const state = loadConfig(cwd)
+ * const tracked = new Set(['https://github.com/owner/repo/issues/1'])
+ * const newSyncs = findUnwatchedSyncs(state, tracked)
+ * console.log(`Found ${newSyncs.length} new sync(s)`)
+ * ```
  */
-class WatchSession {
-  private isShuttingDown = false
-  private operationLock: Promise<void> | null = null
-  private fileWatcher: FSWatcher | null = null
-  private consecutiveErrors = 0
-  private nextAllowedPollTime = 0
-  private shutdownResolve: (() => void) | null = null
-  private pollingAbortController: AbortController | null = null
-  private lastPullCompletedAt = 0
+function findUnwatchedSyncs(
+  currentState: IssyncState,
+  trackedIssueUrls: Set<string>,
+): IssyncSync[] {
+  return currentState.syncs.filter((sync) => !trackedIssueUrls.has(sync.issue_url))
+}
 
-  constructor(
-    private readonly sync: IssyncSync,
-    private readonly filePath: string,
-    private readonly intervalMs: number,
-    private readonly cwd: string,
-    readonly _skipInitialPull: boolean = false,
-  ) {}
+/**
+ * Prepare new targets with safety checks in parallel
+ * @param newSyncs Array of syncs to prepare
+ * @param cwd Current working directory
+ * @returns Array of successfully prepared targets
+ */
+async function prepareNewTargets(newSyncs: IssyncSync[], cwd: string): Promise<PreparedTarget[]> {
+  const results = await Promise.allSettled(
+    newSyncs.map(async (sync) => {
+      const resolvedPath = resolveLocalFilePath(sync.local_file, cwd)
+      await _performSafetyCheck(sync, cwd, resolvedPath)
+      return { sync, resolvedPath }
+    }),
+  )
 
-  /**
-   * Start the watch session
-   */
-  async start(): Promise<void> {
-    // Validate file exists before starting (fail-fast)
-    if (!existsSync(this.filePath)) {
-      throw new Error(`Local file does not exist: ${this.filePath}`)
-    }
+  const prepared: PreparedTarget[] = []
+  const failures: Array<{ sync: IssyncSync; error: string }> = []
 
-    console.log('Starting watch mode...')
-    console.log(`  File:     ${this.filePath}`)
-    console.log(`  Interval: ${this.intervalMs / 1000}s`)
-    console.log('  ⚠️  Before editing locally, ensure remote is up-to-date:')
-    console.log("      Run `issync pull` if you're unsure")
-    console.log('  ⚠️  If conflicts occur, watch mode will notify you')
-    console.log('  Press Ctrl+C to stop\n')
-
-    // Setup graceful shutdown
-    const shutdownPromise = this.setupShutdownHandlers()
-
-    // Start remote polling (performs initial pull synchronously)
-    await this.startRemotePolling()
-
-    // Start local file watching
-    this.startFileWatching()
-
-    // Wait for shutdown signal
-    await shutdownPromise
-  }
-
-  /**
-   * Stop the watch session
-   */
-  private async stop(): Promise<void> {
-    if (this.isShuttingDown) return
-    this.isShuttingDown = true
-
-    console.log('\n\nShutting down watch mode...')
-
-    // Stop polling
-    if (this.pollingAbortController) {
-      this.pollingAbortController.abort()
-      this.pollingAbortController = null
-    }
-
-    // Stop file watcher
-    if (this.fileWatcher) {
-      await this.fileWatcher.close()
-      this.fileWatcher = null
-    }
-
-    console.log('✓ Watch mode stopped')
-    if (this.shutdownResolve) {
-      this.shutdownResolve()
-    }
-  }
-
-  /**
-   * Calculate exponential backoff and log warning
-   */
-  private calculateBackoff(): void {
-    this.consecutiveErrors++
-    const backoffMs = Math.min(2 ** this.consecutiveErrors * BACKOFF_BASE_MS, BACKOFF_MAX_MS)
-    this.nextAllowedPollTime = Date.now() + backoffMs
-
-    if (this.consecutiveErrors > 1) {
-      console.error(
-        `⚠️  Backing off for ${backoffMs / 1000}s after ${this.consecutiveErrors} consecutive errors`,
-      )
-    }
-  }
-
-  /**
-   * Executes an operation with a lock to prevent concurrent operations
-   */
-  private async withLock(fn: () => Promise<void>): Promise<void> {
-    if (this.operationLock || this.isShuttingDown) return
-
-    this.operationLock = fn()
-      .then(() => {
-        this.consecutiveErrors = 0
-        this.nextAllowedPollTime = 0
-      })
-      .catch((error) => {
-        this.calculateBackoff()
-        throw error
-      })
-      .finally(() => {
-        this.operationLock = null
-      })
-
-    await this.operationLock
-  }
-
-  private setupShutdownHandlers(): Promise<void> {
-    return new Promise<void>((resolve) => {
-      this.shutdownResolve = resolve
-
-      const shutdown = () => {
-        void this.stop()
-      }
-
-      process.on('SIGINT', shutdown)
-      process.on('SIGTERM', shutdown)
-    })
-  }
-
-  /**
-   * Execute a single poll: check backoff, pull from remote, and handle errors
-   */
-  private async pollOnce(): Promise<void> {
-    // Check backoff
-    if (Date.now() < this.nextAllowedPollTime) return
-
-    try {
-      await this.withLock(async () => {
-        await pull({ cwd: this.cwd, file: this.sync.local_file })
-        this.lastPullCompletedAt = Date.now() // Record pull completion time
-        console.log(`[${new Date().toISOString()}] ✓ Pulled changes from remote`)
-      })
-    } catch (error) {
-      if (error instanceof Error) {
-        console.error(`[${new Date().toISOString()}] Pull error: ${error.message}`)
-      }
-    }
-  }
-
-  /**
-   * Run the polling loop in background
-   */
-  private async runPollingLoop(signal: AbortSignal): Promise<void> {
-    while (!signal.aborted) {
-      try {
-        await this.sleep(this.intervalMs, signal)
-      } catch {
-        // Aborted during sleep
-        break
-      }
-
-      if (signal.aborted) break
-      await this.pollOnce()
-    }
-  }
-
-  private async startRemotePolling(): Promise<void> {
-    console.log('Starting remote polling...')
-
-    this.pollingAbortController = new AbortController()
-    const signal = this.pollingAbortController.signal
-
-    // Initial pull (synchronous, throws on error) - skip if already synced by safety check
-    if (!this._skipInitialPull) {
-      try {
-        await pull({ cwd: this.cwd, file: this.sync.local_file })
-        this.lastPullCompletedAt = Date.now() // Record initial pull completion time
-        console.log('✓ Initial pull completed')
-      } catch (error) {
-        if (error instanceof ConfigNotFoundError) {
-          console.error('Config not found. Please run "issync init" first.')
-          throw error
-        }
-        if (error instanceof Error) {
-          console.error(`Initial pull failed: ${error.message}`)
-          console.error('Cannot start watch mode - please ensure remote is accessible')
-          throw error
-        }
-        throw error
-      }
+  results.forEach((result, index) => {
+    if (result.status === 'fulfilled') {
+      prepared.push(result.value)
     } else {
-      // Safety check already synced, just update timestamp
-      this.lastPullCompletedAt = Date.now()
-      console.log('✓ Already synced by safety check')
+      failures.push({ sync: newSyncs[index], error: formatError(result.reason) })
     }
+  })
 
-    // Run polling loop in background
-    void this.runPollingLoop(signal)
+  reportPreparationFailures(failures)
+
+  return prepared
+}
+
+/**
+ * Detect new syncs and start watch sessions for them
+ * @returns Object containing success count and failure information
+ */
+async function detectAndStartNewSessions(
+  cwd: string,
+  intervalMs: number,
+  sessionManager: SessionManager,
+): Promise<{
+  successCount: number
+  failures: Array<{ target: PreparedTarget; error: unknown }>
+}> {
+  const trackedIssueUrls = sessionManager.getTrackedUrls()
+  const currentState = loadConfig(cwd)
+  const newSyncs = findUnwatchedSyncs(currentState, trackedIssueUrls)
+
+  if (newSyncs.length === 0) {
+    return { successCount: 0, failures: [] }
   }
 
-  private startFileWatching(): void {
-    console.log('Starting file watcher...')
-
-    this.fileWatcher = chokidar.watch(this.filePath, {
-      persistent: true,
-      ignoreInitial: true,
-      awaitWriteFinish: {
-        stabilityThreshold: FILE_STABILITY_THRESHOLD_MS,
-        pollInterval: FILE_POLL_INTERVAL_MS,
-      },
-    })
-
-    this.fileWatcher.on('change', () => {
-      void this.handleFileChange()
-    })
-
-    this.fileWatcher.on('error', (error: unknown) => {
-      console.error('File watcher error:', error)
-    })
-
-    console.log('✓ Watch mode started\n')
+  const newTargets = await prepareNewTargets(newSyncs, cwd)
+  if (newTargets.length === 0) {
+    return { successCount: 0, failures: [] }
   }
 
-  private async handleFileChange(): Promise<void> {
-    // Skip if this change is likely from a recent pull (prevents pull-push loop)
-    const timeSinceLastPull = Date.now() - this.lastPullCompletedAt
-    if (timeSinceLastPull < PULL_GRACE_PERIOD_MS) {
-      const remainingMs = PULL_GRACE_PERIOD_MS - timeSinceLastPull
-      console.log(
-        `[${new Date().toISOString()}] ⚠️  File change detected ${timeSinceLastPull}ms after pull (within grace period). ` +
-          `This is likely from the pull operation and will be ignored. ` +
-          `If you just edited the file, please save again in ${Math.ceil(remainingMs / 1000)}s.`,
-      )
+  const results = await Promise.allSettled(
+    newTargets.map(({ sync, resolvedPath }) =>
+      sessionManager.startSession(sync, resolvedPath, intervalMs, cwd, true),
+    ),
+  )
+
+  const failures = results
+    .map((r, i) => ({ result: r, index: i }))
+    .filter(({ result }) => result.status === 'rejected')
+    .map(({ result, index }) => ({
+      target: newTargets[index],
+      error: (result as PromiseRejectedResult).reason,
+    }))
+
+  const successCount = results.length - failures.length
+
+  return { successCount, failures }
+}
+
+/**
+ * Handle state.yml change event by detecting new syncs and starting new watch sessions
+ */
+async function handleStateChange(
+  cwd: string,
+  intervalMs: number,
+  sessionManager: SessionManager,
+): Promise<void> {
+  try {
+    console.log(`\n[${new Date().toISOString()}] state.yml changed, checking for new syncs...`)
+
+    const { successCount, failures } = await detectAndStartNewSessions(
+      cwd,
+      intervalMs,
+      sessionManager,
+    )
+
+    if (successCount === 0 && failures.length === 0) {
+      console.log('No new syncs detected')
       return
     }
 
-    console.log(`[${new Date().toISOString()}] File changed, pushing...`)
+    // Report results
+    reportSessionStartupFailures(failures)
 
-    try {
-      await this.withLock(async () => {
-        await push({ cwd: this.cwd, file: this.sync.local_file })
-        console.log(`[${new Date().toISOString()}] ✓ Pushed changes to remote`)
-      })
-    } catch (error) {
-      if (error instanceof OptimisticLockError) {
-        console.error(
-          `[${new Date().toISOString()}] ⚠️  Conflict detected: Remote was modified. Run "issync pull" to sync.`,
-        )
-      } else if (error instanceof Error) {
-        console.error(`[${new Date().toISOString()}] Push error: ${error.message}`)
-      }
+    if (successCount > 0) {
+      console.log(`✓ ${successCount} new session(s) started successfully`)
     }
-  }
-
-  /**
-   * Sleep for a duration or until aborted
-   */
-  private async sleep(ms: number, signal: AbortSignal): Promise<void> {
-    if (signal.aborted) throw new Error('Aborted')
-
-    await new Promise<void>((resolve, reject) => {
-      const timeout = setTimeout(resolve, ms)
-      signal.addEventListener(
-        'abort',
-        () => {
-          clearTimeout(timeout)
-          reject(new Error('Aborted'))
-        },
-        { once: true },
-      )
-    })
+  } catch (error) {
+    console.error(`Error handling state.yml change: ${formatError(error)}`)
   }
 }
 
@@ -470,7 +349,7 @@ export async function watch(options: WatchOptions = {}): Promise<void> {
   const intervalSeconds = options.interval ?? DEFAULT_POLL_INTERVAL_SECONDS
   const intervalMs = intervalSeconds * 1000
 
-  let targets: Array<{ sync: IssyncSync; resolvedPath: string }>
+  let targets: PreparedTarget[]
   try {
     targets = await prepareTargets(options, cwd)
   } catch (error) {
@@ -482,15 +361,18 @@ export async function watch(options: WatchOptions = {}): Promise<void> {
   const plural = targetCount === 1 ? '' : 's'
   console.log(`Starting watch mode for ${targetCount} sync target${plural}`)
 
-  const sessions = targets.map(
-    ({ sync, resolvedPath }) => new WatchSession(sync, resolvedPath, intervalMs, cwd, true),
-  )
+  // Initialize session manager
+  const sessionManager = new SessionManager()
 
   // Use Promise.allSettled to handle individual session failures
   // Design decision: Partial failure mode is enabled - if some sessions succeed,
   // watch mode continues running with those successful sessions. This allows users
   // to work with syncs that succeeded while investigating failures.
-  const results = await Promise.allSettled(sessions.map((session) => session.start()))
+  const results = await Promise.allSettled(
+    targets.map(({ sync, resolvedPath }) =>
+      sessionManager.startSession(sync, resolvedPath, intervalMs, cwd, true),
+    ),
+  )
 
   const failures: Array<{ index: number; reason: unknown }> = []
   results.forEach((result, index) => {
@@ -500,16 +382,15 @@ export async function watch(options: WatchOptions = {}): Promise<void> {
   })
 
   if (failures.length > 0) {
-    const successCount = sessions.length - failures.length
-    const message = `${failures.length} of ${sessions.length} watch session(s) failed to start`
+    const successCount = targets.length - failures.length
+    const message = `${failures.length} of ${targets.length} watch session(s) failed to start`
     console.error(`\nError: ${message}`)
 
     for (const { index, reason } of failures) {
       const target = targets[index]
       const sync = target.sync
       const label = `${sync.issue_url} → ${sync.local_file}`
-      const errorMsg = reason instanceof Error ? reason.message : String(reason)
-      console.error(`  ${label}: ${errorMsg}`)
+      console.error(`  ${label}: ${formatError(reason)}`)
     }
 
     // If some sessions succeeded, show success count and continue
@@ -520,5 +401,44 @@ export async function watch(options: WatchOptions = {}): Promise<void> {
       // All sessions failed - throw error
       throw new Error('All watch sessions failed to start')
     }
+  }
+
+  // Setup state.yml monitoring for dynamic sync addition
+  const { stateFile } = getStatePath(cwd)
+  console.log('\nMonitoring state.yml for new sync entries...')
+
+  const stateFileWatcher = new StateFileWatcher(stateFile, async () => {
+    await handleStateChange(cwd, intervalMs, sessionManager)
+  })
+
+  stateFileWatcher.start()
+
+  // Setup shutdown handler to close all sessions and state watcher
+  let isCleaningUp = false
+  const cleanup = async (signal: string) => {
+    if (isCleaningUp) return
+    isCleaningUp = true
+
+    console.log(`\nReceived ${signal}, cleaning up all watch sessions...`)
+
+    // Note: failures are logged internally by SessionManager.stopAll()
+    await sessionManager.stopAll()
+
+    await stateFileWatcher.stop()
+
+    // Allow tests to mock process.exit
+    if (process.env.NODE_ENV !== 'test') {
+      process.exit(0)
+    }
+  }
+
+  process.once('SIGINT', () => void cleanup('SIGINT'))
+  process.once('SIGTERM', () => void cleanup('SIGTERM'))
+
+  // Wait indefinitely for shutdown signal (unless in test environment)
+  if (process.env.NODE_ENV !== 'test') {
+    await new Promise(() => {
+      // This promise never resolves - wait for SIGINT/SIGTERM
+    })
   }
 }
