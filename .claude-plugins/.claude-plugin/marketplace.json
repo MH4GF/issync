@@ -7,7 +7,7 @@
     {
       "name": "contradiction-tools",
       "source": "./contradiction-tools",
-      "description": "矛盾解消駆動開発のためのツール群(/plan, /resolve-question, /create-task-issues, /complete-subtask, /architecture-decision など)"
+      "description": "矛盾解消駆動開発のためのツール群(/plan, /resolve-question, /create-sub-issue, /complete-sub-issue, /architecture-decision など)"
     }
   ]
 }

@@ -61,7 +61,7 @@ plan.mdファイルが大きくなりすぎた際に、情報量を保持した�
 3. 完了済みPhaseの簡潔化
 4. 矛盾検出と報告
 
-### `/create-task-issues`: タスクのサブissue化ワークフロー
+### `/create-sub-issue`: タスクのサブissue化ワークフロー
 
 plan.mdのTasksセクションから`(未Issue化)`マーク付きタスクを抽出し、GitHub Issueとして一括作成します。以下のプロセスを自動化します：
 
@@ -74,7 +74,7 @@ plan.mdのTasksセクションから`(未Issue化)`マーク付きタスクを�
 
 **ハイブリッド方式**: 大きなタスクのみサブissue化し、小さなタスクはTasksセクションで管理することで、タスク管理の透明性と効率性を向上させます。
 
-### `/complete-subtask`: サブissue完了ワークフロー
+### `/complete-sub-issue`: サブissue完了ワークフロー
 
 サブissue完了時に親issueのplan.mdを自動更新し、完了サマリーとFollow-up事項を親issueに反映します。以下のプロセスを自動化します：
 
@@ -153,8 +153,8 @@ Claude Codeで以下のコマンドを実行し、GitHubから直接マーケッ
 /resolve-question       # Open Question解消ワークフロー
 /add-question           # Open Question追加ワークフロー
 /compact-plan           # plan.md圧縮ツール
-/create-task-issues     # タスクのサブissue化ワークフロー
-/complete-subtask       # サブissue完了ワークフロー
+/create-sub-issue     # タスクのサブissue化ワークフロー
+/complete-sub-issue       # サブissue完了ワークフロー
 ```
 
 #### 更新方法
@@ -389,7 +389,7 @@ plan.mdが779行に膨らんだ場合、pluginは：
 - 矛盾を検出してレポート
 - 結果: 779行 → 450行（42%削減）
 
-### `/create-task-issues`: タスクのサブissue化
+### `/create-sub-issue`: タスクのサブissue化
 
 #### 基本的なワークフロー
 
@@ -402,8 +402,8 @@ plan.mdが779行に膨らんだ場合、pluginは：
 
 2. コマンドを実行:
    ```bash
-   /create-task-issues              # 全ての(未Issue化)タスクを対象
-   /create-task-issues "自動アクション"  # 特定のタスクのみ対象
+   /create-sub-issue              # 全ての(未Issue化)タスクを対象
+   /create-sub-issue "自動アクション"  # 特定のタスクのみ対象
    ```
 
 3. pluginが以下を実行:
@@ -476,7 +476,7 @@ before-architecture-decisionステートでアーキテクチャを決定する�
 - **before-retrospective前**: 振り返りを書く前にドキュメントを整理
 - **矛盾の疑いがある時**: 矛盾検出機能で一貫性をチェック
 
-### `/create-task-issues`
+### `/create-sub-issue`
 
 開発のどの段階でも、大きなタスクをサブissue化したい時にこのコマンドを使用してください：
 - **before-plan**: 初期タスクを整理し、大きなタスクを識別した時
@@ -484,12 +484,12 @@ before-architecture-decisionステートでアーキテクチャを決定する�
 - **before-implement**: 実装前に、並行作業可能なタスクをサブissue化したい時
 
 **ハイブリッド方式**:
-- **大きなタスク**（複数日、複数PRが必要）→ サブissue化（`(未Issue化)`マークを追加 → `/create-task-issues`実行）
+- **大きなタスク**（複数日、複数PRが必要）→ サブissue化（`(未Issue化)`マークを追加 → `/create-sub-issue`実行）
 - **小さなタスク**（1-2時間で完結）→ plan.mdのTasksセクションで管理（Issue番号なし）
 
 これは矛盾解消駆動開発ワークフローをサポートする横断的オペレーションです。
 
-### `/complete-subtask`
+### `/complete-sub-issue`
 
 サブissueが完了し、親issueに成果を反映したい時にこのコマンドを使用してください：
 - **before-retrospective**: サブissueの振り返り記入後、親issueに完了情報を反映する時
@@ -498,7 +498,7 @@ before-architecture-decisionステートでアーキテクチャを決定する�
 **運用フロー**:
 1. サブissueで開発完了（before-plan → before-retrospective）
 2. サブissueのplan.mdにOutcomes & RetrospectivesとFollow-up Issuesを記入
-3. `/complete-subtask <サブissue URL>`を実行
+3. `/complete-sub-issue <サブissue URL>`を実行
 4. 親issueのTasksセクションが自動で完了マーク
 5. 親issueのOutcomes & Retrospectivesにサブタスク完了サマリーが自動追加
 6. サブissueのFollow-up Issuesが親issueの適切なセクションに自動振り分け
@@ -514,17 +514,17 @@ before-architecture-decisionステートでアーキテクチャを決定する�
   - **`/resolve-question`用**: Decision Log, Open Questions / 残論点, Tasks
   - **`/add-question`用**: Open Questions / 残論点
   - **`/compact-plan`用**: docs/plan-template.md（圧縮の基準として使用）
-  - **`/create-task-issues`用**: Tasks, Purpose/Overview, .issync.yml（issync init完了）
-  - **`/complete-subtask`用**: Tasks, Outcomes & Retrospectives, Open Questions, Follow-up Issues, .issync/state.yml（issync watch実行中）
+  - **`/create-sub-issue`用**: Tasks, Purpose/Overview, .issync.yml（issync init完了）
+  - **`/complete-sub-issue`用**: Tasks, Outcomes & Retrospectives, Open Questions, Follow-up Issues, .issync/state.yml（issync watch実行中）
 - (オプション) 自動同期用のissync CLIツール
 - **`/architecture-decision`用の追加要件**:
   - `gh` CLI（PR情報取得・PRクローズのため）
   - `GITHUB_TOKEN`環境変数（`export GITHUB_TOKEN=$(gh auth token)`）
   - 現在のGitHub Issue Statusが `before-architecture-decision` である
-- **`/create-task-issues`用の追加要件**:
+- **`/create-sub-issue`用の追加要件**:
   - `gh` CLI（GitHub Issueを作成するため）
   - `GITHUB_TOKEN`環境変数（`export GITHUB_TOKEN=$(gh auth token)`）
-- **`/complete-subtask`用の追加要件**:
+- **`/complete-sub-issue`用の追加要件**:
   - `gh` CLI（サブissueをcloseするため）
   - `GITHUB_TOKEN`環境変数（`export GITHUB_TOKEN=$(gh auth token)`）
   - 親issueのplan.mdがローカルに存在
@@ -542,8 +542,8 @@ contradiction-tools/
 │   ├── resolve-question.md         # Open Question解消コマンド
 │   ├── add-question.md             # Open Question追加コマンド
 │   ├── compact-plan.md             # plan.md圧縮コマンド
-│   ├── create-task-issues.md       # タスクのサブissue化コマンド
-│   └── complete-subtask.md         # サブissue完了コマンド
+│   ├── create-sub-issue.md       # タスクのサブissue化コマンド
+│   └── complete-sub-issue.md         # サブissue完了コマンド
 └── README.md                       # このファイル
 ```
 
@@ -557,8 +557,8 @@ contradiction-tools/
    - `/resolve-question`: `commands/resolve-question.md`
    - `/add-question`: `commands/add-question.md`
    - `/compact-plan`: `commands/compact-plan.md`
-   - `/create-task-issues`: `commands/create-task-issues.md`
-   - `/complete-subtask`: `commands/complete-subtask.md`
+   - `/create-sub-issue`: `commands/create-sub-issue.md`
+   - `/complete-sub-issue`: `commands/complete-sub-issue.md`
 2. メタデータを変更する場合は `plugin.json` を更新
 3. ローカルでテスト: `/plugin install contradiction-tools` で再インストール
 

@@ -4,13 +4,15 @@ description: before-planフェーズのプロセスを標準化し、コード�
 
 # /plan: before-plan実行ワークフロー
 
-あなたはユーザーの `.issync/docs/plan-{番号}-{slug}.md` ファイルを初期作成するサポートをしています。このコマンドは以下の6ステップのワークフローを自動化します：
+あなたはユーザーの `.issync/docs/plan-{番号}-{slug}.md` ファイルを初期作成するサポートをしています。このコマンドは以下の5ステップのワークフローを自動化します：
 1. 前提条件確認 & ファイル名決定 & 必要なら issync init 実行
 2. GitHub Issue内容の確認
 3. コードベース調査（CRITICAL）
 4. plan-{番号}-{slug}.md 基本セクションの記入
-5. Open Questionsの精査とTasksの初期化
+5. Open Questionsの精査
 6. issync pushで同期
+
+**Note**: Template v7では、Tasksセクションが削除されています。タスクは後で `/create-sub-issue` コマンドを使用してGitHub Sub-issuesとして作成します。
 
 ## コンテキスト
 
@@ -65,12 +67,7 @@ issync init <Issue URL> --file .issync/docs/plan-{番号}-{slug}.md
 
 ### ステップ2: GitHub Issue内容の確認
 
-GitHub Issueの内容を読み、以下を理解してください：
-- タスクの要求・目的
-- 解決すべき問題
-- 期待される成果物
-
-**質問**: 不明点があれば、このステップでユーザーに確認してください。
+Issue内容を理解し、不明点があればユーザーに確認
 
 ---
 
@@ -111,19 +108,11 @@ Read: README.md, CLAUDE.md, docs/
 
 ### ステップ4: plan.md基本セクションの記入
 
-`issync init`でコピーされた`docs/plan-template.md`のテンプレートに従って、以下のセクションを記入：
-
-- **Purpose / Overview** - タスクの目的、解決する問題、コアバリュー
-- **Context & Direction** - 問題の背景、設計哲学
-- **Validation & Acceptance Criteria** - テスト可能な受け入れ基準、テストシナリオ
-
-**注**: 各セクションの詳細なフォーマットはテンプレートファイル内のガイダンスを参照してください
+テンプレートに従い、Purpose/Overview、Context & Direction、Validation & Acceptance Criteriaを記入
 
 ---
 
-### ステップ5: Open Questionsの精査とTasksの初期化
-
-#### 5.1 Open Questionsの精査
+### ステップ5: Open Questionsの精査
 
 コードベース調査の結果を踏まえ、**コードで確認できないもののみ**をOpen Questionsに記載。
 
@@ -140,16 +129,7 @@ Read: README.md, CLAUDE.md, docs/
 
 **フォーマット**: テンプレートの「Open Questions / 残論点」セクションを参照
 
-#### 5.2 Tasksの初期化
-
-Tasksセクションを初期化し、具体的なタスクを箇条書きで記載。
-
-**記法**（テンプレート参照）:
-- `- [ ] タスク名` - 未完了の小タスク
-- `- [ ] タスク名 (#123)` - サブissueとして管理中
-- `- [ ] タスク名 (未Issue化)` - サブissue化を検討中
-
-**注**: フォーマット詳細はテンプレートの「Tasks」セクションを参照
+**Note**: Template v7では、Tasksセクションが削除されています。タスクは後で `/create-sub-issue` コマンドを使用してGitHub Sub-issuesとして作成します。
 
 ---
 
@@ -177,7 +157,7 @@ issync push
 - ✅ ステップ2: GitHub Issue内容確認
 - ✅ ステップ3: コードベース調査（[X]項目を調査、Discoveries & Insightsに記録）
 - ✅ ステップ4: plan-{番号}-{slug}.md基本セクション記入（Purpose/Overview、Context、Acceptance Criteria）
-- ✅ ステップ5: Open Questions精査とTasks初期化（Open Questions: [Y]項目、Tasks: Phase 1に[Z]項目）
+- ✅ ステップ5: Open Questions精査（Open Questions: [Y]項目）
 - ✅ ステップ6: issync push完了（watchモードで自動同期）
 
 ### 作成されたファイル
@@ -189,6 +169,7 @@ issync push
 - [ ] `.issync/docs/plan-{番号}-{slug}.md` の内容をレビューしてください
 - [ ] Open Questionsが適切に絞り込まれているか確認してください
 - [ ] 準備が整ったら、Statusを `before-poc` に変更してください
+- [ ] アーキテクチャ決定後、必要に応じて `/create-sub-issue` コマンドでタスクをGitHub Sub-issuesとして作成してください
 ```
 
 ---
@@ -206,31 +187,9 @@ issync push
 
 ## 実行例
 
-**ユーザー:** `/plan`
+Issue URL確認 → ファイル名決定 → issync init → コードベース調査 → 基本セクション記入 → Open Questions精査 → 同期完了
 
-**アシスタント:** "before-planフェーズを開始します。
-
-### ステップ1: GitHub Issue URLを教えてください
-例: https://github.com/owner/repo/issues/123
-
-**ユーザー:** `https://github.com/owner/repo/issues/123`
-
-**アシスタント:**
-Issue #123: "Implement watch daemon mode"
-提案slug: `watch-daemon`
-ファイル: `.issync/docs/plan-123-watch-daemon.md`
-問題ないですか？
-
-**ユーザー:** `はい`
-
-**アシスタント:**
-[state.yml確認 → 不存在 → issync init実行]
-[ステップ2-3: Issue確認とコードベース調査]
-[ステップ4: 基本セクション記入]
-[ステップ5: Open Questions 3項目、Tasks初期化]
-[ステップ6: watchモードで自動同期]
-
-完了しました。[サマリー出力]"
+Note: Template v7ではTasksセクションが削除されています。アーキテクチャ決定後、`/create-sub-issue`でタスクをGitHub Sub-issuesとして作成
 
 ---
 
