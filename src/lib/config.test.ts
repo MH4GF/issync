@@ -42,7 +42,7 @@ describe('config', () => {
         syncs: [
           {
             issue_url: 'https://github.com/owner/repo/issues/1',
-            local_file: 'docs/plan.md',
+            local_file: '.issync/docs/plan-1.md',
             poll_interval: 10,
             merge_strategy: 'simple',
           },
@@ -65,7 +65,7 @@ describe('config', () => {
         syncs: [
           {
             issue_url: 'https://github.com/owner/repo/issues/1',
-            local_file: 'docs/plan.md',
+            local_file: '.issync/docs/plan-1.md',
             poll_interval: 10,
             merge_strategy: 'simple',
           },
@@ -85,7 +85,7 @@ describe('config', () => {
       const sync: IssyncSync = {
         issue_url: 'https://github.com/owner/repo/issues/1',
         comment_id: 123456789,
-        local_file: 'docs/plan.md',
+        local_file: '.issync/docs/plan-123.md',
         last_synced_hash: 'abc123def',
         last_synced_at: '2025-10-12T10:30:00Z',
         poll_interval: 10,
@@ -106,7 +106,7 @@ describe('config', () => {
         syncs: [
           {
             issue_url: 'https://github.com/owner/repo/issues/1',
-            local_file: 'docs/plan.md',
+            local_file: '.issync/docs/plan-123.md',
             poll_interval: 10,
             merge_strategy: 'simple',
           },
@@ -152,7 +152,7 @@ describe('config', () => {
       const sync: IssyncSync = {
         issue_url: 'https://github.com/owner/repo/issues/1',
         comment_id: 123456789,
-        local_file: 'docs/plan.md',
+        local_file: '.issync/docs/plan-123.md',
         last_synced_hash: 'abc123def',
         last_synced_at: '2025-10-12T10:30:00Z',
         poll_interval: 10,
@@ -169,7 +169,7 @@ describe('config', () => {
       const loadedSync = loadedState.syncs[0]
       expect(loadedSync?.issue_url).toBe('https://github.com/owner/repo/issues/1')
       expect(loadedSync?.comment_id).toBe(123456789)
-      expect(loadedSync?.local_file).toBe('docs/plan.md')
+      expect(loadedSync?.local_file).toBe('.issync/docs/plan-123.md')
       expect(loadedSync?.last_synced_hash).toBe('abc123def')
       expect(loadedSync?.last_synced_at).toBe('2025-10-12T10:30:00Z')
       expect(loadedSync?.poll_interval).toBe(10)
@@ -181,7 +181,7 @@ describe('config', () => {
       // Arrange: Minimal config with only required fields
       const sync: IssyncSync = {
         issue_url: 'https://github.com/owner/repo/issues/1',
-        local_file: 'docs/plan.md',
+        local_file: '.issync/docs/plan-123.md',
         poll_interval: 10,
         merge_strategy: 'simple',
       }
@@ -194,7 +194,7 @@ describe('config', () => {
       expect(loadedState.syncs).toHaveLength(1)
       const loadedSync = loadedState.syncs[0]
       expect(loadedSync?.issue_url).toBe('https://github.com/owner/repo/issues/1')
-      expect(loadedSync?.local_file).toBe('docs/plan.md')
+      expect(loadedSync?.local_file).toBe('.issync/docs/plan-123.md')
       expect(loadedSync?.poll_interval).toBe(10)
       expect(loadedSync?.merge_strategy).toBe('simple')
 
@@ -208,7 +208,7 @@ describe('config', () => {
     test('migrates legacy single-config format to sync array', () => {
       const legacyContent = [
         'issue_url: https://github.com/owner/repo/issues/1',
-        'local_file: docs/plan.md',
+        'local_file: .issync/docs/plan-123.md',
         'comment_id: 123',
       ].join('\n')
 
@@ -220,7 +220,7 @@ describe('config', () => {
       expect(loadedState.syncs).toHaveLength(1)
       const sync = loadedState.syncs[0]
       expect(sync?.issue_url).toBe('https://github.com/owner/repo/issues/1')
-      expect(sync?.local_file).toBe('docs/plan.md')
+      expect(sync?.local_file).toBe('.issync/docs/plan-123.md')
       expect(sync?.comment_id).toBe(123)
 
       const migratedContent = readFileSync('.issync/state.yml', 'utf-8')
@@ -234,7 +234,7 @@ describe('config', () => {
         syncs: [
           {
             issue_url: 'https://github.com/owner/repo/issues/1',
-            local_file: 'docs/plan.md',
+            local_file: '.issync/docs/plan-123.md',
           },
         ],
       }

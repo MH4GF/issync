@@ -270,7 +270,7 @@ describe('push command - multi-sync support', () => {
       syncs: [
         {
           issue_url: 'https://github.com/owner/repo/issues/1',
-          local_file: 'docs/plan.md',
+          local_file: '.issync/docs/plan-123.md',
           comment_id: 123,
           last_synced_hash: calculateHash(previousBody),
         },
@@ -278,8 +278,8 @@ describe('push command - multi-sync support', () => {
     }
     saveConfig(state, tempDir)
 
-    await mkdir(path.join(tempDir, 'docs'), { recursive: true })
-    await writeFile(path.join(tempDir, 'docs/plan.md'), localBody, 'utf-8')
+    await mkdir(path.join(tempDir, '.issync/docs'), { recursive: true })
+    await writeFile(path.join(tempDir, '.issync/docs/plan-123.md'), localBody, 'utf-8')
 
     const updateComment = mock<GitHubClientInstance['updateComment']>(() =>
       Promise.resolve({
@@ -320,7 +320,7 @@ describe('push command - multi-sync support', () => {
       syncs: [
         {
           issue_url: 'https://github.com/owner/repo/issues/1',
-          local_file: 'docs/plan.md',
+          local_file: '.issync/docs/plan-123.md',
           comment_id: 123,
           last_synced_hash: calculateHash(previousBody),
         },
@@ -328,8 +328,8 @@ describe('push command - multi-sync support', () => {
     }
     saveConfig(state, tempDir)
 
-    await mkdir(path.join(tempDir, 'docs'), { recursive: true })
-    await writeFile(path.join(tempDir, 'docs/plan.md'), localBody, 'utf-8')
+    await mkdir(path.join(tempDir, '.issync/docs'), { recursive: true })
+    await writeFile(path.join(tempDir, '.issync/docs/plan-123.md'), localBody, 'utf-8')
 
     const updateComment = mock<GitHubClientInstance['updateComment']>(() =>
       Promise.resolve({
@@ -381,7 +381,7 @@ describe('push command - multi-sync support', () => {
       syncs: [
         {
           issue_url: 'https://github.com/owner/repo/issues/1',
-          local_file: 'docs/plan.md',
+          local_file: '.issync/docs/plan-123.md',
           comment_id: 123,
           last_synced_hash: calculateHash(previousBody),
         },
@@ -389,8 +389,8 @@ describe('push command - multi-sync support', () => {
     }
     saveConfig(state, tempDir)
 
-    await mkdir(path.join(tempDir, 'docs'), { recursive: true })
-    await writeFile(path.join(tempDir, 'docs/plan.md'), localBody, 'utf-8')
+    await mkdir(path.join(tempDir, '.issync/docs'), { recursive: true })
+    await writeFile(path.join(tempDir, '.issync/docs/plan-123.md'), localBody, 'utf-8')
 
     const updateComment = mock<GitHubClientInstance['updateComment']>(() =>
       Promise.resolve({

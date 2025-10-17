@@ -211,7 +211,7 @@ describe('pull command - multi-sync support', () => {
       syncs: [
         {
           issue_url: 'https://github.com/owner/repo/issues/1',
-          local_file: 'docs/plan.md',
+          local_file: '.issync/docs/plan-123.md',
           comment_id: 111,
           last_synced_hash: remoteHash, // Already synced
           last_synced_at: '2025-01-01T00:00:00Z',
@@ -229,7 +229,7 @@ describe('pull command - multi-sync support', () => {
       mockGitHubClient as unknown as GitHubClientInstance,
     )
 
-    await pull({ cwd: tempDir, file: 'docs/plan.md' })
+    await pull({ cwd: tempDir, file: '.issync/docs/plan-123.md' })
 
     // Verify getComment was called (to fetch remote hash)
     expect(getCommentSpy).toHaveBeenCalledTimes(1)
