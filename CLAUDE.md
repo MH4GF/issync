@@ -96,7 +96,7 @@ This project uses **Lefthook** to automatically enforce code quality before comm
 ```yaml
 issue_url: https://github.com/owner/repo/issues/123
 comment_id: 123456789               # Set after first sync
-local_file: docs/plan.md
+local_file: .issync/docs/plan-123.md
 last_synced_hash: abc123def         # Remote content hash for optimistic locking
 last_synced_at: 2025-10-12T10:30:00Z
 poll_interval: 10                   # Seconds between remote polls

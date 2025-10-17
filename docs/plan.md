@@ -206,15 +206,6 @@ syncs:
 ✍️ 記入内容: 実装中に発見した技術的制約・複雑性・新たなタスク。失敗時は失敗原因も記録
 -->
 
-**2025-10-17: Biomeの`noUnusedFunctionParameters`による意図しない自動修正**
-- 問題: 未使用パラメータ`force`が`--unsafe`フラグ使用時に自動的に`_force`へリネームされる
-- 根本原因: `noUnusedFunctionParameters`ルールがデフォルトで"unsafe fix"を提供し、`biome check --write --unsafe`や一部エディタ設定で自動適用される
-- 対処: `biome.json`に`"noUnusedFunctionParameters": { "level": "error", "fix": "none" }`を追加し、自動修正を完全に無効化
-- 学び:
-  - BiomeとESLintには異なる未使用変数検出ルールがある（`noUnusedVariables` vs `noUnusedFunctionParameters`）
-  - "safe fix"と"unsafe fix"の区別が重要（unsafe fixは動作を変える可能性がある）
-  - `"fix": "none"`を明示的に設定することで、エラー検出のみを行い自動修正を防止できる
-
 **2025-10-16: start/endマーカー方式の設計上の脆弱性**
 - 問題: ドキュメント内でマーカーについて説明すると、実際のマーカーとして誤検出される
 - 根本原因: start/endで囲む設計により、コンテンツ内にマーカー文字列があると誤検出するリスクが高い
@@ -387,5 +378,4 @@ issync status            # 同期状態確認 (Phase 2)
 -->
 
 <!-- 人間が整理前の情報をここに記入してください。AIエージェントはこのセクションに書き込みません。 -->
-
-- [ ] force pushができるようにする
+- [ ] CLAUDE.mdを圧縮
