@@ -86,6 +86,26 @@ This project uses **Lefthook** to automatically enforce code quality before comm
 
 **`src/lib/hash.ts`**: SHA-256 hash calculation for optimistic locking.
 
+**`src/commands/watch/SessionManager.ts`**: (v0.8.2+) Manages multiple watch sessions
+- `startSession()`: Start new watch session with validation
+- `stopAll()`: Stop all active sessions gracefully with detailed failure tracking
+- `getTrackedUrls()`: Get currently tracked issue URLs for state monitoring
+
+**`src/commands/watch/WatchSession.ts`**: (v0.8.2+) Individual sync session management
+- Remote polling (setInterval) + local file watching (chokidar)
+- Grace period handling to prevent pull→push loops
+- Independent error handling per session
+
+**`src/commands/watch/StateFileWatcher.ts`**: (v0.8.2+) Monitors `.issync/state.yml` for dynamic sync addition
+- Detects state file changes using chokidar
+- Triggers callback when new syncs are added
+- Enables watch mode to add new targets without restart
+
+**`src/commands/watch/errorReporter.ts`**: (v0.8.2+) Unified error handling utilities
+- `formatError()`: Type-safe error formatting
+- `reportPreparationFailures()`: Report sync preparation failures
+- `reportSessionStartupFailures()`: Report session startup failures
+
 **`src/types/index.ts`**: Core TypeScript interfaces:
 - `IssyncConfig`: .issync.yml structure (issue_url, comment_id, local_file, last_synced_hash, etc.)
 - `GitHubIssueInfo`: Parsed Issue metadata (owner, repo, issue_number)
@@ -281,6 +301,10 @@ Focus on basic sync commands (init, pull, push) and simple watch mode. Skip adva
   - Error handling for network failures
   - Progress indicators for long-running operations
   - Auto-repair for deleted markers
+- **Code Quality Improvements (v0.8.2, 2025-10-17):**
+  - Watch mode modularization (SessionManager, WatchSession, StateFileWatcher, errorReporter)
+  - Enhanced error handling with type-safe formatting
+  - Comprehensive test coverage (130 tests passing)
 
 **Next Steps:**
 - Phase 2: Section-based markdown merging
