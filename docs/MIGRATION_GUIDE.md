@@ -168,8 +168,37 @@ plan.md先頭行 `<!-- Template Version: X (YYYY-MM-DD) -->` を確認し、最�
 
 ---
 
+## Version 10 (2025-10-17)
+
+### 変更内容
+
+**Open Questionsに「検討案」フォーマットを追加 - AIエージェント主導の意思決定を加速**
+
+- Open Questionsに「検討案」セクションを追加し、各選択肢に「（推奨）」マーカーでAIの初期仮説を明示
+- `.claude-plugins/contradiction-tools/commands/plan.md` Step 5に3パターンの具体例を追加
+
+**理由**: AIが叩き台を提示し人間が判断するHITLワークフローを実現。初期仮説→最終決定の経緯を記録し、フォーマットの一貫性を向上
+
+**新フォーマット**: `docs/plan-template.md` の「Open Questions / 残論点」セクションを参照
+
+### マイグレーション手順
+
+#### オプショナル - 段階的移行を推奨
+
+**新規plan.md**: `/contradiction-tools:plan`コマンドで自動的にv10フォーマットが適用される
+
+**既存plan.md**: 次回更新時に任意で適用
+- Open Questionsに「検討案:」セクションを追加
+- 推奨する選択肢に「（推奨）」マーカーを追加
+- 推奨理由を記載
+
+**一斉更新は不要**: 既存のOpen Questionsが既に解決済みの可能性が高く、フォーマット統一の優先度は低い
+
+---
+
 ## 更新履歴
 
+- **Version 10 (2025-10-17)**: Open Questionsに「検討案」フォーマットを追加、AIエージェント主導の意思決定を加速
 - **Version 9 (2025-10-17)**: ステート名から`before-`プレフィックスを削除（破壊的変更）
 - **Version 8 (2025-10-17)**: Inboxセクションを追加（人間専用の整理前メモエリア）
 - **Version 7 (2025-10-17)**: TasksセクションをGitHub Sub-issuesに完全移行（破壊的変更）
