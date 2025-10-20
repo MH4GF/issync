@@ -69,7 +69,7 @@ describe('watch command - unit tests', () => {
 
       expect(pullMock).toHaveBeenCalledTimes(1)
       expect(pullMock.mock.calls[0]?.[0]).toEqual({
-        cwd: process.cwd(),
+        cwd: undefined, // Always undefined to use scope or global-first auto-detection
         file: relativeFile,
       })
       expect(pushMock).not.toHaveBeenCalled()
@@ -94,7 +94,7 @@ describe('watch command - unit tests', () => {
 
       expect(pullMock).toHaveBeenCalledTimes(1)
       expect(pullMock.mock.calls[0]?.[0]).toEqual({
-        cwd: process.cwd(),
+        cwd: undefined, // Always undefined to use scope or global-first auto-detection
         file: relativeFile,
       })
       expect(pushMock).not.toHaveBeenCalled()
@@ -162,7 +162,7 @@ describe('watch command - unit tests', () => {
       // Assert: Should have called push (not pull)
       expect(pushMock).toHaveBeenCalledTimes(1)
       expect(pushMock.mock.calls[0]?.[0]).toEqual({
-        cwd: process.cwd(),
+        cwd: undefined, // Always undefined to use scope or global-first auto-detection
         file: relativeFile,
       })
       expect(pullMock).not.toHaveBeenCalled()
@@ -199,7 +199,7 @@ describe('watch command - unit tests', () => {
       // Assert: Should have called pull (not push)
       expect(pullMock).toHaveBeenCalledTimes(1)
       expect(pullMock.mock.calls[0]?.[0]).toEqual({
-        cwd: process.cwd(),
+        cwd: undefined, // Always undefined to use scope or global-first auto-detection
         file: relativeFile,
       })
       expect(pushMock).not.toHaveBeenCalled()

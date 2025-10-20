@@ -100,6 +100,11 @@ function resolveLocalFilePath(localFile: string, cwd: string): string {
  * NOTE: The scope parameter ensures consistency - all pull/push operations during
  * safety check use the same config scope as the watch command itself.
  * If scope is undefined, the auto-detection logic in resolveConfigPath() applies.
+ *
+ * DESIGN PRINCIPLE: The cwd parameter is for internal file path resolution ONLY.
+ * When calling pull/push, we always pass cwd=undefined to rely on scope parameter
+ * or global-first auto-detection. Never pass cwd to pull/push, as it breaks the
+ * global-first behavior when scope is undefined.
  */
 export async function _performSafetyCheck(
   sync: IssyncSync,
@@ -116,8 +121,9 @@ export async function _performSafetyCheck(
 
   const lastSyncedHash = sync.last_synced_hash
   const localFilePath = resolvedFilePath ?? resolveLocalFilePath(sync.local_file, cwd)
-  // Resolve cwd for pull/push calls: undefined when scope is defined, cwd when scope is undefined
-  const resolvedCwd = scope === undefined ? cwd : undefined
+  // Always pass undefined to pull/push to rely on scope or global-first auto-detection
+  // This ensures consistent behavior: explicit scope takes precedence, then global config
+  const resolvedCwd = undefined
 
   if (!lastSyncedHash) {
     console.log(
