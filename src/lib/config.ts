@@ -140,8 +140,9 @@ function parseState(raw: unknown): { state: IssyncState; migrated: boolean } {
 export function loadConfig(scope?: ConfigScope, cwd?: string): IssyncState {
   validateScopeAndCwd(scope, cwd)
 
-  // For backward compatibility, if scope is not provided and cwd is provided, use getStatePath
-  const { stateFile } = scope !== undefined ? resolveConfigPath(scope) : getStatePath(cwd)
+  // Use resolveConfigPath for all cases - it handles global priority when scope is undefined
+  // For backward compatibility with tests, if cwd is provided, use getStatePath
+  const { stateFile } = cwd !== undefined ? getStatePath(cwd) : resolveConfigPath(scope)
 
   if (!existsSync(stateFile)) {
     throw new ConfigNotFoundError()
@@ -162,8 +163,9 @@ export function loadConfig(scope?: ConfigScope, cwd?: string): IssyncState {
 export function saveConfig(state: IssyncState, scope?: ConfigScope, cwd?: string): void {
   validateScopeAndCwd(scope, cwd)
 
-  // For backward compatibility, if scope is not provided and cwd is provided, use getStatePath
-  const { stateDir, stateFile } = scope !== undefined ? resolveConfigPath(scope) : getStatePath(cwd)
+  // Use resolveConfigPath for all cases - it handles global priority when scope is undefined
+  // For backward compatibility with tests, if cwd is provided, use getStatePath
+  const { stateDir, stateFile } = cwd !== undefined ? getStatePath(cwd) : resolveConfigPath(scope)
 
   // Create directory if it doesn't exist
   if (!existsSync(stateDir)) {
@@ -230,8 +232,9 @@ export function selectSync(
 export function configExists(scope?: ConfigScope, cwd?: string): boolean {
   validateScopeAndCwd(scope, cwd)
 
-  // For backward compatibility, if scope is not provided and cwd is provided, use getStatePath
-  const { stateFile } = scope !== undefined ? resolveConfigPath(scope) : getStatePath(cwd)
+  // Use resolveConfigPath for all cases - it handles global priority when scope is undefined
+  // For backward compatibility with tests, if cwd is provided, use getStatePath
+  const { stateFile } = cwd !== undefined ? getStatePath(cwd) : resolveConfigPath(scope)
   return existsSync(stateFile)
 }
 

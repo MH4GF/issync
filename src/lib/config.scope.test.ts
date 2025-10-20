@@ -231,4 +231,93 @@ describe('Global/Local Config Support', () => {
       expect(loadedLocal.syncs[0]?.local_file).toBe('local-plan.md')
     })
   })
+
+  describe('Default scope behavior (no --global or --local flag)', () => {
+    test('should prioritize global config when it exists', () => {
+      const globalState: IssyncState = {
+        syncs: [
+          {
+            issue_url: 'https://github.com/owner/repo/issues/1',
+            local_file: '/tmp/global-plan.md',
+          },
+        ],
+      }
+
+      const globalStateDir = join(homedir(), '.issync')
+      mkdirSync(globalStateDir, { recursive: true })
+
+      saveConfig(globalState, 'global')
+
+      // Load without specifying scope (default behavior)
+      const loaded = loadConfig()
+      expect(loaded.syncs).toHaveLength(1)
+      expect(loaded.syncs[0]?.local_file).toBe('/tmp/global-plan.md')
+    })
+
+    test('should fallback to local config when global does not exist', () => {
+      const localState: IssyncState = {
+        syncs: [
+          {
+            issue_url: 'https://github.com/owner/repo/issues/2',
+            local_file: 'local-plan.md',
+          },
+        ],
+      }
+
+      saveConfig(localState, 'local')
+
+      // Load without specifying scope (default behavior)
+      const loaded = loadConfig()
+      expect(loaded.syncs).toHaveLength(1)
+      expect(loaded.syncs[0]?.local_file).toBe('local-plan.md')
+    })
+
+    test('should prioritize global over local when both exist', () => {
+      const globalState: IssyncState = {
+        syncs: [
+          {
+            issue_url: 'https://github.com/owner/repo/issues/1',
+            local_file: '/tmp/global-plan.md',
+          },
+        ],
+      }
+
+      const localState: IssyncState = {
+        syncs: [
+          {
+            issue_url: 'https://github.com/owner/repo/issues/2',
+            local_file: 'local-plan.md',
+          },
+        ],
+      }
+
+      const globalStateDir = join(homedir(), '.issync')
+      mkdirSync(globalStateDir, { recursive: true })
+
+      saveConfig(globalState, 'global')
+      saveConfig(localState, 'local')
+
+      // Load without specifying scope (default behavior)
+      const loaded = loadConfig()
+      expect(loaded.syncs).toHaveLength(1)
+      expect(loaded.syncs[0]?.local_file).toBe('/tmp/global-plan.md')
+    })
+
+    test('configExists should check global first, then local', () => {
+      // Initially neither exists
+      expect(configExists()).toBe(false)
+
+      // Create local config
+      const localState: IssyncState = { syncs: [] }
+      saveConfig(localState, 'local')
+      expect(configExists()).toBe(true)
+
+      // Create global config
+      const globalState: IssyncState = { syncs: [] }
+      const globalStateDir = join(homedir(), '.issync')
+      mkdirSync(globalStateDir, { recursive: true })
+      saveConfig(globalState, 'global')
+      expect(configExists()).toBe(true)
+    })
+  })
 })
