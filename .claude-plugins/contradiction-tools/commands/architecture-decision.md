@@ -26,32 +26,18 @@ description: POCの知見を基にアーキテクチャ・設計方針を決定�
 ## 前提条件
 
 実行前に必要なものは以下です：
-- [ ] 現在のGitHub Issue Statusが `architecture-decision` である
+- [ ] **現在のGitHub Issue Statusが `architecture-decision` であることを確認**（手動確認）
 - [ ] POC実装が完了し、PRが作成されている
 - [ ] `GITHUB_TOKEN` 環境変数が設定されている（`export GITHUB_TOKEN=$(gh auth token)`）
 - [ ] plan.mdファイルがローカルに存在する
 
+**重要**: このコマンドは`architecture-decision`ステートで実行されることを前提としています。適切なタイミングで実行する責任はユーザーにあります。
+
 ## 実行ステップ
 
-### ステップ1: 現在のStatusを検証
+### ステップ1: POC PR URLの受け取りとPR情報取得
 
-まず、現在のGitHub Issue Statusを確認します：
-
-```bash
-# plan.mdファイルが管理されているIssueのStatusを確認
-# .issync/state.yml から issue_url を取得し、gh issue view で確認
-gh issue view <issue-url> --json projectItems --jq '.projectItems[].fieldValues[] | select(.field.name == "Status") | .name'
-```
-
-**Status検証**:
-- ✅ `architecture-decision` → 続行
-- ❌ それ以外 → エラー終了（"現在のStatusがarchitecture-decisionではありません。pocステートを完了してから実行してください。"）
-
----
-
-### ステップ2: POC PR URLの受け取りとPR情報取得
-
-#### 2.1 POC PR URLの受け取り
+#### 1.1 POC PR URLの受け取り
 
 ユーザーにPOC PR URLを確認してください：
 
@@ -59,7 +45,7 @@ gh issue view <issue-url> --json projectItems --jq '.projectItems[].fieldValues[
 POC PR URLを教えてください（例: https://github.com/owner/repo/pull/123）
 ```
 
-#### 2.2 PR情報の取得
+#### 1.2 PR情報の取得
 
 POC PRから以下の情報を取得します：
 
@@ -81,11 +67,11 @@ gh pr diff <PR URL>
 
 **PRが既にクローズ済みの場合**:
 - ⚠️ 警告を表示：「このPRは既にクローズされています。Decision Logの記入のみを実行します。」
-- ステップ7（PRクローズ）をスキップして続行
+- ステップ6（PRクローズ）をスキップして続行
 
 ---
 
-### ステップ3: Discoveries & Insightsの参照
+### ステップ2: Discoveries & Insightsの参照
 
 plan.mdの`Discoveries & Insights`セクションを読み、POC実装中に発見された技術的制約・複雑性を確認：
 
@@ -101,7 +87,7 @@ plan.mdの`Discoveries & Insights`セクションを読み、POC実装中に発�
 
 ---
 
-### ステップ4: Decision Logの記入
+### ステップ3: Decision Logの記入
 
 POCの知見を基に、以下の形式でDecision Logセクションを記入します。
 
@@ -141,7 +127,7 @@ POCの知見を基に、以下の形式でDecision Logセクションを記入�
 
 ---
 
-### ステップ5: Specification / 仕様セクションの記入
+### ステップ4: Specification / 仕様セクションの記入
 
 POCで検証したアーキテクチャを基に、以下の形式でSpecification / 仕様セクションを記入します。
 
@@ -200,7 +186,7 @@ graph TD
 
 ---
 
-### ステップ6: Acceptance Criteriaの妥当性検証
+### ステップ5: Acceptance Criteriaの妥当性検証
 
 POCの結果を踏まえて、既存のAcceptance Criteriaが実現可能かを検証し、必要に応じて調整します。
 
@@ -237,7 +223,7 @@ Acceptance Criteriaが妥当であると判断した場合、変更は不要で�
 
 ---
 
-### ステップ7: POC PRのクローズ
+### ステップ6: POC PRのクローズ
 
 POC PRをクローズします：
 
@@ -250,7 +236,7 @@ gh pr close <PR URL> --comment "POC完了。アーキテクチャ決定をplan.m
 
 ---
 
-### ステップ8: issync pushで同期
+### ステップ7: issync pushで同期
 
 **注意**: issyncのwatchモードが起動している場合は、ファイルの変更が自動的にGitHub Issueに同期されます。明示的なpushコマンドは不要です。
 
@@ -277,14 +263,13 @@ issync push
 ## /architecture-decision 実行結果
 
 ### 完了したステップ
-- ✅ ステップ1: Status検証（現在: architecture-decision）
-- ✅ ステップ2: POC PR情報取得（PR #123: [PR Title]）
-- ✅ ステップ3: Discoveries & Insights参照（[X]項目を確認）
-- ✅ ステップ4: Decision Log記入（[Y]個の決定事項を記録）
-- ✅ ステップ5: Specification / 仕様記入
-- ✅ ステップ6: Acceptance Criteria検証（調整: [あり/なし]）
-- ✅ ステップ7: POC PRクローズ（PR #123）
-- ✅ ステップ8: issync push完了（watchモードで自動同期）
+- ✅ ステップ1: POC PR情報取得（PR #123: [PR Title]）
+- ✅ ステップ2: Discoveries & Insights参照（[X]項目を確認）
+- ✅ ステップ3: Decision Log記入（[Y]個の決定事項を記録）
+- ✅ ステップ4: Specification / 仕様記入
+- ✅ ステップ5: Acceptance Criteria検証（調整: [あり/なし]）
+- ✅ ステップ6: POC PRクローズ（PR #123）
+- ✅ ステップ7: issync push完了（watchモードで自動同期）
 
 ### 記録された決定事項
 1. [決定事項1のタイトル]
@@ -301,11 +286,6 @@ issync push
 ---
 
 ## 重要な注意事項
-
-### Status検証について
-
-- **ステップ1を省略しないでください**: `architecture-decision`以外のステートでこのコマンドを実行すると、ワークフローが破綻します
-- エラーが発生した場合は、現在のStatusを確認し、適切なステートに遷移してから再実行してください
 
 ### Decision Logの記入について
 
@@ -332,10 +312,13 @@ issync push
 
 | ケース | 対応 |
 |--------|------|
-| 現在のStatusが`architecture-decision`でない | ❌ エラー終了（"現在のStatusがarchitecture-decisionではありません"） |
 | POC PR URLが無効 | ❌ エラー終了（"無効なPR URLです"） |
 | POC PRが既にクローズ済み | ⚠️ 警告を出して続行（Decision Log記入のみ実行） |
 | POCの知見が不足（Discoveries & Insightsが空） | ⚠️ 警告を出して続行（最小限の記入を実施） |
+
+**注意**:
+- このコマンドに渡されたPRは全てPoC PRとして扱います（PoC PR判定ロジックは不要）
+- このコマンドは`architecture-decision`ステートで実行されることを前提としています（Status検証は不要、ユーザーの責任で適切なタイミングで実行）
 
 ---
 
@@ -345,15 +328,7 @@ issync push
 
 **アシスタント:**
 
-### ステップ1: Status検証
-
-現在のGitHub Issue Statusを確認します...
-
-✅ 現在のStatus: `architecture-decision`（検証OK）
-
----
-
-### ステップ2: POC PR情報取得
+### ステップ1: POC PR情報取得
 
 PR #456の情報を取得します...
 
@@ -367,7 +342,7 @@ PR #456の情報を取得します...
 
 ---
 
-### ステップ3: Discoveries & Insights参照
+### ステップ2: Discoveries & Insights参照
 
 plan.mdのDiscoveries & Insightsを確認します...
 
@@ -378,7 +353,7 @@ plan.mdのDiscoveries & Insightsを確認します...
 
 ---
 
-### ステップ4: Decision Log記入
+### ステップ3: Decision Log記入
 
 POCの知見を基に、Decision Logを記入します...
 
@@ -389,7 +364,7 @@ POCの知見を基に、Decision Logを記入します...
 
 ---
 
-### ステップ5: Specification / 仕様記入
+### ステップ4: Specification / 仕様記入
 
 アーキテクチャ仕様を記入します...
 
@@ -400,7 +375,7 @@ POCの知見を基に、Decision Logを記入します...
 
 ---
 
-### ステップ6: Acceptance Criteria検証
+### ステップ5: Acceptance Criteria検証
 
 既存のAcceptance Criteriaを検証します...
 
@@ -408,7 +383,7 @@ POCの知見を基に、Decision Logを記入します...
 
 ---
 
-### ステップ7: POC PRクローズ
+### ステップ6: POC PRクローズ
 
 PR #456をクローズします...
 
@@ -416,7 +391,7 @@ PR #456をクローズします...
 
 ---
 
-### ステップ8: issync同期
+### ステップ7: issync同期
 
 watchモードが起動しているため、自動的にGitHub Issueに同期されます。
 
@@ -425,14 +400,13 @@ watchモードが起動しているため、自動的にGitHub Issueに同期さ
 ## /architecture-decision 実行結果
 
 ### 完了したステップ
-- ✅ ステップ1: Status検証（現在: architecture-decision）
-- ✅ ステップ2: POC PR情報取得（PR #456: "POC: Watch daemon implementation"）
-- ✅ ステップ3: Discoveries & Insights参照（3項目を確認）
-- ✅ ステップ4: Decision Log記入（3個の決定事項を記録）
-- ✅ ステップ5: Specification / 仕様記入
-- ✅ ステップ6: Acceptance Criteria検証（調整: あり - ポーリング間隔を30秒に変更）
-- ✅ ステップ7: POC PRクローズ（PR #456）
-- ✅ ステップ8: issync push完了（watchモードで自動同期）
+- ✅ ステップ1: POC PR情報取得（PR #456: "POC: Watch daemon implementation"）
+- ✅ ステップ2: Discoveries & Insights参照（3項目を確認）
+- ✅ ステップ3: Decision Log記入（3個の決定事項を記録）
+- ✅ ステップ4: Specification / 仕様記入
+- ✅ ステップ5: Acceptance Criteria検証（調整: あり - ポーリング間隔を30秒に変更）
+- ✅ ステップ6: POC PRクローズ（PR #456）
+- ✅ ステップ7: issync push完了（watchモードで自動同期）
 
 ### 記録された決定事項
 1. Watch daemonの実装方針（chokidar + setInterval）
