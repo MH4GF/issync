@@ -40,7 +40,7 @@ export class WatchSession {
     readonly _sync: IssyncSync,
     private readonly filePath: string,
     private readonly intervalMs: number,
-    private readonly cwd: string,
+    readonly _cwd: string,
     readonly _skipInitialPull: boolean = false,
     readonly _scope?: ConfigScope,
   ) {}
@@ -163,7 +163,11 @@ export class WatchSession {
 
     try {
       await this.withLock(async () => {
-        await pull({ cwd: this.cwd, file: this._sync.local_file, scope: this._scope })
+        await pull({
+          cwd: undefined,
+          file: this._sync.local_file,
+          scope: this._scope,
+        })
         this.lastPullCompletedAt = Date.now() // Record pull completion time
         console.log(`[${new Date().toISOString()}] ✓ Pulled changes from remote`)
       })
@@ -200,7 +204,11 @@ export class WatchSession {
     // Initial pull (synchronous, throws on error) - skip if already synced by safety check
     if (!this._skipInitialPull) {
       try {
-        await pull({ cwd: this.cwd, file: this._sync.local_file, scope: this._scope })
+        await pull({
+          cwd: undefined,
+          file: this._sync.local_file,
+          scope: this._scope,
+        })
         this.lastPullCompletedAt = Date.now() // Record initial pull completion time
         console.log('✓ Initial pull completed')
       } catch (error) {
@@ -265,7 +273,11 @@ export class WatchSession {
 
     try {
       await this.withLock(async () => {
-        await push({ cwd: this.cwd, file: this._sync.local_file, scope: this._scope })
+        await push({
+          cwd: undefined,
+          file: this._sync.local_file,
+          scope: this._scope,
+        })
         console.log(`[${new Date().toISOString()}] ✓ Pushed changes to remote`)
       })
     } catch (error) {
