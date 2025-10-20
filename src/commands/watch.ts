@@ -385,7 +385,7 @@ export async function watch(options: WatchOptions = {}): Promise<void> {
 
   // For config operations, only pass cwd when scope is explicitly undefined
   // This ensures global-first auto-detection when no scope is specified
-  const configCwd = scope === undefined ? undefined : options.cwd
+  const configCwd = scope === undefined ? options.cwd : undefined
 
   let targets: PreparedTarget[]
   try {

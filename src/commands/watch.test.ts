@@ -138,8 +138,9 @@ describe('watch command (chokidar mocked)', () => {
     await waitFor(() => pushMock.mock.calls.length === 1)
     expect(pushMock).toHaveBeenCalledTimes(1)
     expect(pushMock.mock.calls[0]?.[0]).toEqual({
-      cwd: process.cwd(),
+      cwd: undefined,
       file: relativeFile,
+      scope: undefined,
     })
     expect(pullMock).not.toHaveBeenCalled()
   })
@@ -170,8 +171,9 @@ describe('watch command (chokidar mocked)', () => {
     await waitFor(() => pullMock.mock.calls.length >= 1, { timeout: 2000 })
     expect(pullMock.mock.calls.length).toBeGreaterThanOrEqual(1)
     expect(pullMock.mock.calls[0]?.[0]).toEqual({
-      cwd: process.cwd(),
+      cwd: undefined,
       file: relativeFile,
+      scope: undefined,
     })
   })
 
@@ -234,23 +236,25 @@ describe('watch command (chokidar mocked)', () => {
     // Verify loadConfig was called with scope='global' and cwd=undefined
     expect(loadConfigSpy).toHaveBeenCalledWith('global', undefined)
 
-    // Trigger file change event to verify push is called with scope
-    const watchInstance = chokidarSpy.mock.results[0]?.value
-    if (watchInstance?.emit) {
-      // Write new content to trigger change
-      await writeFile(filePath, '# Updated Content', 'utf-8')
-      await delay(600) // Wait for awaitWriteFinish
+    // Wait for grace period to expire before triggering change
+    await delay(GRACE_PERIOD_MS + 100)
 
-      watchInstance.emit('change', filePath)
-      await delay(200) // Wait for push to complete
+    // Trigger file change to test push with global scope
+    expect(changeHandlers.length).toBeGreaterThan(0)
+    triggerFileChange()
 
-      // Verify push was called with scope='global'
-      expect(pushMock.mock.calls.length).toBeGreaterThanOrEqual(1)
-      const lastPushCall = pushMock.mock.calls[pushMock.mock.calls.length - 1]?.[0]
-      expect(lastPushCall).toMatchObject({
-        scope: 'global',
-      })
-    }
+    // Wait for push to complete
+    await waitFor(() => pushMock.mock.calls.length === 1)
+
+    // Verify push was called with scope='global' and cwd=undefined
+    expect(pushMock).toHaveBeenCalledTimes(1)
+    const pushCall = pushMock.mock.calls[0]?.[0]
+    expect(pushCall).toMatchObject({
+      scope: 'global',
+    })
+    // CRITICAL: Global config should NOT pass cwd parameter
+    // This test will fail with current bug (cwd: process.cwd() is passed)
+    expect(pushCall).toHaveProperty('cwd', undefined)
   })
 
   test('should work with --local option', async () => {
