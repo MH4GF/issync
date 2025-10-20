@@ -27,29 +27,6 @@ function validateScopeAndCwd(scope?: ConfigScope, cwd?: string): void {
 }
 
 /**
- * Resolves the cwd parameter for config operations based on scope.
- *
- * Design rationale: When scope is explicitly specified (global/local),
- * the config path is predetermined and cwd should not influence it.
- * This prevents inconsistent config file lookups and ensures that
- * global/local scope always resolves to the correct config location.
- *
- * When scope is undefined, the function uses auto-detection behavior
- * (prefer global if exists, fallback to local), and cwd can be used
- * for backward compatibility with legacy code.
- *
- * @param scope - The config scope (global, local, or undefined)
- * @param cwd - The current working directory (optional)
- * @returns undefined if scope is specified (cwd ignored), otherwise cwd
- */
-export function resolveCwdForScope(
-  scope: ConfigScope | undefined,
-  cwd: string | undefined,
-): string | undefined {
-  return scope === undefined ? cwd : undefined
-}
-
-/**
  * Resolves the config file path based on scope
  *
  * Auto-detection behavior (when scope is undefined):

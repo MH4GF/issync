@@ -2,7 +2,7 @@ import { existsSync } from 'node:fs'
 import { mkdir, writeFile } from 'node:fs/promises'
 import path from 'node:path'
 import type { SyncSelector } from '../lib/config.js'
-import { loadConfig, resolveCwdForScope, saveConfig, selectSync } from '../lib/config.js'
+import { loadConfig, saveConfig, selectSync } from '../lib/config.js'
 import { SyncNotFoundError } from '../lib/errors.js'
 import { createGitHubClient, parseIssueUrl, removeMarker } from '../lib/github.js'
 import { calculateHash } from '../lib/hash.js'
@@ -68,7 +68,7 @@ async function pullSingleSync(sync: IssyncSync, cwd: string, token?: string): Pr
 async function pullAllSyncs(
   state: IssyncState,
   baseDir: string,
-  resolvedCwd: string | undefined,
+  cwd: string | undefined,
   token?: string,
   scope?: ConfigScope,
 ): Promise<void> {
@@ -89,7 +89,7 @@ async function pullAllSyncs(
     .filter((failure): failure is { sync: IssyncSync; reason: unknown } => failure !== null)
 
   // Save config (updates successful syncs)
-  saveConfig(state, scope, resolvedCwd)
+  saveConfig(state, scope, cwd)
 
   // Report results
   reportSyncResults('pull', state.syncs.length, failures)
@@ -98,14 +98,13 @@ async function pullAllSyncs(
 export async function pull(options: PullOptions = {}): Promise<void> {
   const { cwd, token, file, issue, scope } = options
   const baseDir = cwd ?? process.cwd()
-  const resolvedCwd = resolveCwdForScope(scope, cwd)
 
   // Load config
-  const state = loadConfig(scope, resolvedCwd)
+  const state = loadConfig(scope, cwd)
 
   // If no selector provided, pull all syncs
   if (!file && !issue) {
-    await pullAllSyncs(state, baseDir, resolvedCwd, token, scope)
+    await pullAllSyncs(state, baseDir, cwd, token, scope)
     return
   }
 
@@ -117,5 +116,5 @@ export async function pull(options: PullOptions = {}): Promise<void> {
   const { sync } = selectSync(state, selector, baseDir)
 
   await pullSingleSync(sync, baseDir, token)
-  saveConfig(state, scope, resolvedCwd)
+  saveConfig(state, scope, cwd)
 }
