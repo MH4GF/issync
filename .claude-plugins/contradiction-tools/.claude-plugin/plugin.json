@@ -1,6 +1,6 @@
 {
   "name": "contradiction-tools",
-  "description": "矛盾解消駆動開発のためのツール群: plan実行(/plan)、アーキテクチャ決定(/architecture-decision)、Open Question解消(/resolve-question)、Open Question追加(/add-question)、plan.md圧縮(/compact-plan)、タスクのサブissue化と順序管理(/create-sub-issue)、サブissue完了(/complete-sub-issue)",
+  "description": "矛盾解消駆動開発のためのツール群: plan実行(/plan)、アーキテクチャ決定(/architecture-decision)、Open Question追加(/add-question)、plan.md圧縮(/compact-plan)、タスクのサブissue化と順序管理(/create-sub-issue)、サブissue完了(/complete-sub-issue)",
   "version": "0.7.0",
   "author": {
     "name": "MH4GF"

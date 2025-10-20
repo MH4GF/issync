@@ -34,14 +34,6 @@ POC完了後、POCで得た知見を基にアーキテクチャ・設計方針�
 
 **重要**: POCの実装結果を具体的に記録し、アーキテクチャ決定の根拠を明確にします。
 
-### `/resolve-question`: Open Question解消ワークフロー
-
-plan.mdファイル内のOpen Questionを体系的に解決するサポートをします。以下のプロセスを自動化します：
-
-1. Decision Logへの決定事項の記録
-2. Open Questionの解決済みマーク
-3. 関連するタスクの更新
-
 ### `/add-question`: Open Question追加ワークフロー
 
 plan.mdファイルに新しいOpen Questionを追加する際に、優先度評価と最適な配置位置を提案します。以下のプロセスをガイドします：
@@ -150,7 +142,6 @@ Claude Codeで以下のコマンドを実行し、GitHubから直接マーケッ
 ```bash
 /plan                   # plan実行ワークフロー
 /architecture-decision  # アーキテクチャ決定ワークフロー
-/resolve-question       # Open Question解消ワークフロー
 /add-question           # Open Question追加ワークフロー
 /compact-plan           # plan.md圧縮ツール
 /create-sub-issue     # タスクのサブissue化ワークフロー
@@ -292,35 +283,6 @@ POC PR #456完了時：
 - POC PRをクローズ
 - watchモードが起動している場合は自動的にGitHub Issueに同期
 
-### `/resolve-question`: Open Question解消
-
-#### 基本的なワークフロー
-
-1. コマンドを実行:
-   ```
-   /resolve-question
-   ```
-
-2. プロンプトに従って以下の情報を提供:
-   - **Open Question ID** (例: Q1, Q2, Q5)
-   - **決定内容のサマリー** (何を決定したか、なぜそう決定したか)
-   - **トレードオフ** (制約や今後の考慮事項)
-   - **タスクの更新** (新規タスクまたは削除するタスク)
-
-3. pluginが以下を実行:
-   - plan.mdのDecision Logセクションを更新
-   - Open Questionを解決済みとしてマーク
-   - Tasksセクションを更新
-   - issyncのwatchモードが起動している場合は自動的にGitHub Issueに同期
-
-#### 実行例
-
-Q5（issync init実行について）の決定内容を提供すると、pluginは：
-- 決定内容と根拠をDecision Logに追加
-- Open QuestionsセクションでQ5を解決済みとしてマーク
-- 必要に応じてTasksセクションを更新
-- watchモードが起動している場合は自動的にGitHub Issueに同期
-
 ### `/add-question`: Open Question追加
 
 #### 基本的なワークフロー
@@ -447,16 +409,6 @@ architecture-decisionステートでアーキテクチャを決定する時に�
 
 **重要**: このコマンドは、architecture-decisionステート専用です。POC PRをクローズし、Decision LogとSpecification / 仕様を記入します。
 
-### `/resolve-question`
-
-開発のどの段階でも、Open Questionに答えた時にこのコマンドを使用してください：
-- **plan**: 初期設計の質問を解決する時
-- **poc**: 技術的実現可能性の質問に答える時
-- **architecture-decision**: アーキテクチャの選択を行う時
-- **implement**: 実装の詳細を明確にする時
-
-これは矛盾解消駆動開発ワークフローをサポートする横断的オペレーションです。
-
 ### `/add-question`
 
 開発のどの段階でも、新しいOpen Questionを追加したい時にこのコマンドを使用してください：
@@ -511,7 +463,6 @@ architecture-decisionステートでアーキテクチャを決定する時に�
 - プロジェクトに以下のセクションを含む `plan.md` ファイルが必要:
   - **`/plan`用**: plan-template.mdから生成された初期構造
   - **`/architecture-decision`用**: Discoveries & Insights, Decision Log, Specification / 仕様, Validation & Acceptance Criteria
-  - **`/resolve-question`用**: Decision Log, Open Questions / 残論点, Tasks
   - **`/add-question`用**: Open Questions / 残論点
   - **`/compact-plan`用**: docs/plan-template.md（圧縮の基準として使用）
   - **`/create-sub-issue`用**: Tasks, Purpose/Overview, .issync.yml（issync init完了）
@@ -539,7 +490,6 @@ contradiction-tools/
 ├── commands/
 │   ├── plan.md                     # plan実行コマンド
 │   ├── architecture-decision.md    # アーキテクチャ決定コマンド
-│   ├── resolve-question.md         # Open Question解消コマンド
 │   ├── add-question.md             # Open Question追加コマンド
 │   ├── compact-plan.md             # plan.md圧縮コマンド
 │   ├── create-sub-issue.md       # タスクのサブissue化コマンド
@@ -554,7 +504,6 @@ contradiction-tools/
 1. コマンドプロンプトを編集:
    - `/plan`: `commands/plan.md`
    - `/architecture-decision`: `commands/architecture-decision.md`
-   - `/resolve-question`: `commands/resolve-question.md`
    - `/add-question`: `commands/add-question.md`
    - `/compact-plan`: `commands/compact-plan.md`
    - `/create-sub-issue`: `commands/create-sub-issue.md`
