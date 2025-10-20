@@ -14,13 +14,9 @@ import {
 import { calculateHash } from '../lib/hash.js'
 import { resolvePathWithinBase } from '../lib/path.js'
 import { reportSyncResults } from '../lib/sync-reporter.js'
-import type { IssyncState, IssyncSync } from '../types/index.js'
+import type { ConfigScope, IssyncState, IssyncSync, SelectorOptions } from '../types/index.js'
 
-export interface PushOptions {
-  cwd?: string
-  token?: string
-  file?: string
-  issue?: string
+export interface PushOptions extends SelectorOptions {
   force?: boolean
 }
 
@@ -188,6 +184,7 @@ async function pushAllSyncs(
   cwd: string,
   token?: string,
   force = false,
+  scope?: ConfigScope,
 ): Promise<void> {
   if (state.syncs.length === 0) {
     throw new SyncNotFoundError()
@@ -206,14 +203,14 @@ async function pushAllSyncs(
     .filter((failure): failure is { sync: IssyncSync; reason: unknown } => failure !== null)
 
   // Save config (updates successful syncs)
-  saveConfig(state, cwd)
+  saveConfig(state, scope, cwd)
 
   // Report results
   reportSyncResults('push', state.syncs.length, failures)
 }
 
 export async function push(options: PushOptions = {}): Promise<void> {
-  const { cwd, token, file, issue, force } = options
+  const { cwd, token, file, issue, force, scope } = options
   const baseDir = cwd ?? process.cwd()
 
   // Display warning and ask for confirmation if force is enabled
@@ -228,11 +225,11 @@ export async function push(options: PushOptions = {}): Promise<void> {
   }
 
   // Load config
-  const state = loadConfig(cwd)
+  const state = loadConfig(scope, cwd)
 
   // If no selector provided, push all syncs
   if (!file && !issue) {
-    await pushAllSyncs(state, baseDir, baseDir, token, force)
+    await pushAllSyncs(state, baseDir, baseDir, token, force, scope)
     return
   }
 
@@ -244,5 +241,5 @@ export async function push(options: PushOptions = {}): Promise<void> {
   const { sync } = selectSync(state, selector, baseDir)
 
   await pushSingleSync(sync, baseDir, token, force)
-  saveConfig(state, cwd)
+  saveConfig(state, scope, cwd)
 }

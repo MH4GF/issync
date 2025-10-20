@@ -3,7 +3,13 @@ import { existsSync, mkdirSync, readFileSync, statSync, writeFileSync } from 'no
 import path from 'node:path'
 
 // Project modules (alphabetical order)
-import { configExists, loadConfig, saveConfig } from '../lib/config.js'
+import {
+  checkDuplicateSync,
+  configExists,
+  loadConfig,
+  normalizeLocalFilePath,
+  saveConfig,
+} from '../lib/config.js'
 import {
   FileAlreadyExistsError,
   FileNotFoundError,
@@ -14,16 +20,21 @@ import {
 import { createGitHubClient, parseIssueUrl, removeMarker } from '../lib/github.js'
 import { calculateHash } from '../lib/hash.js'
 import { resolvePathWithinBase } from '../lib/path.js'
-import type { CommentData, GitHubIssueInfo, IssyncState, IssyncSync } from '../types/index.js'
+import type {
+  CommandOptions,
+  CommentData,
+  ConfigScope,
+  GitHubIssueInfo,
+  IssyncState,
+  IssyncSync,
+} from '../types/index.js'
 
 const _DEFAULT_TEMPLATE_URL =
   'https://raw.githubusercontent.com/MH4GF/issync/refs/heads/main/docs/plan-template.md'
 
-interface InitOptions {
+interface InitOptions extends CommandOptions {
   file?: string
-  cwd?: string
   template?: string
-  token?: string
 }
 
 function _isUrl(str: string): boolean {
@@ -87,9 +98,9 @@ function ensureTargetFile(
   writeFileSync(targetPath, content, 'utf-8')
 }
 
-function loadState(cwd?: string): IssyncState {
-  if (configExists(cwd)) {
-    return loadConfig(cwd)
+function loadState(scope?: ConfigScope, cwd?: string): IssyncState {
+  if (configExists(scope, cwd)) {
+    return loadConfig(scope, cwd)
   }
   return { syncs: [] }
 }
@@ -211,19 +222,27 @@ async function initializeFromTemplate(
 }
 
 export async function init(issueUrl: string, options: InitOptions = {}): Promise<string> {
-  const { file, cwd, template, token } = options
+  const { file, cwd, template, token, scope } = options
   const workingDir = cwd ?? process.cwd()
 
   // Validate Issue URL by parsing it
   const issueInfo = parseIssueUrl(issueUrl)
 
   // Use dynamic default based on issue number if no file is provided
-  const targetFile = file ?? `.issync/docs/plan-${issueInfo.issue_number}.md`
+  let targetFile = file ?? `.issync/docs/plan-${issueInfo.issue_number}.md`
+
+  // Normalize file path based on scope (converts to absolute path for global scope)
+  targetFile = normalizeLocalFilePath(targetFile, scope, workingDir)
+
+  // Check for duplicate sync in global/local config
+  checkDuplicateSync(issueUrl, scope)
 
   const basePath = path.resolve(workingDir)
-  const targetPath = resolvePathWithinBase(basePath, targetFile, targetFile)
+  const targetPath = path.isAbsolute(targetFile)
+    ? targetFile
+    : resolvePathWithinBase(basePath, targetFile, targetFile)
 
-  const state = loadState(cwd)
+  const state = loadState(scope, cwd)
   assertSyncAvailability(state, issueUrl, targetFile, basePath)
 
   // Create initial sync config
@@ -246,7 +265,7 @@ export async function init(issueUrl: string, options: InitOptions = {}): Promise
   state.syncs.push(newSync)
 
   // Save config (will create .issync directory)
-  saveConfig(state, cwd)
+  saveConfig(state, scope, cwd)
 
   return targetFile
 }

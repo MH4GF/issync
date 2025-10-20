@@ -1,3 +1,22 @@
+export type ConfigScope = 'global' | 'local'
+
+/**
+ * Base options common to all commands
+ */
+export interface CommandOptions {
+  cwd?: string
+  token?: string
+  scope?: ConfigScope
+}
+
+/**
+ * Options for commands that need to select a specific sync target
+ */
+export interface SelectorOptions extends CommandOptions {
+  file?: string
+  issue?: string
+}
+
 export interface IssyncSync {
   issue_url: string
   comment_id?: number

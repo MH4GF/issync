@@ -50,7 +50,7 @@ describe('init command', () => {
     expect(content).toBeTruthy()
     expect(content.length).toBeGreaterThan(0)
 
-    const state = loadConfig(TEST_DIR)
+    const state = loadConfig(undefined, TEST_DIR)
     expect(state.syncs).toHaveLength(1)
     const config = state.syncs[0]
 
@@ -65,7 +65,7 @@ describe('init command', () => {
 
     await init(issueUrl, { cwd: TEST_DIR })
 
-    const state = loadConfig(TEST_DIR)
+    const state = loadConfig(undefined, TEST_DIR)
     expect(state.syncs).toHaveLength(1)
     const config = state.syncs[0]
 
@@ -82,7 +82,7 @@ describe('init command', () => {
 
     await init(issueUrl, { file: customPath, cwd: TEST_DIR })
 
-    const state = loadConfig(TEST_DIR)
+    const state = loadConfig(undefined, TEST_DIR)
     expect(state.syncs).toHaveLength(1)
     const config = state.syncs[0]
 
@@ -97,7 +97,7 @@ describe('init command', () => {
     await init('https://github.com/owner/repo/issues/1', { cwd: TEST_DIR })
     await init('https://github.com/owner/repo/issues/999', { cwd: TEST_DIR })
 
-    const state = loadConfig(TEST_DIR)
+    const state = loadConfig(undefined, TEST_DIR)
     expect(state.syncs).toHaveLength(2)
     expect(state.syncs[0]?.local_file).toBe('.issync/docs/plan-1.md')
     expect(state.syncs[1]?.local_file).toBe('.issync/docs/plan-999.md')
@@ -116,7 +116,7 @@ describe('init command', () => {
 
     await init(issueUrl, { cwd: TEST_DIR, template: 'template.md' })
 
-    const state = loadConfig(TEST_DIR)
+    const state = loadConfig(undefined, TEST_DIR)
     const targetFile = state.syncs[0]?.local_file
     expect(targetFile).toBe('.issync/docs/plan-456.md')
 
@@ -269,7 +269,7 @@ describe('init command', () => {
       file: 'docs/notes.md',
     })
 
-    const state = loadConfig(TEST_DIR)
+    const state = loadConfig(undefined, TEST_DIR)
     expect(state.syncs).toHaveLength(2)
     const files = state.syncs.map((sync) => sync.local_file).sort()
     expect(files).toEqual(['docs/notes.md', 'docs/plan.md'])
@@ -314,7 +314,7 @@ describe('init command', () => {
     expect(existsSync(targetPath)).toBe(true)
     expect(readFileSync(targetPath, 'utf-8')).toBe(existingContent) // unwrapped
 
-    const state = loadConfig(TEST_DIR)
+    const state = loadConfig(undefined, TEST_DIR)
     const sync = state.syncs[0]
     expect(sync).toBeDefined()
     expect(sync?.comment_id).toBe(123)
@@ -343,7 +343,7 @@ describe('init command', () => {
     const content = readFileSync(targetPath, 'utf-8')
     expect(content).toBeTruthy() // Has content from template
 
-    const state = loadConfig(TEST_DIR)
+    const state = loadConfig(undefined, TEST_DIR)
     const sync = state.syncs[0]
     expect(sync).toBeDefined()
     expect(sync?.comment_id).toBeUndefined() // No comment_id since pull failed
