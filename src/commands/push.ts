@@ -2,7 +2,7 @@ import { existsSync } from 'node:fs'
 import { readFile } from 'node:fs/promises'
 import path from 'node:path'
 import type { SyncSelector } from '../lib/config.js'
-import { loadConfig, resolveCwdForScope, saveConfig, selectSync } from '../lib/config.js'
+import { loadConfig, saveConfig, selectSync } from '../lib/config.js'
 import { FileNotFoundError, SyncNotFoundError } from '../lib/errors.js'
 import {
   addMarker,
@@ -181,7 +181,7 @@ async function pushSingleSync(
 async function pushAllSyncs(
   state: IssyncState,
   baseDir: string,
-  resolvedCwd: string | undefined,
+  cwd: string | undefined,
   token?: string,
   force = false,
   scope?: ConfigScope,
@@ -203,7 +203,7 @@ async function pushAllSyncs(
     .filter((failure): failure is { sync: IssyncSync; reason: unknown } => failure !== null)
 
   // Save config (updates successful syncs)
-  saveConfig(state, scope, resolvedCwd)
+  saveConfig(state, scope, cwd)
 
   // Report results
   reportSyncResults('push', state.syncs.length, failures)
@@ -212,7 +212,6 @@ async function pushAllSyncs(
 export async function push(options: PushOptions = {}): Promise<void> {
   const { cwd, token, file, issue, force, scope } = options
   const baseDir = cwd ?? process.cwd()
-  const resolvedCwd = resolveCwdForScope(scope, cwd)
 
   // Display warning and ask for confirmation if force is enabled
   if (force) {
@@ -226,11 +225,11 @@ export async function push(options: PushOptions = {}): Promise<void> {
   }
 
   // Load config
-  const state = loadConfig(scope, resolvedCwd)
+  const state = loadConfig(scope, cwd)
 
   // If no selector provided, push all syncs
   if (!file && !issue) {
-    await pushAllSyncs(state, baseDir, resolvedCwd, token, force, scope)
+    await pushAllSyncs(state, baseDir, cwd, token, force, scope)
     return
   }
 
@@ -242,5 +241,5 @@ export async function push(options: PushOptions = {}): Promise<void> {
   const { sync } = selectSync(state, selector, baseDir)
 
   await pushSingleSync(sync, baseDir, token, force)
-  saveConfig(state, scope, resolvedCwd)
+  saveConfig(state, scope, cwd)
 }

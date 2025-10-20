@@ -294,7 +294,7 @@ describe('watch command (chokidar mocked)', () => {
     }
   })
 
-  test('should use process.cwd() when scope is not specified', async () => {
+  test('should use global-priority auto-detection when scope is not specified', async () => {
     const state: IssyncState = {
       syncs: [
         {
@@ -313,9 +313,9 @@ describe('watch command (chokidar mocked)', () => {
     watchPromise = watch({ interval: 60 })
     await delay(100)
 
-    // Verify loadConfig was called with scope=undefined and cwd=process.cwd()
-    // (will use getStatePath(cwd) with cwd defaulting to process.cwd())
-    expect(loadConfigSpy).toHaveBeenCalledWith(undefined, process.cwd())
+    // Verify loadConfig was called with scope=undefined and cwd=undefined
+    // This triggers resolveConfigPath(undefined) which implements global-first auto-detection
+    expect(loadConfigSpy).toHaveBeenCalledWith(undefined, undefined)
   })
 
   // Error handling is validated via targeted unit tests to avoid relying on chokidar internals here.

@@ -1,6 +1,6 @@
 import { existsSync, readFileSync } from 'node:fs'
 import path from 'node:path'
-import { loadConfig, resolveConfigPath, resolveCwdForScope, selectSync } from '../lib/config.js'
+import { loadConfig, resolveConfigPath, selectSync } from '../lib/config.js'
 import {
   AmbiguousSyncError,
   ConfigNotFoundError,
@@ -178,10 +178,10 @@ function determineSyncs(state: IssyncState, options: WatchOptions, cwd: string):
 async function prepareTargets(
   options: WatchOptions,
   cwd: string,
-  resolvedCwd: string | undefined,
+  configCwd: string | undefined,
   scope?: ConfigScope,
 ): Promise<PreparedTarget[]> {
-  const state = loadConfig(scope, resolvedCwd)
+  const state = loadConfig(scope, configCwd)
   const syncs = determineSyncs(state, options, cwd)
 
   if (syncs.length === 0) {
@@ -292,16 +292,16 @@ async function prepareNewTargets(
  */
 async function detectAndStartNewSessions(
   cwd: string,
+  configCwd: string | undefined,
   intervalMs: number,
   sessionManager: SessionManager,
-  resolvedCwd: string | undefined,
   scope?: ConfigScope,
 ): Promise<{
   successCount: number
   failures: Array<{ target: PreparedTarget; error: unknown }>
 }> {
   const trackedIssueUrls = sessionManager.getTrackedUrls()
-  const currentState = loadConfig(scope, resolvedCwd)
+  const currentState = loadConfig(scope, configCwd)
   const newSyncs = findUnwatchedSyncs(currentState, trackedIssueUrls)
 
   if (newSyncs.length === 0) {
@@ -337,9 +337,9 @@ async function detectAndStartNewSessions(
  */
 async function handleStateChange(
   cwd: string,
+  configCwd: string | undefined,
   intervalMs: number,
   sessionManager: SessionManager,
-  resolvedCwd: string | undefined,
   scope?: ConfigScope,
 ): Promise<void> {
   try {
@@ -347,9 +347,9 @@ async function handleStateChange(
 
     const { successCount, failures } = await detectAndStartNewSessions(
       cwd,
+      configCwd,
       intervalMs,
       sessionManager,
-      resolvedCwd,
       scope,
     )
 
@@ -372,13 +372,16 @@ async function handleStateChange(
 export async function watch(options: WatchOptions = {}): Promise<void> {
   const cwd = options.cwd ?? process.cwd()
   const scope = options.scope
-  const resolvedCwd = resolveCwdForScope(scope, cwd)
   const intervalSeconds = options.interval ?? DEFAULT_POLL_INTERVAL_SECONDS
   const intervalMs = intervalSeconds * 1000
 
+  // For config operations, only pass cwd when scope is explicitly undefined
+  // This ensures global-first auto-detection when no scope is specified
+  const configCwd = scope === undefined ? undefined : options.cwd
+
   let targets: PreparedTarget[]
   try {
-    targets = await prepareTargets(options, cwd, resolvedCwd, scope)
+    targets = await prepareTargets(options, cwd, configCwd, scope)
   } catch (error) {
     handleWatchSetupError(error)
     throw error
@@ -435,7 +438,7 @@ export async function watch(options: WatchOptions = {}): Promise<void> {
   console.log('\nMonitoring state.yml for new sync entries...')
 
   const stateFileWatcher = new StateFileWatcher(stateFile, async () => {
-    await handleStateChange(cwd, intervalMs, sessionManager, resolvedCwd, scope)
+    await handleStateChange(cwd, configCwd, intervalMs, sessionManager, scope)
   })
 
   stateFileWatcher.start()
