@@ -271,5 +271,106 @@ describe('watch command - unit tests', () => {
         throw error
       }
     })
+
+    test('should pass scope parameter to pull when pulling with global scope', async () => {
+      // Arrange
+      const content = '# Test Content'
+      const mockConfig: IssyncSync = {
+        issue_url: 'https://github.com/owner/repo/issues/1',
+        comment_id: 123,
+        local_file: relativeFile,
+      }
+
+      const pullMock = spyOn(pullModule, 'pull').mockImplementation(() => Promise.resolve())
+      const mockGitHubClient: Pick<GitHubClientInstance, 'getComment'> = {
+        getComment: () =>
+          Promise.resolve({ id: 123, body: content, updated_at: '2025-01-01T00:00:00Z' }),
+      }
+      spyOn(githubModule, 'createGitHubClient').mockReturnValue(
+        mockGitHubClient as unknown as GitHubClientInstance,
+      )
+
+      // Act: Call safety check with global scope
+      await _performSafetyCheck(mockConfig, process.cwd(), undefined, 'global')
+
+      // Assert: pull should be called with scope parameter
+      expect(pullMock).toHaveBeenCalledTimes(1)
+      expect(pullMock.mock.calls[0]?.[0]).toEqual({
+        cwd: process.cwd(),
+        file: relativeFile,
+        scope: 'global',
+      })
+    })
+
+    test('should pass scope parameter to push when pushing with global scope', async () => {
+      // Arrange: Local has changes
+      const localContent = '# Local changes'
+      const remoteContent = '# Original content'
+      const lastSyncedContent = '# Original content'
+
+      const mockConfig: IssyncSync = {
+        issue_url: 'https://github.com/owner/repo/issues/1',
+        comment_id: 123,
+        local_file: relativeFile,
+        last_synced_hash: calculateHash(lastSyncedContent),
+      }
+
+      await writeFile(absoluteFile, localContent, 'utf-8')
+
+      const mockGitHubClient: Pick<GitHubClientInstance, 'getComment'> = {
+        getComment: () =>
+          Promise.resolve({ id: 123, body: remoteContent, updated_at: '2025-01-01T00:00:00Z' }),
+      }
+      spyOn(githubModule, 'createGitHubClient').mockReturnValue(
+        mockGitHubClient as unknown as GitHubClientInstance,
+      )
+
+      const pushMock = spyOn(pushModule, 'push').mockImplementation(() => Promise.resolve())
+
+      // Act: Call safety check with global scope
+      await _performSafetyCheck(mockConfig, process.cwd(), undefined, 'global')
+
+      // Assert: push should be called with scope parameter
+      expect(pushMock).toHaveBeenCalledTimes(1)
+      expect(pushMock.mock.calls[0]?.[0]).toEqual({
+        cwd: process.cwd(),
+        file: relativeFile,
+        scope: 'global',
+      })
+    })
+
+    test('should pass scope parameter to pull/push when pulling with local scope', async () => {
+      // Arrange: Remote has changes
+      const remoteContent = '# Remote changes'
+      const lastSyncedContent = '# Test Content'
+
+      const mockConfig: IssyncSync = {
+        issue_url: 'https://github.com/owner/repo/issues/1',
+        comment_id: 123,
+        local_file: relativeFile,
+        last_synced_hash: calculateHash(lastSyncedContent),
+      }
+
+      const mockGitHubClient: Pick<GitHubClientInstance, 'getComment'> = {
+        getComment: () =>
+          Promise.resolve({ id: 123, body: remoteContent, updated_at: '2025-01-01T00:00:00Z' }),
+      }
+      spyOn(githubModule, 'createGitHubClient').mockReturnValue(
+        mockGitHubClient as unknown as GitHubClientInstance,
+      )
+
+      const pullMock = spyOn(pullModule, 'pull').mockImplementation(() => Promise.resolve())
+
+      // Act: Call safety check with local scope
+      await _performSafetyCheck(mockConfig, process.cwd(), undefined, 'local')
+
+      // Assert: pull should be called with scope parameter
+      expect(pullMock).toHaveBeenCalledTimes(1)
+      expect(pullMock.mock.calls[0]?.[0]).toEqual({
+        cwd: process.cwd(),
+        file: relativeFile,
+        scope: 'local',
+      })
+    })
   })
 })

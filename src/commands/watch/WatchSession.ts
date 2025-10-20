@@ -1,7 +1,7 @@
 import { existsSync } from 'node:fs'
 import chokidar, { type FSWatcher } from 'chokidar'
 import { ConfigNotFoundError } from '../../lib/errors.js'
-import type { IssyncSync } from '../../types/index.js'
+import type { ConfigScope, IssyncSync } from '../../types/index.js'
 import { pull } from '../pull.js'
 import { OptimisticLockError, push } from '../push.js'
 
@@ -42,6 +42,7 @@ export class WatchSession {
     private readonly intervalMs: number,
     private readonly cwd: string,
     readonly _skipInitialPull: boolean = false,
+    readonly _scope?: ConfigScope,
   ) {}
 
   /**
@@ -162,7 +163,7 @@ export class WatchSession {
 
     try {
       await this.withLock(async () => {
-        await pull({ cwd: this.cwd, file: this._sync.local_file })
+        await pull({ cwd: this.cwd, file: this._sync.local_file, scope: this._scope })
         this.lastPullCompletedAt = Date.now() // Record pull completion time
         console.log(`[${new Date().toISOString()}] ✓ Pulled changes from remote`)
       })
@@ -199,7 +200,7 @@ export class WatchSession {
     // Initial pull (synchronous, throws on error) - skip if already synced by safety check
     if (!this._skipInitialPull) {
       try {
-        await pull({ cwd: this.cwd, file: this._sync.local_file })
+        await pull({ cwd: this.cwd, file: this._sync.local_file, scope: this._scope })
         this.lastPullCompletedAt = Date.now() // Record initial pull completion time
         console.log('✓ Initial pull completed')
       } catch (error) {
@@ -264,7 +265,7 @@ export class WatchSession {
 
     try {
       await this.withLock(async () => {
-        await push({ cwd: this.cwd, file: this._sync.local_file })
+        await push({ cwd: this.cwd, file: this._sync.local_file, scope: this._scope })
         console.log(`[${new Date().toISOString()}] ✓ Pushed changes to remote`)
       })
     } catch (error) {

@@ -315,7 +315,7 @@ async function detectAndStartNewSessions(
 
   const results = await Promise.allSettled(
     newTargets.map(({ sync, resolvedPath }) =>
-      sessionManager.startSession(sync, resolvedPath, intervalMs, cwd, true),
+      sessionManager.startSession(sync, resolvedPath, intervalMs, cwd, true, scope),
     ),
   )
 
@@ -397,7 +397,7 @@ export async function watch(options: WatchOptions = {}): Promise<void> {
   // to work with syncs that succeeded while investigating failures.
   const results = await Promise.allSettled(
     targets.map(({ sync, resolvedPath }) =>
-      sessionManager.startSession(sync, resolvedPath, intervalMs, cwd, true),
+      sessionManager.startSession(sync, resolvedPath, intervalMs, cwd, true, scope),
     ),
   )
 

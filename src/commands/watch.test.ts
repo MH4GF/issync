@@ -233,6 +233,24 @@ describe('watch command (chokidar mocked)', () => {
 
     // Verify loadConfig was called with scope='global' and cwd=undefined
     expect(loadConfigSpy).toHaveBeenCalledWith('global', undefined)
+
+    // Trigger file change event to verify push is called with scope
+    const watchInstance = chokidarSpy.mock.results[0]?.value
+    if (watchInstance?.emit) {
+      // Write new content to trigger change
+      await writeFile(filePath, '# Updated Content', 'utf-8')
+      await delay(600) // Wait for awaitWriteFinish
+
+      watchInstance.emit('change', filePath)
+      await delay(200) // Wait for push to complete
+
+      // Verify push was called with scope='global'
+      expect(pushMock.mock.calls.length).toBeGreaterThanOrEqual(1)
+      const lastPushCall = pushMock.mock.calls[pushMock.mock.calls.length - 1]?.[0]
+      expect(lastPushCall).toMatchObject({
+        scope: 'global',
+      })
+    }
   })
 
   test('should work with --local option', async () => {
@@ -256,6 +274,24 @@ describe('watch command (chokidar mocked)', () => {
 
     // Verify loadConfig was called with scope='local' and cwd=undefined
     expect(loadConfigSpy).toHaveBeenCalledWith('local', undefined)
+
+    // Trigger file change event to verify push is called with scope
+    const watchInstance = chokidarSpy.mock.results[0]?.value
+    if (watchInstance?.emit) {
+      // Write new content to trigger change
+      await writeFile(filePath, '# Updated Content', 'utf-8')
+      await delay(600) // Wait for awaitWriteFinish
+
+      watchInstance.emit('change', filePath)
+      await delay(200) // Wait for push to complete
+
+      // Verify push was called with scope='local'
+      expect(pushMock.mock.calls.length).toBeGreaterThanOrEqual(1)
+      const lastPushCall = pushMock.mock.calls[pushMock.mock.calls.length - 1]?.[0]
+      expect(lastPushCall).toMatchObject({
+        scope: 'local',
+      })
+    }
   })
 
   test('should use process.cwd() when scope is not specified', async () => {

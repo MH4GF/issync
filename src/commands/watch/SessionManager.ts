@@ -1,4 +1,4 @@
-import type { IssyncSync } from '../../types/index.js'
+import type { ConfigScope, IssyncSync } from '../../types/index.js'
 import { formatError } from './errorReporter.js'
 import { WatchSession } from './WatchSession.js'
 
@@ -31,6 +31,7 @@ export class SessionManager {
    * @param intervalMs - Polling interval in milliseconds
    * @param cwd - Current working directory
    * @param skipInitialPull - Skip initial pull (used after safety check)
+   * @param scope - Config scope (global/local) to pass to pull/push operations
    * @throws {Error} If session fails to start
    */
   async startSession(
@@ -39,8 +40,9 @@ export class SessionManager {
     intervalMs: number,
     cwd: string,
     skipInitialPull = true,
+    scope?: ConfigScope,
   ): Promise<void> {
-    const session = new WatchSession(sync, resolvedPath, intervalMs, cwd, skipInitialPull)
+    const session = new WatchSession(sync, resolvedPath, intervalMs, cwd, skipInitialPull, scope)
     await session.start()
     this.sessions.set(sync.issue_url, session)
   }
