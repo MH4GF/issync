@@ -116,12 +116,14 @@ export async function _performSafetyCheck(
 
   const lastSyncedHash = sync.last_synced_hash
   const localFilePath = resolvedFilePath ?? resolveLocalFilePath(sync.local_file, cwd)
+  // Resolve cwd for pull/push calls: undefined when scope is defined, cwd when scope is undefined
+  const resolvedCwd = scope === undefined ? cwd : undefined
 
   if (!lastSyncedHash) {
     console.log(
       '⚠️  No sync history found. Pulling from remote to establish baseline before starting watch...',
     )
-    await pull({ cwd, file: sync.local_file, scope })
+    await pull({ cwd: resolvedCwd, file: sync.local_file, scope })
     console.log('✓ Baseline established from remote')
     return
   }
@@ -129,7 +131,7 @@ export async function _performSafetyCheck(
   // Read local file
   if (!existsSync(localFilePath)) {
     console.log('⚠️  Local file missing. Pulling from remote to restore before starting watch...')
-    await pull({ cwd, file: sync.local_file, scope })
+    await pull({ cwd: resolvedCwd, file: sync.local_file, scope })
     console.log('✓ Local file restored from remote')
     return
   }
@@ -155,13 +157,13 @@ export async function _performSafetyCheck(
     // Only local changed → Auto push
     console.log('⚠️  Local changes detected. Pushing to remote before starting watch...')
     // NOTE: Use the same scope as watch command to maintain config consistency
-    await push({ cwd, file: sync.local_file, scope })
+    await push({ cwd: resolvedCwd, file: sync.local_file, scope })
     console.log('✓ Local changes pushed')
   } else if (remoteChanged) {
     // Only remote changed → Auto pull
     console.log('⚠️  Remote changes detected. Pulling from remote before starting watch...')
     // NOTE: Use the same scope as watch command to maintain config consistency
-    await pull({ cwd, file: sync.local_file, scope })
+    await pull({ cwd: resolvedCwd, file: sync.local_file, scope })
     console.log('✓ Remote changes pulled')
   }
   // else: Neither changed → No-op, proceed to watch
