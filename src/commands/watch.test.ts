@@ -211,5 +211,76 @@ describe('watch command (chokidar mocked)', () => {
     expect(watchedPaths).toContain(path.resolve(process.cwd(), relativeFile))
     expect(watchedPaths).toContain(path.resolve(process.cwd(), secondRelative))
   })
+
+  test('should work with --global option', async () => {
+    const globalState: IssyncState = {
+      syncs: [
+        {
+          issue_url: 'https://github.com/owner/repo/issues/1',
+          local_file: filePath, // absolute path for global config
+          comment_id: 123,
+          last_synced_at: new Date().toISOString(),
+          last_synced_hash: calculateHash('# Test Content'),
+        },
+      ],
+    }
+
+    loadConfigSpy.mockReturnValue(globalState)
+
+    // Start watch with global scope
+    watchPromise = watch({ interval: 60, scope: 'global' })
+    await delay(100)
+
+    // Verify loadConfig was called with scope='global' and cwd=undefined
+    expect(loadConfigSpy).toHaveBeenCalledWith('global', undefined)
+  })
+
+  test('should work with --local option', async () => {
+    const localState: IssyncState = {
+      syncs: [
+        {
+          issue_url: 'https://github.com/owner/repo/issues/1',
+          local_file: filePath,
+          comment_id: 123,
+          last_synced_at: new Date().toISOString(),
+          last_synced_hash: calculateHash('# Test Content'),
+        },
+      ],
+    }
+
+    loadConfigSpy.mockReturnValue(localState)
+
+    // Start watch with local scope
+    watchPromise = watch({ interval: 60, scope: 'local' })
+    await delay(100)
+
+    // Verify loadConfig was called with scope='local' and cwd=undefined
+    expect(loadConfigSpy).toHaveBeenCalledWith('local', undefined)
+  })
+
+  test('should use process.cwd() when scope is not specified', async () => {
+    const state: IssyncState = {
+      syncs: [
+        {
+          issue_url: 'https://github.com/owner/repo/issues/1',
+          local_file: filePath,
+          comment_id: 123,
+          last_synced_at: new Date().toISOString(),
+          last_synced_hash: calculateHash('# Test Content'),
+        },
+      ],
+    }
+
+    loadConfigSpy.mockReturnValue(state)
+
+    // Start watch without scope
+    watchPromise = watch({ interval: 60 })
+    await delay(100)
+
+    // Verify loadConfig was called with scope=undefined and cwd=process.cwd()
+    // (will use getStatePath(cwd) with cwd defaulting to process.cwd())
+    expect(loadConfigSpy).toHaveBeenCalledWith(undefined, process.cwd())
+  })
+
   // Error handling is validated via targeted unit tests to avoid relying on chokidar internals here.
 })

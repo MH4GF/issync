@@ -8,6 +8,7 @@ import {
   configExists,
   loadConfig,
   normalizeLocalFilePath,
+  resolveCwdForScope,
   saveConfig,
 } from '../lib/config.js'
 import {
@@ -98,9 +99,9 @@ function ensureTargetFile(
   writeFileSync(targetPath, content, 'utf-8')
 }
 
-function loadState(scope?: ConfigScope, cwd?: string): IssyncState {
-  if (configExists(scope, cwd)) {
-    return loadConfig(scope, cwd)
+function loadState(scope: ConfigScope | undefined, resolvedCwd: string | undefined): IssyncState {
+  if (configExists(scope, resolvedCwd)) {
+    return loadConfig(scope, resolvedCwd)
   }
   return { syncs: [] }
 }
@@ -224,6 +225,7 @@ async function initializeFromTemplate(
 export async function init(issueUrl: string, options: InitOptions = {}): Promise<string> {
   const { file, cwd, template, token, scope } = options
   const workingDir = cwd ?? process.cwd()
+  const resolvedCwd = resolveCwdForScope(scope, cwd)
 
   // Validate Issue URL by parsing it
   const issueInfo = parseIssueUrl(issueUrl)
@@ -242,7 +244,7 @@ export async function init(issueUrl: string, options: InitOptions = {}): Promise
     ? targetFile
     : resolvePathWithinBase(basePath, targetFile, targetFile)
 
-  const state = loadState(scope, cwd)
+  const state = loadState(scope, resolvedCwd)
   assertSyncAvailability(state, issueUrl, targetFile, basePath)
 
   // Create initial sync config
@@ -265,7 +267,7 @@ export async function init(issueUrl: string, options: InitOptions = {}): Promise
   state.syncs.push(newSync)
 
   // Save config (will create .issync directory)
-  saveConfig(state, scope, cwd)
+  saveConfig(state, scope, resolvedCwd)
 
   return targetFile
 }

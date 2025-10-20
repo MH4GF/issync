@@ -244,4 +244,137 @@ describe('pull command - multi-sync support', () => {
     expect(sync.last_synced_hash).toBe(remoteHash)
     expect(sync.last_synced_at).toBe('2025-01-01T00:00:00Z') // Unchanged
   })
+
+  test('should work with --global scope option', async () => {
+    const state: IssyncState = {
+      syncs: [
+        {
+          issue_url: 'https://github.com/owner/repo/issues/1',
+          local_file: 'docs/plan.md', // relative path for testing
+          comment_id: 123,
+          last_synced_at: '2025-01-01T00:00:00Z',
+          last_synced_hash: 'old-hash',
+        },
+      ],
+    }
+
+    const loadConfigSpy = spyOn(await import('../lib/config.js'), 'loadConfig').mockReturnValue(
+      state,
+    )
+    const saveConfigSpy = spyOn(await import('../lib/config.js'), 'saveConfig').mockImplementation(
+      () => {},
+    )
+
+    const newContent = '# New Content'
+
+    const getCommentSpy = mock(() => ({
+      id: 123,
+      body: `<!-- issync:v1 -->\n${newContent}`,
+      updated_at: '2025-01-02T00:00:00Z',
+    }))
+
+    await mock.module('../lib/github.js', () => ({
+      ...githubModule,
+      createGitHubClient: () =>
+        ({
+          getComment: getCommentSpy,
+        }) as unknown as GitHubClientInstance,
+    }))
+
+    await pull({ scope: 'global', file: 'docs/plan.md' })
+
+    // Verify loadConfig was called with scope='global' and cwd=undefined
+    expect(loadConfigSpy).toHaveBeenCalledWith('global', undefined)
+    // Verify saveConfig was called with scope='global' and cwd=undefined
+    expect(saveConfigSpy).toHaveBeenCalledWith(state, 'global', undefined)
+  })
+
+  test('should work with --local scope option', async () => {
+    const state: IssyncState = {
+      syncs: [
+        {
+          issue_url: 'https://github.com/owner/repo/issues/1',
+          local_file: 'docs/plan.md',
+          comment_id: 123,
+          last_synced_at: '2025-01-01T00:00:00Z',
+          last_synced_hash: 'old-hash',
+        },
+      ],
+    }
+
+    const loadConfigSpy = spyOn(await import('../lib/config.js'), 'loadConfig').mockReturnValue(
+      state,
+    )
+    const saveConfigSpy = spyOn(await import('../lib/config.js'), 'saveConfig').mockImplementation(
+      () => {},
+    )
+
+    const newContent = '# New Content'
+
+    const getCommentSpy = mock(() => ({
+      id: 123,
+      body: `<!-- issync:v1 -->\n${newContent}`,
+      updated_at: '2025-01-02T00:00:00Z',
+    }))
+
+    await mock.module('../lib/github.js', () => ({
+      ...githubModule,
+      createGitHubClient: () =>
+        ({
+          getComment: getCommentSpy,
+        }) as unknown as GitHubClientInstance,
+    }))
+
+    await pull({ scope: 'local', file: 'docs/plan.md' })
+
+    // Verify loadConfig was called with scope='local' and cwd=undefined
+    expect(loadConfigSpy).toHaveBeenCalledWith('local', undefined)
+    // Verify saveConfig was called with scope='local' and cwd=undefined
+    expect(saveConfigSpy).toHaveBeenCalledWith(state, 'local', undefined)
+  })
+
+  test('should use process.cwd() when scope is not specified', async () => {
+    const state: IssyncState = {
+      syncs: [
+        {
+          issue_url: 'https://github.com/owner/repo/issues/1',
+          local_file: 'docs/plan.md',
+          comment_id: 123,
+          last_synced_at: '2025-01-01T00:00:00Z',
+          last_synced_hash: 'old-hash',
+        },
+      ],
+    }
+
+    const loadConfigSpy = spyOn(await import('../lib/config.js'), 'loadConfig').mockReturnValue(
+      state,
+    )
+    const saveConfigSpy = spyOn(await import('../lib/config.js'), 'saveConfig').mockImplementation(
+      () => {},
+    )
+
+    const newContent = '# New Content'
+
+    const getCommentSpy = mock(() => ({
+      id: 123,
+      body: `<!-- issync:v1 -->\n${newContent}`,
+      updated_at: '2025-01-02T00:00:00Z',
+    }))
+
+    await mock.module('../lib/github.js', () => ({
+      ...githubModule,
+      createGitHubClient: () =>
+        ({
+          getComment: getCommentSpy,
+        }) as unknown as GitHubClientInstance,
+    }))
+
+    await pull({ file: 'docs/plan.md' })
+
+    // Verify loadConfig was called with scope=undefined and cwd=undefined
+    // (will use getStatePath(cwd) with cwd defaulting to process.cwd())
+    expect(loadConfigSpy).toHaveBeenCalledWith(undefined, undefined)
+    // Verify saveConfig was called with scope=undefined and cwd=undefined
+    expect(saveConfigSpy).toHaveBeenCalledWith(state, undefined, undefined)
+  })
 })
