@@ -12,7 +12,7 @@ import {
   removeMarker,
 } from '../lib/github.js'
 import { calculateHash } from '../lib/hash.js'
-import { resolvePathWithinBase } from '../lib/path.js'
+import { resolveFilePath } from '../lib/path.js'
 import { reportSyncResults } from '../lib/sync-reporter.js'
 import type { ConfigScope, IssyncState, IssyncSync, SelectorOptions } from '../types/index.js'
 
@@ -103,7 +103,7 @@ async function pushSingleSync(
 
   // Validate and read local file
   const basePath = path.resolve(baseDir)
-  const resolvedPath = resolvePathWithinBase(basePath, sync.local_file, sync.local_file)
+  const resolvedPath = resolveFilePath(basePath, sync.local_file)
 
   // Check if file exists
   if (!existsSync(resolvedPath)) {

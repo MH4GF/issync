@@ -6,7 +6,7 @@ import { loadConfig, resolveCwdForScope, saveConfig, selectSync } from '../lib/c
 import { SyncNotFoundError } from '../lib/errors.js'
 import { createGitHubClient, parseIssueUrl, removeMarker } from '../lib/github.js'
 import { calculateHash } from '../lib/hash.js'
-import { resolvePathWithinBase } from '../lib/path.js'
+import { resolveFilePath } from '../lib/path.js'
 import { reportSyncResults } from '../lib/sync-reporter.js'
 import type { ConfigScope, IssyncState, IssyncSync, SelectorOptions } from '../types/index.js'
 
@@ -26,7 +26,7 @@ async function pullSingleSync(sync: IssyncSync, cwd: string, token?: string): Pr
 
   // Validate file path
   const basePath = path.resolve(baseDir)
-  const resolvedPath = resolvePathWithinBase(basePath, sync.local_file, sync.local_file)
+  const resolvedPath = resolveFilePath(basePath, sync.local_file)
 
   // Ensure parent directory exists
   const parentDir = path.dirname(resolvedPath)

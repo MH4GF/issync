@@ -6,6 +6,15 @@ import type { ConfigScope, IssyncState, IssyncSync } from '../types/index.js'
 import { AmbiguousSyncError, ConfigNotFoundError, SyncNotFoundError } from './errors.js'
 
 /**
+ * Get home directory, respecting HOME environment variable for testing
+ * Bun's homedir() ignores process.env.HOME, so we need this helper
+ */
+function getHomeDir(): string {
+  const homeEnv = process.env.HOME?.trim()
+  return homeEnv || homedir()
+}
+
+/**
  * Validates that scope and cwd parameters are not used together
  * @throws {Error} When both parameters are provided
  */
@@ -51,7 +60,7 @@ export function resolveCwdForScope(
  */
 export function resolveConfigPath(scope?: ConfigScope): { stateDir: string; stateFile: string } {
   if (scope === 'global') {
-    const stateDir = path.join(homedir(), '.issync')
+    const stateDir = path.join(getHomeDir(), '.issync')
     return {
       stateDir,
       stateFile: path.join(stateDir, 'state.yml'),
@@ -65,10 +74,10 @@ export function resolveConfigPath(scope?: ConfigScope): { stateDir: string; stat
     }
   }
   // デフォルト: グローバル優先
-  const globalStateFile = path.join(homedir(), '.issync', 'state.yml')
+  const globalStateFile = path.join(getHomeDir(), '.issync', 'state.yml')
   if (existsSync(globalStateFile)) {
     return {
-      stateDir: path.join(homedir(), '.issync'),
+      stateDir: path.join(getHomeDir(), '.issync'),
       stateFile: globalStateFile,
     }
   }

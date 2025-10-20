@@ -15,19 +15,34 @@ import {
 describe('Global/Local Config Support', () => {
   let originalCwd: string
   let tempTestDir: string
+  let originalHome: string | undefined
+  let tempHomeDir: string
 
   beforeEach(() => {
-    // Save original cwd
+    // Save original cwd and HOME
     originalCwd = process.cwd()
+    originalHome = process.env.HOME
 
-    // Create temporary test directory
+    // Create temp directories
+    tempHomeDir = mkdtempSync(join(tmpdir(), 'issync-test-home-'))
     tempTestDir = mkdtempSync(join(tmpdir(), 'issync-config-scope-test-'))
 
-    // Change to test directory
+    // Setup test environment
     process.chdir(tempTestDir)
+    process.env.HOME = tempHomeDir
   })
 
   afterEach(() => {
+    // Cleanup temp home directory BEFORE restoring HOME
+    rmSync(tempHomeDir, { recursive: true, force: true })
+
+    // Restore original HOME
+    if (originalHome !== undefined) {
+      process.env.HOME = originalHome
+    } else {
+      delete process.env.HOME
+    }
+
     // Restore original cwd
     process.chdir(originalCwd)
 
@@ -40,7 +55,8 @@ describe('Global/Local Config Support', () => {
       const result = resolveConfigPath('global')
       expect(result.stateFile).toContain('.issync')
       expect(result.stateFile).toContain('state.yml')
-      expect(result.stateFile).toContain(homedir())
+      // Should use mocked HOME from beforeEach
+      expect(result.stateFile).toContain(tempHomeDir)
     })
 
     test('should return local path when scope is local', () => {
@@ -127,15 +143,10 @@ describe('Global/Local Config Support', () => {
       }
       saveConfig(globalState, 'global')
 
-      try {
-        // Try to add to local - should throw
-        expect(() => checkDuplicateSync(issueUrl, 'local')).toThrow(
-          'Issue already configured in global config',
-        )
-      } finally {
-        // Cleanup global config
-        rmSync(globalStateDir, { recursive: true, force: true })
-      }
+      // Try to add to local - should throw
+      expect(() => checkDuplicateSync(issueUrl, 'local')).toThrow(
+        'Issue already configured in global config',
+      )
     })
 
     test('should not throw when issue does not exist in either config', () => {
@@ -161,15 +172,11 @@ describe('Global/Local Config Support', () => {
       const globalStateDir = join(homedir(), '.issync')
       mkdirSync(globalStateDir, { recursive: true })
 
-      try {
-        saveConfig(globalState, 'global')
-        const loaded = loadConfig('global')
-        expect(loaded.syncs).toHaveLength(1)
-        expect(loaded.syncs[0]?.issue_url).toBe('https://github.com/owner/repo/issues/1')
-        expect(loaded.syncs[0]?.local_file).toBe('/tmp/global-plan.md')
-      } finally {
-        rmSync(globalStateDir, { recursive: true, force: true })
-      }
+      saveConfig(globalState, 'global')
+      const loaded = loadConfig('global')
+      expect(loaded.syncs).toHaveLength(1)
+      expect(loaded.syncs[0]?.issue_url).toBe('https://github.com/owner/repo/issues/1')
+      expect(loaded.syncs[0]?.local_file).toBe('/tmp/global-plan.md')
     })
 
     test('should save and load local config independently', () => {
@@ -211,21 +218,17 @@ describe('Global/Local Config Support', () => {
       const globalStateDir = join(homedir(), '.issync')
       mkdirSync(globalStateDir, { recursive: true })
 
-      try {
-        saveConfig(globalState, 'global')
-        saveConfig(localState, 'local')
+      saveConfig(globalState, 'global')
+      saveConfig(localState, 'local')
 
-        const loadedGlobal = loadConfig('global')
-        const loadedLocal = loadConfig('local')
+      const loadedGlobal = loadConfig('global')
+      const loadedLocal = loadConfig('local')
 
-        expect(loadedGlobal.syncs).toHaveLength(1)
-        expect(loadedGlobal.syncs[0]?.local_file).toBe('/tmp/global-plan.md')
+      expect(loadedGlobal.syncs).toHaveLength(1)
+      expect(loadedGlobal.syncs[0]?.local_file).toBe('/tmp/global-plan.md')
 
-        expect(loadedLocal.syncs).toHaveLength(1)
-        expect(loadedLocal.syncs[0]?.local_file).toBe('local-plan.md')
-      } finally {
-        rmSync(globalStateDir, { recursive: true, force: true })
-      }
+      expect(loadedLocal.syncs).toHaveLength(1)
+      expect(loadedLocal.syncs[0]?.local_file).toBe('local-plan.md')
     })
   })
 })

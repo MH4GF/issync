@@ -15,32 +15,47 @@ function _escapesBase(relativePath: string): boolean {
  * Resolves a target path within a base directory, preventing path traversal attacks.
  * Allows directory names starting with ".." (like "..docs") but blocks "../parent" style traversal.
  *
- * @param basePath - The base directory path (absolute or relative, will be resolved)
- * @param targetPath - The target path to resolve (relative to base)
- * @param label - Label for error messages (defaults to targetPath)
- * @returns The resolved absolute path within the base directory
- * @throws InvalidFilePathError if path traversal is detected (e.g., "../etc/passwd" or "/etc/passwd")
+ * @param basePath - The base directory (will be resolved to absolute)
+ * @param targetPath - The target path (relative to base, or absolute if allowAbsolute=true)
+ * @param label - Label for error messages
+ * @param allowAbsolute - Allow absolute paths (for global scope). Defaults to false.
+ * @returns Resolved absolute path
+ * @throws InvalidFilePathError if path traversal is detected or targets protected directory
  *
  * @example
- * // Valid: Directory name starting with ".."
- * resolvePathWithinBase('/base', '..docs/plan.md', 'local_file')
- * // => '/base/..docs/plan.md'
+ * // Local scope: relative paths only
+ * resolvePathWithinBase('/base', 'docs/plan.md')
+ * // => '/base/docs/plan.md'
  *
  * @example
- * // Invalid: Path traversal attempt
- * resolvePathWithinBase('/base', '../etc/passwd', 'local_file')
- * // => throws InvalidFilePathError('local_file', 'path traversal detected')
- *
- * @example
- * // Invalid: Absolute path
- * resolvePathWithinBase('/base', '/etc/passwd', 'local_file')
- * // => throws InvalidFilePathError('local_file', 'path traversal detected')
+ * // Global scope: absolute paths allowed
+ * resolvePathWithinBase('/base', '/Users/user/docs/plan.md', 'local_file', true)
+ * // => '/Users/user/docs/plan.md'
  */
 export function resolvePathWithinBase(
   basePath: string,
   targetPath: string,
   label = targetPath,
+  allowAbsolute = false,
 ): string {
+  // If targetPath is already absolute and allowAbsolute is true, validate and use it
+  if (allowAbsolute && path.isAbsolute(targetPath)) {
+    const normalized = path.resolve(targetPath)
+
+    // Prevent access to system-critical directories for security
+    const dangerousPaths = ['/etc', '/sys', '/proc', '/dev', '/boot']
+    const dangerousWindowsPaths = ['C:\\Windows\\System32', 'C:\\Windows\\SysWOW64']
+    const allDangerousPaths = [...dangerousPaths, ...dangerousWindowsPaths]
+
+    for (const dangerousPath of allDangerousPaths) {
+      if (normalized.startsWith(dangerousPath)) {
+        throw new InvalidFilePathError(label, 'absolute path targets protected system directory')
+      }
+    }
+
+    return normalized
+  }
+
   const resolvedBase = path.resolve(basePath)
   const resolvedTarget = path.resolve(resolvedBase, targetPath)
   const relativePath = path.relative(resolvedBase, resolvedTarget)
@@ -50,4 +65,20 @@ export function resolvePathWithinBase(
   }
 
   return resolvedTarget
+}
+
+/**
+ * Resolves a file path, automatically allowing absolute paths if the path is absolute.
+ * This is a convenience wrapper for resolvePathWithinBase that handles the common pattern
+ * of allowing absolute paths in global scope and relative paths in local scope.
+ *
+ * @param basePath - The base directory path
+ * @param filePath - The file path (relative or absolute)
+ * @param label - Label for error messages (defaults to filePath)
+ * @returns The resolved absolute path
+ * @throws InvalidFilePathError if path traversal is detected or path targets protected directory
+ */
+export function resolveFilePath(basePath: string, filePath: string, label = filePath): string {
+  const allowAbsolute = path.isAbsolute(filePath)
+  return resolvePathWithinBase(basePath, filePath, label, allowAbsolute)
 }
