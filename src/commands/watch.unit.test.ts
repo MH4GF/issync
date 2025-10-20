@@ -293,10 +293,10 @@ describe('watch command - unit tests', () => {
       // Act: Call safety check with global scope
       await _performSafetyCheck(mockConfig, process.cwd(), undefined, 'global')
 
-      // Assert: pull should be called with scope parameter
+      // Assert: pull should be called with scope parameter and cwd=undefined (not both)
       expect(pullMock).toHaveBeenCalledTimes(1)
       expect(pullMock.mock.calls[0]?.[0]).toEqual({
-        cwd: process.cwd(),
+        cwd: undefined, // When scope is defined, cwd should be undefined
         file: relativeFile,
         scope: 'global',
       })
@@ -330,10 +330,10 @@ describe('watch command - unit tests', () => {
       // Act: Call safety check with global scope
       await _performSafetyCheck(mockConfig, process.cwd(), undefined, 'global')
 
-      // Assert: push should be called with scope parameter
+      // Assert: push should be called with scope parameter and cwd=undefined (not both)
       expect(pushMock).toHaveBeenCalledTimes(1)
       expect(pushMock.mock.calls[0]?.[0]).toEqual({
-        cwd: process.cwd(),
+        cwd: undefined, // When scope is defined, cwd should be undefined
         file: relativeFile,
         scope: 'global',
       })
@@ -364,10 +364,10 @@ describe('watch command - unit tests', () => {
       // Act: Call safety check with local scope
       await _performSafetyCheck(mockConfig, process.cwd(), undefined, 'local')
 
-      // Assert: pull should be called with scope parameter
+      // Assert: pull should be called with scope parameter and cwd=undefined (not both)
       expect(pullMock).toHaveBeenCalledTimes(1)
       expect(pullMock.mock.calls[0]?.[0]).toEqual({
-        cwd: process.cwd(),
+        cwd: undefined, // When scope is defined, cwd should be undefined
         file: relativeFile,
         scope: 'local',
       })
