@@ -8,14 +8,9 @@ import { createGitHubClient, parseIssueUrl, removeMarker } from '../lib/github.j
 import { calculateHash } from '../lib/hash.js'
 import { resolvePathWithinBase } from '../lib/path.js'
 import { reportSyncResults } from '../lib/sync-reporter.js'
-import type { IssyncState, IssyncSync } from '../types/index.js'
+import type { ConfigScope, IssyncState, IssyncSync, SelectorOptions } from '../types/index.js'
 
-export interface PullOptions {
-  cwd?: string
-  token?: string
-  file?: string
-  issue?: string
-}
+export type PullOptions = SelectorOptions
 
 /**
  * Pull a single sync from remote
@@ -75,6 +70,7 @@ async function pullAllSyncs(
   baseDir: string,
   cwd: string,
   token?: string,
+  scope?: ConfigScope,
 ): Promise<void> {
   if (state.syncs.length === 0) {
     throw new SyncNotFoundError()
@@ -93,22 +89,22 @@ async function pullAllSyncs(
     .filter((failure): failure is { sync: IssyncSync; reason: unknown } => failure !== null)
 
   // Save config (updates successful syncs)
-  saveConfig(state, cwd)
+  saveConfig(state, scope, cwd)
 
   // Report results
   reportSyncResults('pull', state.syncs.length, failures)
 }
 
 export async function pull(options: PullOptions = {}): Promise<void> {
-  const { cwd, token, file, issue } = options
+  const { cwd, token, file, issue, scope } = options
   const baseDir = cwd ?? process.cwd()
 
   // Load config
-  const state = loadConfig(cwd)
+  const state = loadConfig(scope, cwd)
 
   // If no selector provided, pull all syncs
   if (!file && !issue) {
-    await pullAllSyncs(state, baseDir, baseDir, token)
+    await pullAllSyncs(state, baseDir, baseDir, token, scope)
     return
   }
 
@@ -120,5 +116,5 @@ export async function pull(options: PullOptions = {}): Promise<void> {
   const { sync } = selectSync(state, selector, baseDir)
 
   await pullSingleSync(sync, baseDir, token)
-  saveConfig(state, cwd)
+  saveConfig(state, scope, cwd)
 }

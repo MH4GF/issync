@@ -77,3 +77,10 @@ export class GitHubAuthenticationError extends IssyncError {
     this.name = 'GitHubAuthenticationError'
   }
 }
+
+export class MutuallyExclusiveOptionsError extends IssyncError {
+  constructor(option1: string, option2: string) {
+    super(`Cannot use both --${option1} and --${option2} options`)
+    this.name = 'MutuallyExclusiveOptionsError'
+  }
+}

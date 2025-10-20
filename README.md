@@ -37,10 +37,16 @@ export GITHUB_TOKEN=ghp_your_token_here
 ### 2. Initialize sync
 
 ```bash
-# Link a GitHub Issue to a local file
+# Link a GitHub Issue to a local file (auto-detects config location)
 issync init https://github.com/owner/repo/issues/123 --file docs/plan.md
 
-# Or create a new file from template
+# Use global config (shared across all projects)
+issync init https://github.com/owner/repo/issues/123 --file ~/documents/plan.md --global
+
+# Use local config (project-specific, default for relative paths)
+issync init https://github.com/owner/repo/issues/123 --file docs/plan.md --local
+
+# Create from template
 issync init https://github.com/owner/repo/issues/123 --file docs/plan.md --template template.md
 ```
 
@@ -74,31 +80,76 @@ issync init https://github.com/owner/repo/issues/123 --file docs/plan.md
   - Example: For issue #123, the default will be `.issync/docs/plan-123.md`
   - This allows tracking multiple issues without file name conflicts
 - `--template <path>`: Create file from template if it doesn't exist
+- `--global`: Use global config (`~/.issync/state.yml`)
+  - File paths are stored as absolute paths
+  - Config is shared across all projects
+  - Useful for tracking issues across multiple repositories
+- `--local`: Use local config (`./.issync/state.yml`)
+  - File paths are stored as relative paths
+  - Config is project-specific (should be git-ignored)
+  - Default behavior for most use cases
+
+**Auto-detection (when neither --global nor --local is specified):**
+- Checks if `~/.issync/state.yml` exists → uses global
+- Otherwise → uses local (creates `./.issync/state.yml`)
 
 **Behavior:**
 - Detects existing issync-managed comments on the Issue and pulls the content
 - Creates a new file from template if no existing comment is found
+- Prevents duplicate: Cannot add same issue to both global and local configs
 
 ### `issync pull`
 
 Pull remote changes from GitHub Issue comment to local file.
 
 ```bash
+# Auto-detect config location
 issync pull
+
+# Use global config
+issync pull --global
+
+# Use local config
+issync pull --local
+
+# Select specific sync target
+issync pull --file docs/plan.md
+issync pull --issue https://github.com/owner/repo/issues/123
 ```
+
+**Options:**
+- `--file <path>`: Select sync target by local file path
+- `--issue <url>`: Select sync target by issue URL
+- `--global`: Use global config (`~/.issync/state.yml`)
+- `--local`: Use local config (`./.issync/state.yml`)
 
 ### `issync push`
 
 Push local changes to GitHub Issue comment.
 
 ```bash
+# Auto-detect config location
 issync push
+
+# Use global config
+issync push --global
+
+# Use local config
+issync push --local
 
 # Force push (skip optimistic lock check)
 issync push --force
+
+# Select specific sync target
+issync push --file docs/plan.md
+issync push --issue https://github.com/owner/repo/issues/123
 ```
 
 **Options:**
+- `--file <path>`: Select sync target by local file path
+- `--issue <url>`: Select sync target by issue URL
+- `--global`: Use global config (`~/.issync/state.yml`)
+- `--local`: Use local config (`./.issync/state.yml`)
 - `--force`: Skip optimistic lock check and force overwrite remote changes
   - ⚠️ **WARNING**: Concurrent remote changes will be permanently lost
   - Displays warning and asks for confirmation before execution
@@ -125,36 +176,81 @@ issync push --force
 Start watch mode (foreground process, press Ctrl+C to stop).
 
 ```bash
+# Auto-detect config location
 issync watch
 
-# Custom polling interval
+# Use global config
+issync watch --global
+
+# Use local config
+issync watch --local
+
+# Custom polling interval (default: 30s)
 issync watch --interval 10
+
+# Select specific sync target
+issync watch --file docs/plan.md
+issync watch --issue https://github.com/owner/repo/issues/123
 ```
+
+**Options:**
+- `--interval <seconds>`: Polling interval in seconds (default: 30, min: 1, max: 3600)
+- `--file <path>`: Select sync target by local file path
+- `--issue <url>`: Select sync target by issue URL
+- `--global`: Use global config (`~/.issync/state.yml`)
+- `--local`: Use local config (`./.issync/state.yml`)
 
 **Watch mode behavior:**
 
-- Polls GitHub Issue comment every 60 seconds (configurable)
+- Polls GitHub Issue comment every 30 seconds (configurable)
 - Watches local file for changes with `chokidar`
 - Automatically syncs changes bidirectionally
 - Safety check on startup: detects conflicts and auto-syncs if only one side changed
+- Supports multiple sync targets: Watches all configured syncs in the selected config
 
 ## Configuration
 
-issync stores state in `.issync/state.yml` (should be git-ignored):
+### Config File Locations
+
+issync supports two config file locations:
+
+**1. Local config (default)**: `./.issync/state.yml`
+- Project-specific configuration
+- Should be git-ignored
+- Uses relative file paths
+- Recommended for most use cases
+
+**2. Global config**: `~/.issync/state.yml`
+- Shared across all projects
+- Stored in home directory
+- Uses absolute file paths
+- Useful for tracking issues across multiple repositories
+
+### Config File Format
 
 ```yaml
-issue_url: https://github.com/owner/repo/issues/123
-comment_id: 123456789
-local_file: docs/plan.md
-last_synced_hash: abc123def
-last_synced_at: '2025-10-14T12:00:00.000Z'
+syncs:
+  - issue_url: https://github.com/owner/repo/issues/123
+    comment_id: 123456789
+    local_file: docs/plan.md
+    last_synced_hash: abc123def
+    last_synced_at: '2025-10-14T12:00:00.000Z'
+  - issue_url: https://github.com/owner/repo/issues/456
+    comment_id: 987654321
+    local_file: docs/design.md
+    last_synced_hash: def456abc
+    last_synced_at: '2025-10-14T13:00:00.000Z'
 ```
 
-Add to `.gitignore`:
+### .gitignore
+
+Add local config to `.gitignore`:
 
 ```gitignore
 .issync/
 ```
+
+**Note**: Global config (`~/.issync/state.yml`) is in your home directory and doesn't need to be git-ignored.
 
 ## Workflow for AI Agents
 
@@ -217,7 +313,6 @@ On watch startup, issync performs a 3-way comparison:
 ## Limitations (MVP)
 
 - **No merge logic**: Pull overwrites local file completely
-- **Single Issue per project**: Multi-Issue support coming in Phase 2
 - **Foreground watch**: Daemon mode planned for Phase 2
 - **No section-based merging**: Smart merge strategy planned for Phase 2
 

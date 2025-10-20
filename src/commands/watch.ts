@@ -1,6 +1,6 @@
 import { existsSync, readFileSync } from 'node:fs'
 import path from 'node:path'
-import { getStatePath, loadConfig, selectSync } from '../lib/config.js'
+import { loadConfig, resolveConfigPath, selectSync } from '../lib/config.js'
 import {
   AmbiguousSyncError,
   ConfigNotFoundError,
@@ -9,7 +9,7 @@ import {
 } from '../lib/errors.js'
 import { createGitHubClient, parseIssueUrl } from '../lib/github.js'
 import { calculateHash } from '../lib/hash.js'
-import type { IssyncState, IssyncSync } from '../types/index.js'
+import type { ConfigScope, IssyncState, IssyncSync, SelectorOptions } from '../types/index.js'
 import { pull } from './pull.js'
 import { push } from './push.js'
 import {
@@ -37,11 +37,8 @@ class ConflictError extends Error {
   }
 }
 
-interface WatchOptions {
+interface WatchOptions extends SelectorOptions {
   interval?: number // polling interval in seconds
-  cwd?: string
-  file?: string
-  issue?: string
 }
 
 /**
@@ -93,11 +90,16 @@ function resolveLocalFilePath(localFile: string, cwd: string): string {
  * Perform 3-way comparison to detect conflicts before starting watch
  * Returns true if safety check passed (watch can start)
  * Exported for testing
+ *
+ * NOTE: The scope parameter ensures consistency - all pull/push operations during
+ * safety check use the same config scope as the watch command itself.
+ * If scope is undefined, the auto-detection logic in resolveConfigPath() applies.
  */
 export async function _performSafetyCheck(
   sync: IssyncSync,
   cwd = process.cwd(),
   resolvedFilePath?: string,
+  scope?: ConfigScope,
 ): Promise<void> {
   if (!sync.comment_id) {
     throw new Error(
@@ -113,7 +115,7 @@ export async function _performSafetyCheck(
     console.log(
       '⚠️  No sync history found. Pulling from remote to establish baseline before starting watch...',
     )
-    await pull({ cwd, file: sync.local_file })
+    await pull({ cwd, file: sync.local_file, scope })
     console.log('✓ Baseline established from remote')
     return
   }
@@ -121,7 +123,7 @@ export async function _performSafetyCheck(
   // Read local file
   if (!existsSync(localFilePath)) {
     console.log('⚠️  Local file missing. Pulling from remote to restore before starting watch...')
-    await pull({ cwd, file: sync.local_file })
+    await pull({ cwd, file: sync.local_file, scope })
     console.log('✓ Local file restored from remote')
     return
   }
@@ -146,12 +148,14 @@ export async function _performSafetyCheck(
   if (localChanged) {
     // Only local changed → Auto push
     console.log('⚠️  Local changes detected. Pushing to remote before starting watch...')
-    await push({ cwd, file: sync.local_file })
+    // NOTE: Use the same scope as watch command to maintain config consistency
+    await push({ cwd, file: sync.local_file, scope })
     console.log('✓ Local changes pushed')
   } else if (remoteChanged) {
     // Only remote changed → Auto pull
     console.log('⚠️  Remote changes detected. Pulling from remote before starting watch...')
-    await pull({ cwd, file: sync.local_file })
+    // NOTE: Use the same scope as watch command to maintain config consistency
+    await pull({ cwd, file: sync.local_file, scope })
     console.log('✓ Remote changes pulled')
   }
   // else: Neither changed → No-op, proceed to watch
@@ -165,8 +169,12 @@ function determineSyncs(state: IssyncState, options: WatchOptions, cwd: string):
   return state.syncs
 }
 
-async function prepareTargets(options: WatchOptions, cwd: string): Promise<PreparedTarget[]> {
-  const state = loadConfig(cwd)
+async function prepareTargets(
+  options: WatchOptions,
+  cwd: string,
+  scope?: ConfigScope,
+): Promise<PreparedTarget[]> {
+  const state = loadConfig(scope, cwd)
   const syncs = determineSyncs(state, options, cwd)
 
   if (syncs.length === 0) {
@@ -179,7 +187,7 @@ async function prepareTargets(options: WatchOptions, cwd: string): Promise<Prepa
   }))
 
   for (const target of targets) {
-    await _performSafetyCheck(target.sync, cwd, target.resolvedPath)
+    await _performSafetyCheck(target.sync, cwd, target.resolvedPath, scope)
   }
 
   return targets
@@ -242,11 +250,15 @@ function findUnwatchedSyncs(
  * @param cwd Current working directory
  * @returns Array of successfully prepared targets
  */
-async function prepareNewTargets(newSyncs: IssyncSync[], cwd: string): Promise<PreparedTarget[]> {
+async function prepareNewTargets(
+  newSyncs: IssyncSync[],
+  cwd: string,
+  scope?: ConfigScope,
+): Promise<PreparedTarget[]> {
   const results = await Promise.allSettled(
     newSyncs.map(async (sync) => {
       const resolvedPath = resolveLocalFilePath(sync.local_file, cwd)
-      await _performSafetyCheck(sync, cwd, resolvedPath)
+      await _performSafetyCheck(sync, cwd, resolvedPath, scope)
       return { sync, resolvedPath }
     }),
   )
@@ -275,19 +287,20 @@ async function detectAndStartNewSessions(
   cwd: string,
   intervalMs: number,
   sessionManager: SessionManager,
+  scope?: ConfigScope,
 ): Promise<{
   successCount: number
   failures: Array<{ target: PreparedTarget; error: unknown }>
 }> {
   const trackedIssueUrls = sessionManager.getTrackedUrls()
-  const currentState = loadConfig(cwd)
+  const currentState = loadConfig(scope, cwd)
   const newSyncs = findUnwatchedSyncs(currentState, trackedIssueUrls)
 
   if (newSyncs.length === 0) {
     return { successCount: 0, failures: [] }
   }
 
-  const newTargets = await prepareNewTargets(newSyncs, cwd)
+  const newTargets = await prepareNewTargets(newSyncs, cwd, scope)
   if (newTargets.length === 0) {
     return { successCount: 0, failures: [] }
   }
@@ -318,6 +331,7 @@ async function handleStateChange(
   cwd: string,
   intervalMs: number,
   sessionManager: SessionManager,
+  scope?: ConfigScope,
 ): Promise<void> {
   try {
     console.log(`\n[${new Date().toISOString()}] state.yml changed, checking for new syncs...`)
@@ -326,6 +340,7 @@ async function handleStateChange(
       cwd,
       intervalMs,
       sessionManager,
+      scope,
     )
 
     if (successCount === 0 && failures.length === 0) {
@@ -346,12 +361,13 @@ async function handleStateChange(
 
 export async function watch(options: WatchOptions = {}): Promise<void> {
   const cwd = options.cwd ?? process.cwd()
+  const scope = options.scope
   const intervalSeconds = options.interval ?? DEFAULT_POLL_INTERVAL_SECONDS
   const intervalMs = intervalSeconds * 1000
 
   let targets: PreparedTarget[]
   try {
-    targets = await prepareTargets(options, cwd)
+    targets = await prepareTargets(options, cwd, scope)
   } catch (error) {
     handleWatchSetupError(error)
     throw error
@@ -404,11 +420,11 @@ export async function watch(options: WatchOptions = {}): Promise<void> {
   }
 
   // Setup state.yml monitoring for dynamic sync addition
-  const { stateFile } = getStatePath(cwd)
+  const { stateFile } = resolveConfigPath(scope)
   console.log('\nMonitoring state.yml for new sync entries...')
 
   const stateFileWatcher = new StateFileWatcher(stateFile, async () => {
-    await handleStateChange(cwd, intervalMs, sessionManager)
+    await handleStateChange(cwd, intervalMs, sessionManager, scope)
   })
 
   stateFileWatcher.start()

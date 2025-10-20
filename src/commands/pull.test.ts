@@ -40,7 +40,7 @@ describe('pull command - multi-sync support', () => {
         },
       ],
     }
-    saveConfig(state, tempDir)
+    saveConfig(state, undefined, tempDir)
 
     const remoteBody = '# Remote Content'
     const mockGitHubClient: Pick<GitHubClientInstance, 'getComment'> = {
@@ -56,7 +56,7 @@ describe('pull command - multi-sync support', () => {
     const pulledContent = readFileSync(path.join(tempDir, 'docs/two.md'), 'utf-8')
     expect(pulledContent).toBe(remoteBody)
 
-    const updatedState = loadConfig(tempDir)
+    const updatedState = loadConfig(undefined, tempDir)
     const sync = updatedState.syncs.find((entry) => entry.local_file === 'docs/two.md')
     expect(sync?.last_synced_hash).toBe(calculateHash(remoteBody))
     expect(sync?.last_synced_at).toBeDefined()
@@ -79,7 +79,7 @@ describe('pull command - multi-sync support', () => {
         },
       ],
     }
-    saveConfig(state, tempDir)
+    saveConfig(state, undefined, tempDir)
 
     const mockGitHubClient: Pick<GitHubClientInstance, 'getComment'> = {
       getComment: (_, __, commentId) => {
@@ -111,7 +111,7 @@ describe('pull command - multi-sync support', () => {
     expect(pulledContentOne).toBe(remoteBodyOne)
     expect(pulledContentTwo).toBe(remoteBodyTwo)
 
-    const updatedState = loadConfig(tempDir)
+    const updatedState = loadConfig(undefined, tempDir)
     const syncOne = updatedState.syncs.find((entry) => entry.local_file === 'docs/one.md')
     const syncTwo = updatedState.syncs.find((entry) => entry.local_file === 'docs/two.md')
 
@@ -139,7 +139,7 @@ describe('pull command - multi-sync support', () => {
         },
       ],
     }
-    saveConfig(state, tempDir)
+    saveConfig(state, undefined, tempDir)
 
     const mockGitHubClient: Pick<GitHubClientInstance, 'getComment'> = {
       getComment: (_, __, commentId) => {
@@ -162,7 +162,7 @@ describe('pull command - multi-sync support', () => {
     await expect(pull({ cwd: tempDir })).rejects.toThrow('1 of 2 pull operation(s) failed')
 
     // Verify successful sync was updated
-    const updatedState = loadConfig(tempDir)
+    const updatedState = loadConfig(undefined, tempDir)
     const syncOne = updatedState.syncs.find((entry) => entry.local_file === 'docs/one.md')
     const syncTwo = updatedState.syncs.find((entry) => entry.local_file === 'docs/two.md')
 
@@ -187,7 +187,7 @@ describe('pull command - multi-sync support', () => {
         },
       ],
     }
-    saveConfig(state, tempDir)
+    saveConfig(state, undefined, tempDir)
 
     const remoteBody = '# Remote Content'
     const mockGitHubClient: Pick<GitHubClientInstance, 'getComment'> = {
@@ -218,7 +218,7 @@ describe('pull command - multi-sync support', () => {
         },
       ],
     }
-    saveConfig(state, tempDir)
+    saveConfig(state, undefined, tempDir)
 
     const mockGitHubClient: Pick<GitHubClientInstance, 'getComment'> = {
       getComment: () =>
@@ -239,7 +239,7 @@ describe('pull command - multi-sync support', () => {
     expect(existsSync(planPath)).toBe(false)
 
     // Verify hash and timestamp were NOT updated
-    const updatedState = loadConfig(tempDir)
+    const updatedState = loadConfig(undefined, tempDir)
     const sync = updatedState.syncs[0]
     expect(sync.last_synced_hash).toBe(remoteHash)
     expect(sync.last_synced_at).toBe('2025-01-01T00:00:00Z') // Unchanged

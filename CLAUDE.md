@@ -111,18 +111,34 @@ This project uses **Lefthook** to automatically enforce code quality before comm
 - `GitHubIssueInfo`: Parsed Issue metadata (owner, repo, issue_number)
 - `CommentData`: GitHub comment response (id, body, updated_at)
 
-### Configuration File (.issync.yml)
+### Configuration File (state.yml)
+
+issync supports two config file locations:
+- **Local**: `./.issync/state.yml` (project-specific, git-ignored)
+- **Global**: `~/.issync/state.yml` (shared across projects)
 
 ```yaml
-issue_url: https://github.com/owner/repo/issues/123
-comment_id: 123456789               # Set after first sync
-local_file: .issync/docs/plan-123.md
-last_synced_hash: abc123def         # Remote content hash for optimistic locking
-last_synced_at: 2025-10-12T10:30:00Z
-poll_interval: 10                   # Seconds between remote polls
-merge_strategy: section-based       # Future: smart merge (Phase 2)
-watch_daemon_pid: 12345             # PID of watch process (if running)
+syncs:
+  - issue_url: https://github.com/owner/repo/issues/123
+    comment_id: 123456789               # Set after first sync
+    local_file: .issync/docs/plan-123.md
+    last_synced_hash: abc123def         # Remote content hash for optimistic locking
+    last_synced_at: 2025-10-12T10:30:00Z
+    poll_interval: 10                   # Seconds between remote polls (optional)
+    merge_strategy: section-based       # Future: smart merge (Phase 2, optional)
+    watch_daemon_pid: 12345             # PID of watch process (if running, optional)
+  - issue_url: https://github.com/owner/repo/issues/456
+    comment_id: 987654321
+    local_file: .issync/docs/design-456.md
+    last_synced_hash: def456abc
+    last_synced_at: 2025-10-13T11:00:00Z
 ```
+
+**Global vs Local:**
+- Global config uses absolute paths: `local_file: /Users/user/projects/repo/docs/plan.md`
+- Local config uses relative paths: `local_file: .issync/docs/plan-123.md`
+- Auto-detection: Prefers global if exists, falls back to local
+- Commands accept `--global` or `--local` flags to override
 
 ### issync Comment Identification
 
@@ -315,4 +331,5 @@ Focus on basic sync commands (init, pull, push) and simple watch mode. Skip adva
 
 - `docs/plan.md`: Living development plan (progress, decisions, architecture)
 - `src/types/index.ts`: Core data structures
-- `.issync.yml`: Per-project configuration (git-ignored by default)
+- `.issync/state.yml`: Local configuration (project-specific, git-ignored by default)
+- `~/.issync/state.yml`: Global configuration (optional, shared across projects)
