@@ -236,5 +236,40 @@ describe('watch command - unit tests', () => {
       expect(pushMock).not.toHaveBeenCalled()
       expect(pullMock).not.toHaveBeenCalled()
     })
+
+    test('should handle absolute paths (global scope) without path traversal error', async () => {
+      // Arrange: Use absolute path that points outside of current working directory
+      // This simulates global scope where files can be anywhere on the system
+      const content = '# Test Content'
+      const mockConfig: IssyncSync = {
+        issue_url: 'https://github.com/owner/repo/issues/1',
+        comment_id: 123,
+        local_file: absoluteFile, // Use absolute path from a different directory
+        last_synced_hash: calculateHash(content),
+      }
+
+      // Mock GitHub client to return same content
+      const mockGitHubClient: Pick<GitHubClientInstance, 'getComment'> = {
+        getComment: () =>
+          Promise.resolve({ id: 123, body: content, updated_at: '2025-01-01T00:00:00Z' }),
+      }
+      spyOn(githubModule, 'createGitHubClient').mockReturnValue(
+        mockGitHubClient as unknown as GitHubClientInstance,
+      )
+
+      const pushMock = spyOn(pushModule, 'push').mockImplementation(() => Promise.resolve())
+      const pullMock = spyOn(pullModule, 'pull').mockImplementation(() => Promise.resolve())
+
+      // Act & Assert: Should not throw path traversal error
+      try {
+        await _performSafetyCheck(mockConfig)
+        // Should not sync when content matches
+        expect(pushMock).not.toHaveBeenCalled()
+        expect(pullMock).not.toHaveBeenCalled()
+      } catch (error) {
+        console.error('Unexpected error:', error)
+        throw error
+      }
+    })
   })
 })

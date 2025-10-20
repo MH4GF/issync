@@ -76,6 +76,12 @@ const DEFAULT_POLL_INTERVAL_SECONDS = 30
  * ```
  */
 function resolveLocalFilePath(localFile: string, cwd: string): string {
+  // If localFile is already an absolute path (global scope), use it directly
+  if (path.isAbsolute(localFile)) {
+    return localFile
+  }
+
+  // For relative paths, resolve against cwd and validate
   const basePath = path.resolve(cwd)
   const resolvedPath = path.resolve(basePath, localFile)
 
