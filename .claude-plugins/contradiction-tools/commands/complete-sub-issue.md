@@ -1,5 +1,5 @@
 ---
-description: サブissue完了時に親issueのplan.mdを自動更新し、完了サマリーとFollow-up事項を親issueに反映
+description: サブissue完了時に親issueのplan.mdを自動更新し、完了サマリーとFollow-up事項を適切に処理（Open Questions追加、/create-sub-issue提案）
 ---
 
 # /complete-sub-issue: サブissue完了オペレーション
@@ -7,9 +7,10 @@ description: サブissue完了時に親issueのplan.mdを自動更新し、完�
 あなたはユーザーのサブissue完了時に、親issueのplan.mdを自動的に更新するサポートをしています。このコマンドは以下のワークフローを自動化します：
 1. サブissue情報のフェッチと親issue番号の抽出
 2. サブissueのplan.mdから完了情報を抽出
-3. 親issueのplan.mdを更新（Outcomes & Retrospectives、Open Questions、Follow-up Issues）
-4. サブissueのclose
-5. 完了通知
+3. 親issueのplan.mdを更新（Outcomes & Retrospectives、Open Questions）
+4. Follow-up事項の適切な処理提案（Open Questions追加または/create-sub-issue実行提案）
+5. サブissueのclose
+6. 完了通知
 
 ## 使用方法
 
@@ -26,8 +27,8 @@ description: サブissue完了時に親issueのplan.mdを自動更新し、完�
 このコマンドは「矛盾解消駆動開発」ワークフローの**横断的オペレーション**です：
 - **実行タイミング**: `retrospective`ステート（サブissueの振り返り記入後）
 - サブissue完了時に親issueへ完了情報を自動反映
-- Follow-up事項を適切なセクション（Open Questions、Follow-up Issues）に振り分け
-- 大きなタスクのサブissue化と完了フローの自動化
+- Follow-up事項を適切に処理：論点はOpen Questionsへ、実装タスクは/create-sub-issueで新規サブissue化を提案
+- 親issueが適切なネクストアクションを実施できるよう支援
 - **Note**: Template v7では、plan.mdのTasksセクションが削除されているため、このコマンドはTasksセクションを操作しません
 
 ## 前提条件
@@ -110,52 +111,30 @@ syncs:
 - （記載なし）
 ```
 
-### ステップ5: Follow-up Issuesを親issueに振り分け
+### ステップ5: Follow-up Issuesの適切な処理
 
-サブissueのFollow-up Issuesセクションの各項目を、内容に応じて親issueの適切なセクションに追加：
+サブissueのFollow-up Issuesをキーワードベースで分類し処理：
 
-**振り分けロジック**:
-
-1. **「未解決の質問・将来的な改善課題」** → 親issueの**Open Questionsセクション**に追加
-   - キーワード: "検討"、"調査"、"方法"、"どのように"、"改善"、"最適化"
+1. **論点・調査事項** → 親issueの**Open Questionsに自動追加**
+   - キーワード: "検討"、"調査"、"方法"、"どのように"、"理由"、"判断"、"選択"、"課題"
    - フォーマット: `**Q[次の番号]: [質問タイトル]**\n- [詳細]`
 
-2. **「別issueとして扱うべき申し送り事項」** → 親issueの**Follow-up Issuesセクション**に追加
-   - キーワード: "別issue"、"今回のスコープ外"、"将来的に"、"実装"、"機能追加"、"対応"、"作成"、"構築"
-   - フォーマット: `- [項目内容]`
+2. **実装タスク** → **`/create-sub-issue`実行を提案**（完了サマリーで提示、自動作成はしない）
+   - キーワード: "実装"、"機能追加"、"対応"、"作成"、"構築"、"別issue"、"今回のスコープ外"、"将来的に"
 
-**振り分け例**:
-
-サブissueのFollow-up Issues:
-```markdown
-## Follow-up Issues / フォローアップ課題
-
-- GitHub Actionsのリトライロジックの実装を検討
-- failedステートの自動判定方法の調査が必要
-- Phase 3でE2Eテストを別issueとして作成
-```
-
-親issueへの振り分け:
-- Open Questionsセクションに追加: `**Q[次の番号]: failedステートの自動判定方法**\n- GitHub ActionsからIssue Statusを変更する方法を調査`
-- Follow-up Issuesセクションに追加:
-  - `- GitHub Actionsのリトライロジックの実装を検討`
-  - `- Phase 3でE2Eテストを別issueとして作成`
-
-**Follow-up Issuesがない場合**: このステップをスキップ
+**重要**: 親issueのFollow-up Issuesセクションへの転記は禁止。親issueが適切なネクストアクションを実施できるよう支援する。
 
 ### ステップ6: サブissueをclose
-
-`gh` CLIを使用してサブissueをclose：
 
 ```bash
 gh issue close <サブissue URL> --comment "Completed. Summary recorded in parent issue #<親issue番号>."
 ```
 
-**エラーハンドリング**: close失敗時は警告を表示し手動closeを依頼
+エラー時は警告を表示し手動closeを依頼。
 
 ### ステップ7: 完了通知
 
-編集内容のサマリーを出力（watchが自動同期）：
+編集内容のサマリーを出力（watchが自動同期）。フォーマットは「出力フォーマット」セクション参照。
 
 ## 出力フォーマット
 
@@ -170,114 +149,67 @@ gh issue close <サブissue URL> --comment "Completed. Summary recorded in paren
 
 ### 更新内容
 - ✅ Outcomes & Retrospectives: サブタスク完了サマリー追加 (plan.md:[line_number])
-- ✅ Follow-up Issues振り分け: Open Questionsに[X]件、Follow-up Issuesに[Y]件追加
+- ✅ Follow-up Issues処理: Open Questionsに[X]件追加
 - ✅ サブissue #[サブissue番号] をclose
 - ✅ 自動同期完了（watchモードで親issueに反映）
 
+### 推奨アクション: 新規サブissue作成 (該当する場合のみ表示)
+以下のタスクは `/create-sub-issue` での新規サブissue化を推奨します：
+- [タスク概要1]
+- [タスク概要2]
+
+実行例: `/create-sub-issue "[タスク概要1]" "[タスク概要2]"`
+
 ### 次のアクション
 - [ ] 親issueの更新内容を確認してください
-- [ ] 追加されたOpen QuestionsやFollow-up Issuesを確認してください
-- [ ] 必要に応じて新しいサブissueを作成してください（`/create-sub-issue`）
+- [ ] 追加されたOpen Questionsを確認してください
+- [ ] 推奨されている場合は `/create-sub-issue` で新規サブissueを作成してください
 ```
 
 ---
 
 ## 重要な注意事項
 
-- gh CLIでissue情報を取得し、"Part of #123"パターンで親issue番号を抽出
-- state.ymlから親issueのplan.mdを特定し、既存フォーマットを保持
-- Follow-up事項はキーワードベースでOpen Questions/Follow-up Issuesに振り分け
-- issync watch実行中を前提とし、明示的なpushは不要
+**技術的制約**:
+- gh CLIで"Part of #123"パターンから親issue番号を抽出
+- `.issync/state.yml`から親issueのplan.mdを特定
+- issync watch実行中を前提（明示的なpushは不要）
+
+**Follow-up処理方針**（詳細はステップ5参照）:
+- 論点・調査事項 → Open Questionsに自動追加
+- 実装タスク → `/create-sub-issue`実行を提案
+- **親issueのFollow-up Issuesセクションへの転記は禁止**
+
+**エラーハンドリング**:
+- state.yml不在、親issue未初期化 → issync init案内
+- サブissueのplan.md不在 → 「（記載なし）」として記録
+- issue close失敗 → 警告表示、手動close依頼
 
 ---
 
 ## 実行例
 
-### 例1: サブissue完了（基本フロー）
+**入力**: `/complete-sub-issue https://github.com/MH4GF/issync/issues/124`
 
-**ユーザー:** `/complete-sub-issue https://github.com/MH4GF/issync/issues/124`
+**処理**:
+1. サブissue #124（Status変更時の自動アクション設計）から親issue #123を特定
+2. サブissueのplan.mdからOutcomes & RetrospectivesとFollow-up Issuesを抽出
+3. 親issueのplan.md（.issync/docs/task-dashboard.md）を更新:
+   - Outcomes & Retrospectives: サブタスク完了サマリー追加
+   - Open Questions: 「failedステートの自動判定方法の調査」を追加
+4. 実装タスク（「リトライロジック実装」「E2Eテスト環境構築」）は`/create-sub-issue`実行を提案
+5. サブissue #124をclose
 
-**アシスタント:**
-
-"サブissue完了処理を開始します。
-
-### ステップ1: サブissue情報をフェッチ
-
-[gh issue viewを実行]
-
-サブissue: #124 - Status変更時の自動アクション設計
-親issue: #123
-
-### ステップ2: サブissueのplan.mdを読み込み
-
-[サブissueのplan.mdからOutcomes & Retrospectives、Follow-up Issuesを抽出]
-
-Outcomes & Retrospectives:
-- GitHub ActionsでCI成功時のStatus自動変更を実装
-- Octokit APIを使用したProjects Status更新の知見を獲得
-
-Follow-up Issues:
-- GitHub Actionsのリトライロジックの実装を検討
-- failedステートの自動判定方法の調査が必要
-
-### ステップ3: 親issueのplan.mdを特定
-
-[.issync/state.ymlから親issue #123のplan.mdを特定]
-
-親issueのplan.md: .issync/docs/task-dashboard.md
-
-### ステップ4-6: 親issueのplan.mdを更新
-
-[Editツールで以下を更新]
-- Outcomes & Retrospectives: サブタスク完了サマリー追加
-- Open Questions: 「Q13: failedステートの自動判定方法」を追加
-- Follow-up Issues: 「GitHub Actionsのリトライロジックの実装を検討」を追加
-
-### ステップ6: サブissueをclose
-
-[gh issue close実行]
-
-✅ サブissue #124 をcloseしました
-
-## /complete-sub-issue 実行結果
-
-### 完了したサブissue
-- #124: Status変更時の自動アクション設計
-- 親issue: #123
-
-### 更新内容
-- ✅ Outcomes & Retrospectives: サブタスク完了サマリー追加 (task-dashboard.md:561)
-- ✅ Follow-up Issues振り分け: Open Questionsに1件、Follow-up Issuesに1件追加
-- ✅ サブissue #124 をclose
-- ✅ 自動同期完了（watchモードで親issueに反映）
-
-### 次のアクション
-- [ ] 親issueの更新内容を確認してください
-- [ ] 追加されたOpen QuestionsやFollow-up Issuesを確認してください
-- [ ] 必要に応じて新しいサブissueを作成してください（`/create-sub-issue`）
-"
+**出力**: 「出力フォーマット」セクション参照
 
 ---
 
-### 例2: サブissueにplan.mdがない場合
+## 運用フロー
 
-plan.md不在時は「（記載なし）」として記録し、手動追記を提案
+1. `/create-sub-issue`でサブissue作成
+2. サブissueで開発（plan → retrospective）
+3. サブissueのplan.mdにOutcomes & RetrospectivesとFollow-up Issuesを記入
+4. `/complete-sub-issue`で親issueに自動反映＆サブissueclose
+5. 必要に応じて`/create-sub-issue`で次のサブissueを作成
 
----
-
-## 補足: Template v7への完全移行
-
-このコマンドは、task-dashboard.mdの**Decision Log 2025-10-17**（TasksセクションをGitHub Sub-issuesに完全移行）を反映した実装です：
-
-- **完全移行**: GitHub Sub-issuesが完全なSSoT、plan.mdのTasksセクションは使用しない
-- **更新内容の変更**:
-  - Tasksセクションの更新処理を削除
-  - Follow-up Issuesの振り分け先をOpen QuestionsまたはFollow-up Issuesのみに変更
-
-- **運用フロー**:
-  1. `/create-sub-issue`でサブissue作成
-  2. サブissueで開発（plan → retrospective）
-  3. サブissueのplan.mdにOutcomes & RetrospectivesとFollow-up Issuesを記入
-  4. `/complete-sub-issue`で親issueに自動反映＆サブissueclose
-
-このワークフローにより、サブissueの成果が親issueに確実に反映され、知見の蓄積と次のタスク計画が自動化されます。
+**設計原則**: GitHub Sub-issuesを完全なSSOTとし、plan.mdのTasksセクションは使用しない。サブissueの成果を親issueに確実に反映し、知見蓄積と次のタスク計画を自動化する。
