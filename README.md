@@ -324,7 +324,7 @@ Documents managed by issync that synchronize bidirectionally between GitHub Issu
 
 **Characteristics:**
 - Filename pattern: `plan-{number}-{slug}.md` (e.g., `plan-123-watch-daemon.md`)
-- Template: Generated from `docs/plan-template.md`
+- Template: Generated from `docs/progress-document-template.md`
 - Purpose: Recording development progress, architecture decisions, task management, retrospectives
 - Sync destination: GitHub Issue comments (identified by HTML comment markers)
 

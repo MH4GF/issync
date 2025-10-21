@@ -1,36 +1,36 @@
 ---
-description: plan-template.md更新時にMIGRATION_GUIDE.mdの新エントリを半自動生成
+description: progress-document-template.md更新時にMIGRATION_GUIDE.mdの新エントリを半自動生成
 ---
 
-# /upgrade-plan-template: テンプレート更新とマイグレーションガイド生成
+# /upgrade-progress-document-template: テンプレート更新とマイグレーションガイド生成
 
-あなたは @plan-template.md の更新をサポートし、 @MIGRATION_GUIDE.md の新しいバージョンエントリを半自動で生成します。このコマンドは以下のワークフローを自動化します：
-1. plan-template.mdの変更内容の分析
+あなたは @progress-document-template.md の更新をサポートし、 @MIGRATION_GUIDE.md の新しいバージョンエントリを半自動で生成します。このコマンドは以下のワークフローを自動化します：
+1. progress-document-template.mdの変更内容の分析
 2. MIGRATION_GUIDE.mdへの新バージョンエントリの追加
 3. バージョン番号の更新
 
 ## コンテキスト
 
-このコマンドはplan-template.mdのバージョン管理を支援します：
-- plan-template.mdは矛盾解消駆動開発の中核的インターフェース
+このコマンドはprogress-document-template.mdのバージョン管理を支援します：
+- progress-document-template.mdは矛盾解消駆動開発の中核的インターフェース
 - テンプレート変更時には既存プロジェクトへのマイグレーション手順が必要
 - 完全手動では運用コストが高く、完全自動では説明が不十分
 - AIによる初期ドラフト生成 + 人間のレビューで品質と効率のバランスを取る
 
 ## 実行タイミング
 
-plan-template.mdを更新したい時に実行します。ユーザーからどのように更新したいかを聞き、plan-template.mdを更新し、その後MIGRATION_GUIDE.mdに新エントリを生成します。
+progress-document-template.mdを更新したい時に実行します。ユーザーからどのように更新したいかを聞き、progress-document-template.mdを更新し、その後MIGRATION_GUIDE.mdに新エントリを生成します。
 
 ## 前提条件
 
-- ユーザーがplan-template.mdの更新内容を説明できる
+- ユーザーがprogress-document-template.mdの更新内容を説明できる
 - 現在のバージョン番号を知っている、または最新のバージョン情報を確認できる
 
 ## 実行ステップ
 
 ### ステップ1: 現在のバージョン情報を確認
 
-1. **plan-template.mdのバージョンヘッダーを確認**
+1. **progress-document-template.mdのバージョンヘッダーを確認**
    - ファイルの先頭行 `<!-- Template Version: X (YYYY-MM-DD) -->` からバージョン番号を取得
 
 2. **MIGRATION_GUIDE.mdの最新バージョンを確認**
@@ -43,7 +43,7 @@ plan-template.mdを更新したい時に実行します。ユーザーからど�
 
 1. **git diffで差分を取得**
    ```bash
-   git diff HEAD -- docs/plan-template.md
+   git diff HEAD -- docs/progress-document-template.md
    ```
 
 2. **変更内容を分類**
@@ -104,9 +104,9 @@ MIGRATION_GUIDE.mdに以下の形式で新しいバージョンエントリを�
 ---
 ```
 
-### ステップ4: plan-template.mdのバージョンヘッダーを更新
+### ステップ4: progress-document-template.mdのバージョンヘッダーを更新
 
-plan-template.mdの先頭行を新しいバージョン番号と日付に更新：
+progress-document-template.mdの先頭行を新しいバージョン番号と日付に更新：
 
 ```markdown
 <!-- Template Version: X (YYYY-MM-DD) -->
@@ -127,10 +127,10 @@ plan-template.mdの先頭行を新しいバージョン番号と日付に更新�
 更新完了後、以下の形式でサマリーを提供：
 
 ```markdown
-## /upgrade-plan-template 実行結果
+## /upgrade-progress-document-template 実行結果
 
 ### 更新内容
-- ✅ plan-template.mdのバージョンを X → Y に更新 (docs/plan-template.md:1)
+- ✅ progress-document-template.mdのバージョンを X → Y に更新 (docs/progress-document-template.md:1)
 - ✅ MIGRATION_GUIDE.mdに Version Y のエントリを追加 (docs/MIGRATION_GUIDE.md:[line_number])
 
 ### 変更サマリー
@@ -146,7 +146,7 @@ plan-template.mdの先頭行を新しいバージョン番号と日付に更新�
 
 ## 重要な注意事項
 
-- 変更を行う前に**必ずplan-template.mdとMIGRATION_GUIDE.mdを読んでください**
+- 変更を行う前に**必ずprogress-document-template.mdとMIGRATION_GUIDE.mdを読んでください**
 - **git diffを使用**して実際の変更内容を正確に把握してください
 - マイグレーション手順は**具体的で実行可能**な形式で記述してください
 - **変更前/変更後のコード例**を必ず含めてください
@@ -156,15 +156,15 @@ plan-template.mdの先頭行を新しいバージョン番号と日付に更新�
 
 ## 実行例
 
-**ユーザー:** `/upgrade-plan-template`
+**ユーザー:** `/upgrade-progress-document-template`
 
-**アシスタント:** "plan-template.mdの更新をサポートします。
+**アシスタント:** "progress-document-template.mdの更新をサポートします。
 
 まず、現在の状態を確認します。"
 
-[plan-template.mdとMIGRATION_GUIDE.mdを読み、git diffで差分を確認]
+[progress-document-template.mdとMIGRATION_GUIDE.mdを読み、git diffで差分を確認]
 
-**アシスタント:** "plan-template.mdの変更を検出しました。
+**アシスタント:** "progress-document-template.mdの変更を検出しました。
 
 - 現在のバージョン: 2 (2025-10-15)
 - 提案する新バージョン: 3 (2025-10-15)
@@ -177,12 +177,12 @@ plan-template.mdの先頭行を新しいバージョン番号と日付に更新�
 
 **ユーザー:** "はい"
 
-**アシスタント:** [MIGRATION_GUIDE.mdに新エントリを生成、plan-template.mdのバージョンを更新、サマリーを提示]
+**アシスタント:** [MIGRATION_GUIDE.mdに新エントリを生成、progress-document-template.mdのバージョンを更新、サマリーを提示]
 
 ## エラーハンドリング
 
 以下の場合はエラーを報告してユーザーにガイダンスを求めます：
 
-- **git diffで差分が見つからない場合**: "plan-template.mdに変更が検出されませんでした。先にplan-template.mdを編集してください。"
-- **バージョンヘッダーが見つからない場合**: "plan-template.mdのバージョンヘッダーが見つかりません。手動で追加してください。"
+- **git diffで差分が見つからない場合**: "progress-document-template.mdに変更が検出されませんでした。先にprogress-document-template.mdを編集してください。"
+- **バージョンヘッダーが見つからない場合**: "progress-document-template.mdのバージョンヘッダーが見つかりません。手動で追加してください。"
 - **MIGRATION_GUIDE.mdが存在しない場合**: "MIGRATION_GUIDE.mdが見つかりません。新規作成しますか？"

@@ -56,7 +56,7 @@
 - 解決済みのOpen Questions
 - 矛盾する記述
 
-### 3. バージョン比較とplan-template.mdとの比較
+### 3. バージョン比較とprogress-document-template.mdとの比較
 
 #### a) バージョンヘッダーの確認
 
@@ -78,13 +78,13 @@ Version 1 (2025-10-15) 以前のテンプレートを使用している可能性
 <!-- Template Version: 1 (2025-10-15) -->
 ```
 
-#### b) plan-template.mdのバージョン取得
+#### b) progress-document-template.mdのバージョン取得
 
-公式テンプレート（`https://raw.githubusercontent.com/MH4GF/issync/refs/heads/main/docs/plan-template.md`）を取得し、バージョンヘッダーを確認してください。
+公式テンプレート（`https://raw.githubusercontent.com/MH4GF/issync/refs/heads/main/docs/progress-document-template.md`）を取得し、バージョンヘッダーを確認してください。
 
 #### c) バージョン比較
 
-進捗ドキュメントのバージョンと、plan-template.mdのバージョンを比較してください：
+進捗ドキュメントのバージョンと、progress-document-template.mdのバージョンを比較してください：
 
 **バージョンが同じ場合**: 通常の圧縮処理を続行
 
@@ -179,7 +179,7 @@ Version 1 (2025-10-15) 以前のテンプレートを使用している可能性
 
 ### バージョン情報
 - 進捗ドキュメント: Version [X] ([YYYY-MM-DD])
-- plan-template.md: Version [Y] ([YYYY-MM-DD])
+- progress-document-template.md: Version [Y] ([YYYY-MM-DD])
 - マイグレーション: [実施した/不要/スキップ]
 
 ### 圧縮サマリー

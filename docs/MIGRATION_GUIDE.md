@@ -1,6 +1,6 @@
-# plan-template.md Migration Guide
+# progress-document-template.md Migration Guide
 
-このドキュメントは、plan-template.mdのバージョン間の変更内容とマイグレーション手順を記録します。
+このドキュメントは、progress-document-template.mdのバージョン間の変更内容とマイグレーション手順を記録します。
 
 ## バージョン管理の方針
 
@@ -122,7 +122,7 @@
 - `failed` (変更なし)
 - `done` (変更なし)
 
-**影響範囲**: plan-template.md内の全HTMLコメントガイダンス、ステートマシン図、実行プロセス記述
+**影響範囲**: progress-document-template.md内の全HTMLコメントガイダンス、ステートマシン図、実行プロセス記述
 
 ### マイグレーション手順
 
@@ -179,7 +179,7 @@ plan.md先頭行 `<!-- Template Version: X (YYYY-MM-DD) -->` を確認し、最�
 
 **理由**: AIが叩き台を提示し人間が判断するHITLワークフローを実現。初期仮説→最終決定の経緯を記録し、フォーマットの一貫性を向上
 
-**新フォーマット**: `docs/plan-template.md` の「Open Questions / 残論点」セクションを参照
+**新フォーマット**: `docs/progress-document-template.md` の「Open Questions / 残論点」セクションを参照
 
 ### マイグレーション手順
 

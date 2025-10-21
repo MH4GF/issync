@@ -29,6 +29,7 @@ import type {
   IssyncSync,
 } from '../types/index.js'
 
+// TODO: Update to progress-document-template.md after the rename is pushed to GitHub
 const _DEFAULT_TEMPLATE_URL =
   'https://raw.githubusercontent.com/MH4GF/issync/refs/heads/main/docs/plan-template.md'
 

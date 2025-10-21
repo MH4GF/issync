@@ -151,7 +151,8 @@ describe('init command', () => {
   test('creates file from URL template when provided', async () => {
     const issueUrl = 'https://github.com/owner/repo/issues/123'
     const localFile = 'docs/custom.md'
-    // Use the actual default template URL to test real HTTP fetch
+    // Use the old template URL (plan-template.md) until the rename is pushed to GitHub
+    // TODO: Update to progress-document-template.md after push
     const templateUrl =
       'https://raw.githubusercontent.com/MH4GF/issync/refs/heads/main/docs/plan-template.md'
 

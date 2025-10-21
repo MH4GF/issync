@@ -342,7 +342,7 @@ issyncで管理されるドキュメントの総称。GitHub Issueコメント�
 
 **特徴:**
 - ファイル名パターン: `plan-{番号}-{slug}.md` (例: `plan-123-watch-daemon.md`)
-- テンプレート: `docs/plan-template.md`から生成
+- テンプレート: `docs/progress-document-template.md`から生成
 - 用途: 開発進捗の記録、アーキテクチャ決定、タスク管理、振り返り
 - 同期先: GitHub Issueコメント（HTML comment markersで識別）
 

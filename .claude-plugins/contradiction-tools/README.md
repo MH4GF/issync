@@ -331,7 +331,7 @@ POC PR #456完了時：
 
 2. pluginが以下を自動実行:
    - 進捗ドキュメントの分析（総行数、セクション別行数、重複、矛盾）
-   - plan-template.mdとの比較
+   - progress-document-template.mdとの比較
    - 圧縮処理の適用
    - 矛盾検出とレポート
    - watchモードが起動している場合は自動的にGitHub Issueに同期
@@ -461,10 +461,10 @@ architecture-decisionステートでアーキテクチャを決定する時に�
 ## 必要要件
 
 - プロジェクトに以下のセクションを含む `進捗ドキュメント` ファイルが必要:
-  - **`/plan`用**: plan-template.mdから生成された初期構造
+  - **`/plan`用**: progress-document-template.mdから生成された初期構造
   - **`/architecture-decision`用**: Discoveries & Insights, Decision Log, Specification / 仕様, Validation & Acceptance Criteria
   - **`/add-question`用**: Open Questions / 残論点
-  - **`/compact-plan`用**: docs/plan-template.md（圧縮の基準として使用）
+  - **`/compact-plan`用**: docs/progress-document-template.md（圧縮の基準として使用）
   - **`/create-sub-issue`用**: Tasks, Purpose/Overview, .issync.yml（issync init完了）
   - **`/complete-sub-issue`用**: Tasks, Outcomes & Retrospectives, Open Questions, Follow-up Issues, .issync/state.yml（issync watch実行中）
 - (オプション) 自動同期用のissync CLIツール
