@@ -29,7 +29,7 @@ description: POCの知見を基にアーキテクチャ・設計方針を決定�
 - [ ] **現在のGitHub Issue Statusが `architecture-decision` であることを確認**（手動確認）
 - [ ] POC実装が完了し、PRが作成されている
 - [ ] `GITHUB_TOKEN` 環境変数が設定されている（`export GITHUB_TOKEN=$(gh auth token)`）
-- [ ] plan.mdファイルがローカルに存在する
+- [ ] 進捗ドキュメントファイルがローカルに存在する
 
 **重要**: このコマンドは`architecture-decision`ステートで実行されることを前提としています。適切なタイミングで実行する責任はユーザーにあります。
 
@@ -73,7 +73,7 @@ gh pr diff <PR URL>
 
 ### ステップ2: Discoveries & Insightsの参照
 
-plan.mdの`Discoveries & Insights`セクションを読み、POC実装中に発見された技術的制約・複雑性を確認：
+進捗ドキュメントの`Discoveries & Insights`セクションを読み、POC実装中に発見された技術的制約・複雑性を確認：
 
 ```markdown
 ## Discoveries & Insights
@@ -228,7 +228,7 @@ Acceptance Criteriaが妥当であると判断した場合、変更は不要で�
 POC PRをクローズします：
 
 ```bash
-gh pr close <PR URL> --comment "POC完了。アーキテクチャ決定をplan.mdに記録しました。implementフェーズに進みます。"
+gh pr close <PR URL> --comment "POC完了。アーキテクチャ決定を進捗ドキュメントに記録しました。implementフェーズに進みます。"
 ```
 
 **PRが既にクローズ済みの場合**:
@@ -277,7 +277,7 @@ issync push
 ...
 
 ### 次のアクション
-- [ ] plan.mdの内容（Decision Log、Specification、Acceptance Criteria）をレビューしてください
+- [ ] 進捗ドキュメントの内容（Decision Log、Specification、Acceptance Criteria）をレビューしてください
 - [ ] アーキテクチャ決定が適切か確認してください
 - [ ] 承認後、Statusを `implement` に変更してください
 - [ ] implementのチェックリストを確認し、本実装を開始してください
@@ -344,7 +344,7 @@ PR #456の情報を取得します...
 
 ### ステップ2: Discoveries & Insights参照
 
-plan.mdのDiscoveries & Insightsを確認します...
+進捗ドキュメントのDiscoveries & Insightsを確認します...
 
 **確認した発見事項**:
 1. chokidarライブラリによるファイル監視の安定性
@@ -414,7 +414,7 @@ watchモードが起動しているため、自動的にGitHub Issueに同期さ
 3. エラーハンドリング戦略（3回リトライ + 指数バックオフ）
 
 ### 次のアクション
-- [ ] plan.mdの内容（Decision Log、Specification、Acceptance Criteria）をレビューしてください
+- [ ] 進捗ドキュメントの内容（Decision Log、Specification、Acceptance Criteria）をレビューしてください
 - [ ] アーキテクチャ決定が適切か確認してください
 - [ ] 承認後、Statusを `implement` に変更してください
 - [ ] implementのチェックリストを確認し、本実装を開始してください
@@ -444,11 +444,11 @@ Statusを architecture-decision に変更
    ↓
 アーキテクチャ決定完了
    ↓
-人間がplan.mdをレビュー
+人間が進捗ドキュメントをレビュー
    ↓
 承認後、Statusを implement に変更
    ↓
 本実装開始
 ```
 
-**重要**: アーキテクチャ決定完了後、必ず人間がplan.mdの内容（Decision Log、Specification、Acceptance Criteria）をレビューし、承認してからStatusを変更してください。
+**重要**: アーキテクチャ決定完了後、必ず人間が進捗ドキュメントの内容（Decision Log、Specification、Acceptance Criteria）をレビューし、承認してからStatusを変更してください。

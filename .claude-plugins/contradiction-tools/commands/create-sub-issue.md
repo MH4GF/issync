@@ -1,5 +1,5 @@
 ---
-description: 新規タスクをGitHub Issueとして作成し、親issueとのリンクを自動管理。plan.mdのTasksセクションは不使用
+description: 新規タスクをGitHub Issueとして作成し、親issueとのリンクを自動管理。進捗ドキュメントのTasksセクションは不使用
 ---
 
 # /create-sub-issue: サブissue作成オペレーション
@@ -16,7 +16,7 @@ description: 新規タスクをGitHub Issueとして作成し、親issueとの�
 **横断的オペレーション** - どのステートでも実行可能（plan、poc、architecture-decision、implement）
 
 **設計原則**:
-- GitHub Sub-issuesを完全なSSOTとし、plan.mdのTasksセクションは不使用
+- GitHub Sub-issuesを完全なSSOTとし、進捗ドキュメントのTasksセクションは不使用
 - ユーザーは簡潔なタスク概要を入力（詳細なタイトルは不要）
 - LLMが親issueコンテキストから適切なタイトル・本文を自動生成
 - Sub-issues APIで親issueと自動リンク、順序維持
@@ -49,13 +49,13 @@ description: 新規タスクをGitHub Issueとして作成し、親issueとの�
 
 `.issync/state.yml`から取得:
 - `issue_url`: 親issueのURL
-- `local_file`: plan.mdのパス
+- `local_file`: 進捗ドキュメントのパス
 
 複数sync存在時はユーザーに選択を促す。ファイル不在時は`issync init`実行を案内。
 
-### ステップ3: 親issueのplan.mdを読み込み、コンテキストを抽出
+### ステップ3: 親issueの進捗ドキュメントを読み込み、コンテキストを抽出
 
-親issueのplan.md全体を読み込み、LLMが以下を理解:
+親issueの進捗ドキュメント全体を読み込み、LLMが以下を理解:
 - Purpose/Overview: 目的、コアバリュー
 - Context & Direction: 背景、設計哲学
 - Specification: 仕様、アーキテクチャ（存在する場合）
@@ -139,7 +139,7 @@ done
 ## 重要な注意事項
 
 **必須要件**:
-- 親issueのplan.md全体読み込み（.issync/state.ymlのlocal_fileパス使用）
+- 親issueの進捗ドキュメント全体読み込み（.issync/state.ymlのlocal_fileパス使用）
 - タイトル・本文はLLM生成、ユーザー確認必須
 - gh CLI使用、内部ID使用（`gh api .../issues/{番号} --jq .id`）
 
@@ -147,7 +147,7 @@ done
 - Issue作成→内部ID取得→Sub-issues紐づけ→順序設定（`after_id`）
 - JSON payload使用、エラー時は処理継続して報告
 
-**plan.md非変更**: Tasksセクション削除済み、タスク管理はGitHub Sub-issuesに完全移行
+**進捗ドキュメント非変更**: Tasksセクション削除済み、タスク管理はGitHub Sub-issuesに完全移行
 
 **エラーハンドリング**: state.yml不在・gh CLI不在時は終了、Issue作成失敗時は部分成功も記録
 

@@ -4,15 +4,15 @@
 
 ## 概要
 
-このpluginは7つのスラッシュコマンドを提供し、plan.mdファイルの管理を効率化します：
+このpluginは7つのスラッシュコマンドを提供し、進捗ドキュメントの管理を効率化します：
 
 ### `/plan`: plan実行ワークフロー
 
-planフェーズのplan.md初期作成をガイドします。以下の6ステップを自動化します：
+planフェーズの進捗ドキュメント初期作成をガイドします。以下の6ステップを自動化します：
 
 1. GitHub Issue内容の確認
 2. コードベース調査（CRITICAL）
-3. plan.md基本セクションの記入
+3. 進捗ドキュメント基本セクションの記入
 4. Open Questionsの精査
 5. Tasksの初期化
 6. issync pushで同期
@@ -36,7 +36,7 @@ POC完了後、POCで得た知見を基にアーキテクチャ・設計方針�
 
 ### `/add-question`: Open Question追加ワークフロー
 
-plan.mdファイルに新しいOpen Questionを追加する際に、優先度評価と最適な配置位置を提案します。以下のプロセスをガイドします：
+進捗ドキュメントに新しいOpen Questionを追加する際に、優先度評価と最適な配置位置を提案します。以下のプロセスをガイドします：
 
 1. 質問内容の入力（対話形式）
 2. 優先度評価（最優先/高/中/低）
@@ -44,9 +44,9 @@ plan.mdファイルに新しいOpen Questionを追加する際に、優先度評
 4. 配置位置の提案
 5. Open Questionsセクションへの追加
 
-### `/compact-plan`: plan.md圧縮ツール
+### `/compact-plan`: 進捗ドキュメント圧縮ツール
 
-plan.mdファイルが大きくなりすぎた際に、情報量を保持したまま文量を削減します。以下の処理を自動化します：
+進捗ドキュメントが大きくなりすぎた際に、情報量を保持したまま文量を削減します。以下の処理を自動化します：
 
 1. 重複情報の削減
 2. 解決済みOpen Questionsの整理
@@ -55,7 +55,7 @@ plan.mdファイルが大きくなりすぎた際に、情報量を保持した�
 
 ### `/create-sub-issue`: タスクのサブissue化ワークフロー
 
-plan.mdのTasksセクションから`(未Issue化)`マーク付きタスクを抽出し、GitHub Issueとして一括作成します。以下のプロセスを自動化します：
+進捗ドキュメントのTasksセクションから`(未Issue化)`マーク付きタスクを抽出し、GitHub Issueとして一括作成します。以下のプロセスを自動化します：
 
 1. .issync.ymlから親issue情報を取得
 2. Tasksセクションから`(未Issue化)`タスクを抽出
@@ -68,11 +68,11 @@ plan.mdのTasksセクションから`(未Issue化)`マーク付きタスクを�
 
 ### `/complete-sub-issue`: サブissue完了ワークフロー
 
-サブissue完了時に親issueのplan.mdを自動更新し、完了サマリーとFollow-up事項を親issueに反映します。以下のプロセスを自動化します：
+サブissue完了時に親issueの進捗ドキュメントを自動更新し、完了サマリーとFollow-up事項を親issueに反映します。以下のプロセスを自動化します：
 
 1. サブissue情報のフェッチと親issue番号の抽出
-2. サブissueのplan.mdから完了情報を抽出（Outcomes & Retrospectives、Follow-up Issues）
-3. 親issueのplan.mdを更新
+2. サブissueの進捗ドキュメントから完了情報を抽出（Outcomes & Retrospectives、Follow-up Issues）
+3. 親issueの進捗ドキュメントを更新
    - Tasksセクション: 該当タスクを完了マーク
    - Outcomes & Retrospectives: サブタスク完了サマリー追加
    - Follow-up Issuesの振り分け（Tasks、Open Questions、Follow-up Issuesに適切に配置）
@@ -143,7 +143,7 @@ Claude Codeで以下のコマンドを実行し、GitHubから直接マーケッ
 /plan                   # plan実行ワークフロー
 /architecture-decision  # アーキテクチャ決定ワークフロー
 /add-question           # Open Question追加ワークフロー
-/compact-plan           # plan.md圧縮ツール
+/compact-plan           # 進捗ドキュメント圧縮ツール
 /create-sub-issue     # タスクのサブissue化ワークフロー
 /complete-sub-issue       # サブissue完了ワークフロー
 ```
@@ -218,7 +218,7 @@ git clone https://github.com/MH4GF/issync.git
 
 1. 前提条件を確認:
    - GitHub Issueが作成されている
-   - `issync init --template` が完了し、plan.mdが存在する
+   - `issync init --template` が完了し、進捗ドキュメントが存在する
    - issync watch modeが起動している（推奨）
 
 2. コマンドを実行:
@@ -229,16 +229,16 @@ git clone https://github.com/MH4GF/issync.git
 3. pluginが以下を自動実行:
    - **ステップ1**: GitHub Issue内容を確認
    - **ステップ2**: コードベース調査（類似機能、技術スタック、テストコード、関連ファイル、ドキュメント）
-   - **ステップ3**: plan.md基本セクション記入（Purpose/Overview、Context & Direction、Acceptance Criteria、Work Plan Phase 1）
+   - **ステップ3**: 進捗ドキュメント基本セクション記入（Purpose/Overview、Context & Direction、Acceptance Criteria、Work Plan Phase 1）
    - **ステップ4**: Open Questions精査（5-10項目に絞り込み）
    - **ステップ5**: Tasks初期化
    - **ステップ6**: issync pushで同期
 
-4. 完了後、plan.mdの内容をレビューしてから Statusを `poc` に変更
+4. 完了後、進捗ドキュメントの内容をレビューしてから Statusを `poc` に変更
 
 #### 実行例
 
-新規タスクのplan.md作成時：
+新規タスクの進捗ドキュメント作成時：
 - GitHub Issueの要求を理解
 - コードベースを調査（既存の類似機能を発見、使用技術スタックを確認）
 - Purpose/Overview、Context & Direction、Acceptance Criteriaを記入
@@ -270,7 +270,7 @@ git clone https://github.com/MH4GF/issync.git
    - **ステップ7**: POC PRクローズ
    - **ステップ8**: issync pushで同期
 
-4. 完了後、plan.mdの内容をレビューしてから Statusを `implement` に変更
+4. 完了後、進捗ドキュメントの内容をレビューしてから Statusを `implement` に変更
 
 #### 実行例
 
@@ -307,7 +307,7 @@ POC PR #456完了時：
    - 配置位置の理由
    - 新しい質問番号
 
-5. 承認後、pluginがplan.mdを更新:
+5. 承認後、pluginが進捗ドキュメントを更新:
    - Open Questionsセクションに追加
    - issyncのwatchモードが起動している場合は自動的にGitHub Issueに同期
 
@@ -320,17 +320,17 @@ POC PR #456完了時：
 - ユーザーの承認後、Open Questionsセクションを更新
 - watchモードが起動している場合は自動的にGitHub Issueに同期
 
-### `/compact-plan`: plan.md圧縮
+### `/compact-plan`: 進捗ドキュメント圧縮
 
 #### 基本的なワークフロー
 
 1. コマンドを実行（ファイルパスを指定）:
    ```bash
-   /compact-plan docs/plan.md
+   /compact-plan .issync/docs/plan-123-example.md
    ```
 
 2. pluginが以下を自動実行:
-   - plan.mdの分析（総行数、セクション別行数、重複、矛盾）
+   - 進捗ドキュメントの分析（総行数、セクション別行数、重複、矛盾）
    - plan-template.mdとの比較
    - 圧縮処理の適用
    - 矛盾検出とレポート
@@ -343,7 +343,7 @@ POC PR #456完了時：
 
 #### 実行例
 
-plan.mdが779行に膨らんだ場合、pluginは：
+進捗ドキュメントが779行に膨らんだ場合、pluginは：
 - 重複情報を削減（5箇所）
 - 解決済みOpen Questionsを整理（3件）
 - 完了Phase（Phase 1）を簡潔化
@@ -355,7 +355,7 @@ plan.mdが779行に膨らんだ場合、pluginは：
 
 #### 基本的なワークフロー
 
-1. plan.mdのTasksセクションで大きなタスクに`(未Issue化)`マークを追加:
+1. 進捗ドキュメントのTasksセクションで大きなタスクに`(未Issue化)`マークを追加:
    ```markdown
    - [ ] Status変更時の自動アクション設計 (未Issue化)
    - [ ] CI/CDパイプライン統合 (未Issue化)
@@ -393,8 +393,8 @@ plan.mdが779行に膨らんだ場合、pluginは：
 
 ### `/plan`
 
-planフェーズでplan.mdを初期作成する時にこのコマンドを使用してください：
-- **新規タスクのplan.md作成時**: GitHub Issue作成後、`issync init --template` の直後
+planフェーズで進捗ドキュメントを初期作成する時にこのコマンドを使用してください：
+- **新規タスクの進捗ドキュメント作成時**: GitHub Issue作成後、`issync init --template` の直後
 - **コードベース調査を徹底したい時**: 既存パターンや技術スタックを事前に確認
 - **Open Questionsを適切に絞り込みたい時**: コードで確認可能な情報を質問にしない
 
@@ -422,7 +422,7 @@ architecture-decisionステートでアーキテクチャを決定する時に�
 ### `/compact-plan`
 
 以下のような状況で使用してください：
-- **plan.mdが500行以上に膨らんだ時**: 読みづらくなる前に定期的に圧縮
+- **進捗ドキュメントが500行以上に膨らんだ時**: 読みづらくなる前に定期的に圧縮
 - **Phaseが完了した時**: 完了フェーズの詳細を簡潔化
 - **Open Questionsが大量に解決された時**: 解決済み質問を整理
 - **retrospective前**: 振り返りを書く前にドキュメントを整理
@@ -437,7 +437,7 @@ architecture-decisionステートでアーキテクチャを決定する時に�
 
 **ハイブリッド方式**:
 - **大きなタスク**（複数日、複数PRが必要）→ サブissue化（`(未Issue化)`マークを追加 → `/create-sub-issue`実行）
-- **小さなタスク**（1-2時間で完結）→ plan.mdのTasksセクションで管理（Issue番号なし）
+- **小さなタスク**（1-2時間で完結）→ 進捗ドキュメントのTasksセクションで管理（Issue番号なし）
 
 これは矛盾解消駆動開発ワークフローをサポートする横断的オペレーションです。
 
@@ -449,7 +449,7 @@ architecture-decisionステートでアーキテクチャを決定する時に�
 
 **運用フロー**:
 1. サブissueで開発完了（plan → retrospective）
-2. サブissueのplan.mdにOutcomes & RetrospectivesとFollow-up Issuesを記入
+2. サブissueの進捗ドキュメントにOutcomes & RetrospectivesとFollow-up Issuesを記入
 3. `/complete-sub-issue <サブissue URL>`を実行
 4. 親issueのTasksセクションが自動で完了マーク
 5. 親issueのOutcomes & Retrospectivesにサブタスク完了サマリーが自動追加
@@ -460,7 +460,7 @@ architecture-decisionステートでアーキテクチャを決定する時に�
 
 ## 必要要件
 
-- プロジェクトに以下のセクションを含む `plan.md` ファイルが必要:
+- プロジェクトに以下のセクションを含む `進捗ドキュメント` ファイルが必要:
   - **`/plan`用**: plan-template.mdから生成された初期構造
   - **`/architecture-decision`用**: Discoveries & Insights, Decision Log, Specification / 仕様, Validation & Acceptance Criteria
   - **`/add-question`用**: Open Questions / 残論点
@@ -478,7 +478,7 @@ architecture-decisionステートでアーキテクチャを決定する時に�
 - **`/complete-sub-issue`用の追加要件**:
   - `gh` CLI（サブissueをcloseするため）
   - `GITHUB_TOKEN`環境変数（`export GITHUB_TOKEN=$(gh auth token)`）
-  - 親issueのplan.mdがローカルに存在
+  - 親issueの進捗ドキュメントがローカルに存在
   - `issync watch`が実行中（親issueへの変更を自動同期するため）
 
 ## Pluginの構造
@@ -488,10 +488,10 @@ contradiction-tools/
 ├── .claude-plugin/
 │   └── plugin.json                 # Pluginメタデータ
 ├── commands/
-│   ├── plan.md                     # plan実行コマンド
+│   ├── 進捗ドキュメント                     # plan実行コマンド
 │   ├── architecture-decision.md    # アーキテクチャ決定コマンド
 │   ├── add-question.md             # Open Question追加コマンド
-│   ├── compact-plan.md             # plan.md圧縮コマンド
+│   ├── compact-進捗ドキュメント             # 進捗ドキュメント圧縮コマンド
 │   ├── create-sub-issue.md       # タスクのサブissue化コマンド
 │   └── complete-sub-issue.md         # サブissue完了コマンド
 └── README.md                       # このファイル
@@ -502,10 +502,10 @@ contradiction-tools/
 このpluginを変更するには：
 
 1. コマンドプロンプトを編集:
-   - `/plan`: `commands/plan.md`
+   - `/plan`: `commands/進捗ドキュメント`
    - `/architecture-decision`: `commands/architecture-decision.md`
    - `/add-question`: `commands/add-question.md`
-   - `/compact-plan`: `commands/compact-plan.md`
+   - `/compact-plan`: `commands/compact-進捗ドキュメント`
    - `/create-sub-issue`: `commands/create-sub-issue.md`
    - `/complete-sub-issue`: `commands/complete-sub-issue.md`
 2. メタデータを変更する場合は `plugin.json` を更新

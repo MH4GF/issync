@@ -4,7 +4,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## Project Overview
 
-**issync** is a CLI tool that syncs text between GitHub Issue comments and local files. It enables AI-driven development by allowing AI agents to maintain living documentation (like plan.md) in GitHub Issues as a single source of truth, while multiple local sessions can read and write to the same document concurrently.
+**issync** is a CLI tool that syncs text between GitHub Issue comments and local files. It enables AI-driven development by allowing AI agents to maintain living documentation (progress documents) in GitHub Issues as a single source of truth, while multiple local sessions can read and write to the same document concurrently.
 
 **Core Design Philosophy:**
 - **AI Agent Transparency**: AI coding agents (Claude Code, Devin, etc.) should not need to know issync exists. They use normal Read()/Edit() operations on files.
@@ -12,7 +12,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 - **Conflict Detection via Edit() Failures**: When issync pulls remote changes, Claude Code's Edit() tool naturally fails (old_string not found), triggering a re-read and retry.
 - **Optimistic Locking**: Hash-based conflict detection on the push side prevents overwriting remote changes.
 
-See `docs/plan.md` for detailed architecture decisions, progress tracking, and development phases.
+See the progress document (`docs/plan-*.md`) for detailed architecture decisions, progress tracking, and development phases.
 
 ## Development Commands
 
@@ -329,7 +329,26 @@ Focus on basic sync commands (init, pull, push) and simple watch mode. Skip adva
 
 ## Important Files
 
-- `docs/plan.md`: Living development plan (progress, decisions, architecture)
+- `docs/plan-*.md`: Progress documents - living development plans (progress, decisions, architecture)
 - `src/types/index.ts`: Core data structures
 - `.issync/state.yml`: Local configuration (project-specific, git-ignored by default)
 - `~/.issync/state.yml`: Global configuration (optional, shared across projects)
+
+## Glossary
+
+### 進捗ドキュメント (Progress Document)
+
+issyncで管理されるドキュメントの総称。GitHub Issueコメントとローカルファイル間で双方向同期される、プロジェクトの進捗や意思決定を記録する生きたドキュメント。
+
+**特徴:**
+- ファイル名パターン: `plan-{番号}-{slug}.md` (例: `plan-123-watch-daemon.md`)
+- テンプレート: `docs/plan-template.md`から生成
+- 用途: 開発進捗の記録、アーキテクチャ決定、タスク管理、振り返り
+- 同期先: GitHub Issueコメント（HTML comment markersで識別）
+
+**別名・旧称:**
+- 以前は「plan.md」と呼ばれていたが、特定のファイル名と混同されるため「進捗ドキュメント」に統一（2025-10-21）
+
+**関連用語:**
+- Living documentation: 継続的に更新される文書
+- Single Source of Truth (SSOT): GitHub Issueを唯一の真実の情報源とする

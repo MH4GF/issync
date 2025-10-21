@@ -1,5 +1,5 @@
 ---
-description: planフェーズのプロセスを標準化し、コードベース調査を強制することで高品質なplan.md作成を実現
+description: planフェーズのプロセスを標準化し、コードベース調査を強制することで高品質な進捗ドキュメント作成を実現
 ---
 
 # /plan: plan実行ワークフロー
@@ -57,7 +57,7 @@ GitHub Issue URLを教えてください（例: https://github.com/owner/repo/is
 issync init <Issue URL> --file .issync/docs/plan-{番号}-{slug}.md
 ```
 
-**ケース B: plan.md不存在** (state.yml存在、plan.md不存在)
+**ケース B: 進捗ドキュメント不存在** (state.yml存在、進捗ドキュメント不存在)
 - 新規sync追加: 上記`issync init`を実行
 - 既存commentから取得: `issync pull --issue <Issue URL>`
 
@@ -83,7 +83,7 @@ Issue内容を理解し、不明点があればユーザーに確認
 - [ ] **使用している技術スタック・ライブラリ**: 関連する技術やライブラリは何か？
 - [ ] **テストコードの存在と構造**: テストはどのように書かれているか？
 - [ ] **関連ファイル・モジュール**: どのファイルを修正する必要があるか？
-- [ ] **ドキュメント**: README、CLAUDE.md、既存のplan.md等に記載されている情報は？
+- [ ] **ドキュメント**: README、CLAUDE.md、既存の進捗ドキュメント等に記載されている情報は？
 
 #### 調査方法の例
 
@@ -106,7 +106,7 @@ Read: README.md, CLAUDE.md, docs/
 
 ---
 
-### ステップ4: plan.md基本セクションの記入
+### ステップ4: 進捗ドキュメント基本セクションの記入
 
 テンプレートに従い、Purpose/Overview、Context & Direction、Validation & Acceptance Criteriaを記入
 

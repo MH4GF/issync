@@ -316,6 +316,25 @@ On watch startup, issync performs a 3-way comparison:
 - **Foreground watch**: Daemon mode planned for Phase 2
 - **No section-based merging**: Smart merge strategy planned for Phase 2
 
+## Glossary
+
+### 進捗ドキュメント (Progress Document)
+
+Documents managed by issync that synchronize bidirectionally between GitHub Issue comments and local files, recording project progress and decisions.
+
+**Characteristics:**
+- Filename pattern: `plan-{number}-{slug}.md` (e.g., `plan-123-watch-daemon.md`)
+- Template: Generated from `docs/plan-template.md`
+- Purpose: Recording development progress, architecture decisions, task management, retrospectives
+- Sync destination: GitHub Issue comments (identified by HTML comment markers)
+
+**Aliases/Former names:**
+- Previously called "plan.md" but unified to "progress document" to avoid confusion with specific filenames (2025-10-21)
+
+**Related terms:**
+- Living documentation: Continuously updated documents
+- Single Source of Truth (SSOT): GitHub Issues as the sole authoritative source
+
 ## Development
 
 See [CLAUDE.md](./CLAUDE.md) for development setup and architecture details.
