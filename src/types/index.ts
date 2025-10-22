@@ -1,12 +1,9 @@
-export type ConfigScope = 'global' | 'local'
-
 /**
  * Base options common to all commands
  */
 export interface CommandOptions {
   cwd?: string
   token?: string
-  scope?: ConfigScope
 }
 
 /**

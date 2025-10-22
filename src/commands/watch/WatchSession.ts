@@ -1,7 +1,7 @@
 import { existsSync } from 'node:fs'
 import chokidar, { type FSWatcher } from 'chokidar'
 import { ConfigNotFoundError } from '../../lib/errors.js'
-import type { ConfigScope, IssyncSync } from '../../types/index.js'
+import type { IssyncSync } from '../../types/index.js'
 import { pull } from '../pull.js'
 import { OptimisticLockError, push } from '../push.js'
 
@@ -42,7 +42,6 @@ export class WatchSession {
     private readonly intervalMs: number,
     readonly _cwd: string,
     readonly _skipInitialPull: boolean = false,
-    readonly _scope?: ConfigScope,
   ) {}
 
   /**
@@ -158,7 +157,6 @@ export class WatchSession {
         const hasChanges = await pull({
           cwd: undefined,
           file: this._sync.local_file,
-          scope: this._scope,
         })
         this.lastPullCompletedAt = Date.now() // Record pull completion time
 
@@ -205,7 +203,6 @@ export class WatchSession {
         await pull({
           cwd: undefined,
           file: this._sync.local_file,
-          scope: this._scope,
         })
         this.lastPullCompletedAt = Date.now() // Record initial pull completion time
       } catch (error) {
@@ -268,7 +265,6 @@ export class WatchSession {
         await push({
           cwd: undefined,
           file: this._sync.local_file,
-          scope: this._scope,
         })
         console.log(`[${new Date().toISOString()}] ✓ ${this.filePath}: Pushed changes to remote`)
       })

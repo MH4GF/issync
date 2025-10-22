@@ -3,13 +3,7 @@ import { existsSync, mkdirSync, readFileSync, statSync, writeFileSync } from 'no
 import path from 'node:path'
 
 // Project modules (alphabetical order)
-import {
-  checkDuplicateSync,
-  configExists,
-  loadConfig,
-  normalizeLocalFilePath,
-  saveConfig,
-} from '../lib/config.js'
+import { configExists, loadConfig, saveConfig, toAbsolutePath } from '../lib/config.js'
 import {
   FileAlreadyExistsError,
   FileNotFoundError,
@@ -23,7 +17,6 @@ import { resolvePathWithinBase } from '../lib/path.js'
 import type {
   CommandOptions,
   CommentData,
-  ConfigScope,
   GitHubIssueInfo,
   IssyncState,
   IssyncSync,
@@ -98,9 +91,9 @@ function ensureTargetFile(
   writeFileSync(targetPath, content, 'utf-8')
 }
 
-function loadState(scope: ConfigScope | undefined, cwd: string | undefined): IssyncState {
-  if (configExists(scope, cwd)) {
-    return loadConfig(scope, cwd)
+function loadState(cwd: string | undefined): IssyncState {
+  if (configExists(cwd)) {
+    return loadConfig(cwd)
   }
   return { syncs: [] }
 }
@@ -222,7 +215,7 @@ async function initializeFromTemplate(
 }
 
 export async function init(issueUrl: string, options: InitOptions = {}): Promise<string> {
-  const { file, cwd, template, token, scope } = options
+  const { file, cwd, template, token } = options
   const workingDir = cwd ?? process.cwd()
 
   // Validate Issue URL by parsing it
@@ -231,18 +224,15 @@ export async function init(issueUrl: string, options: InitOptions = {}): Promise
   // Use dynamic default based on issue number if no file is provided
   let targetFile = file ?? `.issync/docs/plan-${issueInfo.issue_number}.md`
 
-  // Normalize file path based on scope (converts to absolute path for global scope)
-  targetFile = normalizeLocalFilePath(targetFile, scope, workingDir)
-
-  // Check for duplicate sync in global/local config
-  checkDuplicateSync(issueUrl, scope)
+  // Convert to absolute path
+  targetFile = toAbsolutePath(targetFile, workingDir)
 
   const basePath = path.resolve(workingDir)
   const targetPath = path.isAbsolute(targetFile)
     ? targetFile
     : resolvePathWithinBase(basePath, targetFile, targetFile)
 
-  const state = loadState(scope, cwd)
+  const state = loadState(cwd)
   assertSyncAvailability(state, issueUrl, targetFile, basePath)
 
   // Create initial sync config
@@ -265,7 +255,7 @@ export async function init(issueUrl: string, options: InitOptions = {}): Promise
   state.syncs.push(newSync)
 
   // Save config (will create .issync directory)
-  saveConfig(state, scope, cwd)
+  saveConfig(state, cwd)
 
   return targetFile
 }

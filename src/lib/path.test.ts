@@ -106,9 +106,9 @@ describe('resolvePathWithinBase', () => {
     })
   })
 
-  describe('when allowAbsolute is true (global scope)', () => {
+  describe('when allowAbsolute is true', () => {
     test('allows absolute paths', () => {
-      // Arrange: Global scope uses absolute paths
+      // Arrange: Absolute paths are allowed
       const targetPath = '/Users/user/projects/repo/docs/plan.md'
 
       // Act
