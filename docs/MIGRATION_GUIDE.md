@@ -196,8 +196,52 @@ plan.md先頭行 `<!-- Template Version: X (YYYY-MM-DD) -->` を確認し、最�
 
 ---
 
+## Version 11 (2025-10-22)
+
+### 変更内容
+
+**概要**: ドキュメントタイトルを "Development Plan" から "Progress Document" に変更
+
+**変更されたセクション:**
+- **ドキュメントタイトル**: `# [Project Name] Development Plan` → `# [Project Name] Progress Document`
+
+**理由:**
+- 用語の統一: CLAUDE.mdやGlossaryセクションで「進捗ドキュメント (Progress Document)」という用語を使用しているため、ドキュメントタイトルもこれに合わせる
+- 明確性の向上: "Development Plan" は「開発計画」という静的なドキュメントを連想させるが、"Progress Document" は継続的に更新される生きたドキュメントという性質をより明確に表現
+
+### マイグレーション手順
+
+#### 手動マイグレーション
+
+既存のplan.mdをバージョン11に移行する手順:
+
+1. ドキュメントの1行目（タイトル行）を確認
+2. `# [Project Name] Development Plan` を `# [Project Name] Progress Document` に置換
+
+**変更前:**
+```markdown
+<!-- Template Version: 10 (2025-10-17) -->
+
+# [Project Name] Development Plan
+```
+
+**変更後:**
+```markdown
+<!-- Template Version: 11 (2025-10-22) -->
+
+# [Project Name] Progress Document
+```
+
+**注意事項:**
+- この変更は破壊的変更ではなく、オプショナルな用語統一のための変更です
+- 既存のplan.mdで "Development Plan" のままでも機能的には問題ありません
+- 新規作成されるplan.mdには自動的に "Progress Document" が使用されます
+
+---
+
 ## 更新履歴
 
+- **Version 11 (2025-10-22)**: ドキュメントタイトルを "Development Plan" から "Progress Document" に変更（用語統一）
 - **Version 10 (2025-10-17)**: Open Questionsに「検討案」フォーマットを追加、AIエージェント主導の意思決定を加速
 - **Version 9 (2025-10-17)**: ステート名から`before-`プレフィックスを削除（破壊的変更）
 - **Version 8 (2025-10-17)**: Inboxセクションを追加（人間専用の整理前メモエリア）

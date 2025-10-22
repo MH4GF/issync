@@ -1,7 +1,7 @@
 <!-- issync:v1:start -->
-<!-- Template Version: 10 (2025-10-17) -->
+<!-- Template Version: 11 (2025-10-22) -->
 
-# [Project Name] Development Plan
+# [Project Name] Progress Document
 
 この実行計画は生きたドキュメントです。新しい情報が出るたびに各セクションを更新してください。各セクションは、事前知識のない初めての貢献者へのガイダンスとして扱ってください。
 
