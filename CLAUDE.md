@@ -134,10 +134,6 @@ syncs:
     last_synced_at: 2025-10-13T11:00:00Z
 ```
 
-**Global vs Local:**
-- Global config uses absolute paths: `local_file: /Users/user/projects/repo/docs/plan.md`
-- Local config uses relative paths: `local_file: .issync/docs/plan-123.md`
-- Auto-detection: Prefers global if exists, falls back to local
 - Commands accept `--global` or `--local` flags to override
 
 ### issync Comment Identification

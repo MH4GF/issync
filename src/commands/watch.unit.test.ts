@@ -54,7 +54,7 @@ describe('watch command - unit tests', () => {
         local_file: relativeFile,
       }
 
-      const pullMock = spyOn(pullModule, 'pull').mockImplementation(() => Promise.resolve())
+      const pullMock = spyOn(pullModule, 'pull').mockImplementation(() => Promise.resolve(false))
       const pushMock = spyOn(pushModule, 'push').mockImplementation(() => Promise.resolve())
 
       const mockGitHubClient: Pick<GitHubClientInstance, 'getComment'> = {
@@ -86,7 +86,7 @@ describe('watch command - unit tests', () => {
 
       await rm(absoluteFile)
 
-      const pullMock = spyOn(pullModule, 'pull').mockImplementation(() => Promise.resolve())
+      const pullMock = spyOn(pullModule, 'pull').mockImplementation(() => Promise.resolve(false))
       const pushMock = spyOn(pushModule, 'push').mockImplementation(() => Promise.resolve())
       const githubClientSpy = spyOn(githubModule, 'createGitHubClient')
 
@@ -154,7 +154,7 @@ describe('watch command - unit tests', () => {
       )
 
       const pushMock = spyOn(pushModule, 'push').mockImplementation(() => Promise.resolve())
-      const pullMock = spyOn(pullModule, 'pull').mockImplementation(() => Promise.resolve())
+      const pullMock = spyOn(pullModule, 'pull').mockImplementation(() => Promise.resolve(false))
 
       // Act: Call safety check directly
       await _performSafetyCheck(mockConfig)
@@ -191,7 +191,7 @@ describe('watch command - unit tests', () => {
       )
 
       const pushMock = spyOn(pushModule, 'push').mockImplementation(() => Promise.resolve())
-      const pullMock = spyOn(pullModule, 'pull').mockImplementation(() => Promise.resolve())
+      const pullMock = spyOn(pullModule, 'pull').mockImplementation(() => Promise.resolve(false))
 
       // Act: Call safety check directly
       await _performSafetyCheck(mockConfig)
@@ -227,7 +227,7 @@ describe('watch command - unit tests', () => {
       )
 
       const pushMock = spyOn(pushModule, 'push').mockImplementation(() => Promise.resolve())
-      const pullMock = spyOn(pullModule, 'pull').mockImplementation(() => Promise.resolve())
+      const pullMock = spyOn(pullModule, 'pull').mockImplementation(() => Promise.resolve(false))
 
       // Act: Call safety check directly
       await _performSafetyCheck(mockConfig)
@@ -258,7 +258,7 @@ describe('watch command - unit tests', () => {
       )
 
       const pushMock = spyOn(pushModule, 'push').mockImplementation(() => Promise.resolve())
-      const pullMock = spyOn(pullModule, 'pull').mockImplementation(() => Promise.resolve())
+      const pullMock = spyOn(pullModule, 'pull').mockImplementation(() => Promise.resolve(false))
 
       // Act & Assert: Should not throw path traversal error
       try {
@@ -281,7 +281,7 @@ describe('watch command - unit tests', () => {
         local_file: relativeFile,
       }
 
-      const pullMock = spyOn(pullModule, 'pull').mockImplementation(() => Promise.resolve())
+      const pullMock = spyOn(pullModule, 'pull').mockImplementation(() => Promise.resolve(false))
       const mockGitHubClient: Pick<GitHubClientInstance, 'getComment'> = {
         getComment: () =>
           Promise.resolve({ id: 123, body: content, updated_at: '2025-01-01T00:00:00Z' }),
@@ -359,7 +359,7 @@ describe('watch command - unit tests', () => {
         mockGitHubClient as unknown as GitHubClientInstance,
       )
 
-      const pullMock = spyOn(pullModule, 'pull').mockImplementation(() => Promise.resolve())
+      const pullMock = spyOn(pullModule, 'pull').mockImplementation(() => Promise.resolve(false))
 
       // Act: Call safety check with local scope
       await _performSafetyCheck(mockConfig, process.cwd(), undefined, 'local')

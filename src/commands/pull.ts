@@ -14,8 +14,9 @@ export type PullOptions = SelectorOptions
 
 /**
  * Pull a single sync from remote
+ * @returns true if content was updated, false if no changes
  */
-async function pullSingleSync(sync: IssyncSync, cwd: string, token?: string): Promise<void> {
+async function pullSingleSync(sync: IssyncSync, cwd: string, token?: string): Promise<boolean> {
   const baseDir = cwd ?? process.cwd()
 
   if (!sync.comment_id) {
@@ -51,7 +52,7 @@ async function pullSingleSync(sync: IssyncSync, cwd: string, token?: string): Pr
     if (process.env.ISSYNC_DEBUG) {
       console.log(`[DEBUG] Skipping pull for ${sync.local_file}: content unchanged`)
     }
-    return
+    return false
   }
 
   // Write to local file (without markers)
@@ -60,10 +61,13 @@ async function pullSingleSync(sync: IssyncSync, cwd: string, token?: string): Pr
   // Update sync metadata
   sync.last_synced_hash = remoteHash
   sync.last_synced_at = new Date().toISOString()
+
+  return true
 }
 
 /**
  * Pull all syncs in parallel and report results
+ * @returns true if any sync was updated, false if no changes
  */
 async function pullAllSyncs(
   state: IssyncState,
@@ -71,7 +75,7 @@ async function pullAllSyncs(
   cwd: string | undefined,
   token?: string,
   scope?: ConfigScope,
-): Promise<void> {
+): Promise<boolean> {
   if (state.syncs.length === 0) {
     throw new SyncNotFoundError()
   }
@@ -81,11 +85,17 @@ async function pullAllSyncs(
     state.syncs.map((sync) => pullSingleSync(sync, baseDir, token)),
   )
 
-  // Collect failures
+  // Collect failures and check if any sync was updated
+  let hasChanges = false
+
   const failures = results
-    .map((result, index) =>
-      result.status === 'rejected' ? { sync: state.syncs[index], reason: result.reason } : null,
-    )
+    .map((result, index) => {
+      if (result.status === 'fulfilled') {
+        hasChanges ||= result.value
+        return null
+      }
+      return { sync: state.syncs[index], reason: result.reason }
+    })
     .filter((failure): failure is { sync: IssyncSync; reason: unknown } => failure !== null)
 
   // Save config (updates successful syncs)
@@ -93,9 +103,15 @@ async function pullAllSyncs(
 
   // Report results
   reportSyncResults('pull', state.syncs.length, failures)
+
+  return hasChanges
 }
 
-export async function pull(options: PullOptions = {}): Promise<void> {
+/**
+ * Pull from remote to local file(s)
+ * @returns true if any content was updated, false if no changes
+ */
+export async function pull(options: PullOptions = {}): Promise<boolean> {
   const { cwd, token, file, issue, scope } = options
   const baseDir = cwd ?? process.cwd()
 
@@ -104,8 +120,7 @@ export async function pull(options: PullOptions = {}): Promise<void> {
 
   // If no selector provided, pull all syncs
   if (!file && !issue) {
-    await pullAllSyncs(state, baseDir, cwd, token, scope)
-    return
+    return pullAllSyncs(state, baseDir, cwd, token, scope)
   }
 
   // Single sync pull
@@ -115,6 +130,8 @@ export async function pull(options: PullOptions = {}): Promise<void> {
   }
   const { sync } = selectSync(state, selector, baseDir)
 
-  await pullSingleSync(sync, baseDir, token)
+  const hasChanges = await pullSingleSync(sync, baseDir, token)
   saveConfig(state, scope, cwd)
+
+  return hasChanges
 }

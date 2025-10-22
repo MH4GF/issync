@@ -245,6 +245,177 @@ describe('pull command - multi-sync support', () => {
     expect(sync.last_synced_at).toBe('2025-01-01T00:00:00Z') // Unchanged
   })
 
+  test('returns false when content unchanged', async () => {
+    const remoteBody = '# Existing Content'
+    const remoteHash = calculateHash(remoteBody)
+    const state: IssyncState = {
+      syncs: [
+        {
+          issue_url: 'https://github.com/owner/repo/issues/1',
+          local_file: '.issync/docs/plan-123.md',
+          comment_id: 111,
+          last_synced_hash: remoteHash,
+          last_synced_at: '2025-01-01T00:00:00Z',
+        },
+      ],
+    }
+    saveConfig(state, undefined, tempDir)
+
+    const mockGitHubClient: Pick<GitHubClientInstance, 'getComment'> = {
+      getComment: () =>
+        Promise.resolve({ id: 111, body: remoteBody, updated_at: '2025-01-01T00:00:00Z' }),
+    }
+    spyOn(githubModule, 'createGitHubClient').mockReturnValue(
+      mockGitHubClient as unknown as GitHubClientInstance,
+    )
+
+    const hasChanges = await pull({ cwd: tempDir, file: '.issync/docs/plan-123.md' })
+
+    expect(hasChanges).toBe(false)
+  })
+
+  test('returns true when content has changed', async () => {
+    const oldBody = '# Old Content'
+    const newBody = '# New Content'
+    const oldHash = calculateHash(oldBody)
+    const state: IssyncState = {
+      syncs: [
+        {
+          issue_url: 'https://github.com/owner/repo/issues/1',
+          local_file: '.issync/docs/plan-123.md',
+          comment_id: 111,
+          last_synced_hash: oldHash,
+          last_synced_at: '2025-01-01T00:00:00Z',
+        },
+      ],
+    }
+    saveConfig(state, undefined, tempDir)
+
+    const mockGitHubClient: Pick<GitHubClientInstance, 'getComment'> = {
+      getComment: () =>
+        Promise.resolve({ id: 111, body: newBody, updated_at: '2025-01-02T00:00:00Z' }),
+    }
+    spyOn(githubModule, 'createGitHubClient').mockReturnValue(
+      mockGitHubClient as unknown as GitHubClientInstance,
+    )
+
+    const hasChanges = await pull({ cwd: tempDir, file: '.issync/docs/plan-123.md' })
+
+    expect(hasChanges).toBe(true)
+
+    // Verify file was written
+    const pulledContent = readFileSync(path.join(tempDir, '.issync/docs/plan-123.md'), 'utf-8')
+    expect(pulledContent).toBe(newBody)
+  })
+
+  test('returns true when any sync has changes in multi-sync pull', async () => {
+    const unchangedBody = '# Unchanged Content'
+    const changedBody = '# Changed Content'
+    const unchangedHash = calculateHash(unchangedBody)
+    const oldHash = calculateHash('# Old Content')
+
+    const state: IssyncState = {
+      syncs: [
+        {
+          issue_url: 'https://github.com/owner/repo/issues/1',
+          local_file: 'docs/unchanged.md',
+          comment_id: 111,
+          last_synced_hash: unchangedHash,
+          last_synced_at: '2025-01-01T00:00:00Z',
+        },
+        {
+          issue_url: 'https://github.com/owner/repo/issues/2',
+          local_file: 'docs/changed.md',
+          comment_id: 222,
+          last_synced_hash: oldHash,
+          last_synced_at: '2025-01-01T00:00:00Z',
+        },
+      ],
+    }
+    saveConfig(state, undefined, tempDir)
+
+    const mockGitHubClient: Pick<GitHubClientInstance, 'getComment'> = {
+      getComment: (_, __, commentId) => {
+        if (commentId === 111) {
+          return Promise.resolve({
+            id: 111,
+            body: unchangedBody,
+            updated_at: '2025-01-01T00:00:00Z',
+          })
+        }
+        if (commentId === 222) {
+          return Promise.resolve({
+            id: 222,
+            body: changedBody,
+            updated_at: '2025-01-02T00:00:00Z',
+          })
+        }
+        throw new Error('Unexpected comment ID')
+      },
+    }
+    spyOn(githubModule, 'createGitHubClient').mockReturnValue(
+      mockGitHubClient as unknown as GitHubClientInstance,
+    )
+
+    const hasChanges = await pull({ cwd: tempDir })
+
+    expect(hasChanges).toBe(true)
+  })
+
+  test('returns false when all syncs are unchanged in multi-sync pull', async () => {
+    const unchangedBody1 = '# Unchanged Content 1'
+    const unchangedBody2 = '# Unchanged Content 2'
+    const unchangedHash1 = calculateHash(unchangedBody1)
+    const unchangedHash2 = calculateHash(unchangedBody2)
+
+    const state: IssyncState = {
+      syncs: [
+        {
+          issue_url: 'https://github.com/owner/repo/issues/1',
+          local_file: 'docs/unchanged1.md',
+          comment_id: 111,
+          last_synced_hash: unchangedHash1,
+          last_synced_at: '2025-01-01T00:00:00Z',
+        },
+        {
+          issue_url: 'https://github.com/owner/repo/issues/2',
+          local_file: 'docs/unchanged2.md',
+          comment_id: 222,
+          last_synced_hash: unchangedHash2,
+          last_synced_at: '2025-01-01T00:00:00Z',
+        },
+      ],
+    }
+    saveConfig(state, undefined, tempDir)
+
+    const mockGitHubClient: Pick<GitHubClientInstance, 'getComment'> = {
+      getComment: (_, __, commentId) => {
+        if (commentId === 111) {
+          return Promise.resolve({
+            id: 111,
+            body: unchangedBody1,
+            updated_at: '2025-01-01T00:00:00Z',
+          })
+        }
+        if (commentId === 222) {
+          return Promise.resolve({
+            id: 222,
+            body: unchangedBody2,
+            updated_at: '2025-01-01T00:00:00Z',
+          })
+        }
+        throw new Error('Unexpected comment ID')
+      },
+    }
+    spyOn(githubModule, 'createGitHubClient').mockReturnValue(
+      mockGitHubClient as unknown as GitHubClientInstance,
+    )
+
+    const hasChanges = await pull({ cwd: tempDir })
+
+    expect(hasChanges).toBe(false)
+  })
+
   test('should work with --global scope option', async () => {
     const state: IssyncState = {
       syncs: [

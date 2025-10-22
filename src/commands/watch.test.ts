@@ -116,7 +116,7 @@ describe('watch command (chokidar mocked)', () => {
       return watcher as unknown as FSWatcher
     })
 
-    pullMock = spyOn(pullModule, 'pull').mockResolvedValue()
+    pullMock = spyOn(pullModule, 'pull').mockResolvedValue(false)
     pushMock = spyOn(pushModule, 'push').mockResolvedValue()
   })
 

@@ -40,10 +40,8 @@ export GITHUB_TOKEN=ghp_your_token_here
 # Link a GitHub Issue to a local file (auto-detects config location)
 issync init https://github.com/owner/repo/issues/123 --file docs/plan.md
 
-# Use global config (shared across all projects)
 issync init https://github.com/owner/repo/issues/123 --file ~/documents/plan.md --global
 
-# Use local config (project-specific, default for relative paths)
 issync init https://github.com/owner/repo/issues/123 --file docs/plan.md --local
 
 # Create from template
@@ -80,11 +78,9 @@ issync init https://github.com/owner/repo/issues/123 --file docs/plan.md
   - Example: For issue #123, the default will be `.issync/docs/plan-123.md`
   - This allows tracking multiple issues without file name conflicts
 - `--template <path>`: Create file from template if it doesn't exist
-- `--global`: Use global config (`~/.issync/state.yml`)
   - File paths are stored as absolute paths
   - Config is shared across all projects
   - Useful for tracking issues across multiple repositories
-- `--local`: Use local config (`./.issync/state.yml`)
   - File paths are stored as relative paths
   - Config is project-specific (should be git-ignored)
   - Default behavior for most use cases
@@ -106,10 +102,8 @@ Pull remote changes from GitHub Issue comment to local file.
 # Auto-detect config location
 issync pull
 
-# Use global config
 issync pull --global
 
-# Use local config
 issync pull --local
 
 # Select specific sync target
@@ -120,8 +114,6 @@ issync pull --issue https://github.com/owner/repo/issues/123
 **Options:**
 - `--file <path>`: Select sync target by local file path
 - `--issue <url>`: Select sync target by issue URL
-- `--global`: Use global config (`~/.issync/state.yml`)
-- `--local`: Use local config (`./.issync/state.yml`)
 
 ### `issync push`
 
@@ -131,10 +123,8 @@ Push local changes to GitHub Issue comment.
 # Auto-detect config location
 issync push
 
-# Use global config
 issync push --global
 
-# Use local config
 issync push --local
 
 # Force push (skip optimistic lock check)
@@ -148,8 +138,6 @@ issync push --issue https://github.com/owner/repo/issues/123
 **Options:**
 - `--file <path>`: Select sync target by local file path
 - `--issue <url>`: Select sync target by issue URL
-- `--global`: Use global config (`~/.issync/state.yml`)
-- `--local`: Use local config (`./.issync/state.yml`)
 - `--force`: Skip optimistic lock check and force overwrite remote changes
   - ⚠️ **WARNING**: Concurrent remote changes will be permanently lost
   - Displays warning and asks for confirmation before execution
@@ -179,10 +167,8 @@ Start watch mode (foreground process, press Ctrl+C to stop).
 # Auto-detect config location
 issync watch
 
-# Use global config
 issync watch --global
 
-# Use local config
 issync watch --local
 
 # Custom polling interval (default: 30s)
@@ -197,8 +183,6 @@ issync watch --issue https://github.com/owner/repo/issues/123
 - `--interval <seconds>`: Polling interval in seconds (default: 30, min: 1, max: 3600)
 - `--file <path>`: Select sync target by local file path
 - `--issue <url>`: Select sync target by issue URL
-- `--global`: Use global config (`~/.issync/state.yml`)
-- `--local`: Use local config (`./.issync/state.yml`)
 
 **Watch mode behavior:**
 
@@ -214,16 +198,8 @@ issync watch --issue https://github.com/owner/repo/issues/123
 
 issync supports two config file locations:
 
-**1. Local config (default)**: `./.issync/state.yml`
-- Project-specific configuration
-- Should be git-ignored
-- Uses relative file paths
 - Recommended for most use cases
 
-**2. Global config**: `~/.issync/state.yml`
-- Shared across all projects
-- Stored in home directory
-- Uses absolute file paths
 - Useful for tracking issues across multiple repositories
 
 ### Config File Format
@@ -244,10 +220,6 @@ syncs:
 
 ### .gitignore
 
-Add local config to `.gitignore`:
-
-```gitignore
-.issync/
 ```
 
 **Note**: Global config (`~/.issync/state.yml`) is in your home directory and doesn't need to be git-ignored.

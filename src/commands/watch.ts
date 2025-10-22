@@ -351,8 +351,6 @@ async function handleStateChange(
   scope?: ConfigScope,
 ): Promise<void> {
   try {
-    console.log(`\n[${new Date().toISOString()}] state.yml changed, checking for new syncs...`)
-
     const { successCount, failures } = await detectAndStartNewSessions(
       cwd,
       configCwd,
@@ -361,8 +359,8 @@ async function handleStateChange(
       scope,
     )
 
+    // Only log if there are new syncs (success or failure)
     if (successCount === 0 && failures.length === 0) {
-      console.log('No new syncs detected')
       return
     }
 
@@ -370,10 +368,12 @@ async function handleStateChange(
     reportSessionStartupFailures(failures)
 
     if (successCount > 0) {
-      console.log(`✓ ${successCount} new session(s) started successfully`)
+      console.log(
+        `\n[${new Date().toISOString()}] ✓ ${successCount} new session(s) started successfully`,
+      )
     }
   } catch (error) {
-    console.error(`Error handling state.yml change: ${formatError(error)}`)
+    console.error(`\nError handling state.yml change: ${formatError(error)}`)
   }
 }
 
@@ -397,7 +397,22 @@ export async function watch(options: WatchOptions = {}): Promise<void> {
 
   const targetCount = targets.length
   const plural = targetCount === 1 ? '' : 's'
-  console.log(`Starting watch mode for ${targetCount} sync target${plural}`)
+  console.log(
+    `✓ Starting watch mode for ${targetCount} sync target${plural} (polling: ${intervalSeconds}s)\n`,
+  )
+
+  // Display syncing files
+  console.log('Syncing:')
+  for (const { sync, resolvedPath } of targets) {
+    console.log(`  • ${resolvedPath}`)
+    console.log(`    ← ${sync.issue_url}`)
+  }
+
+  // Display safety tips
+  console.log('\n⚠️  Safety tips:')
+  console.log('  • Ensure remote is up-to-date before editing (run `issync pull`)')
+  console.log('  • Conflicts will be detected and reported')
+  console.log('  • Press Ctrl+C to stop\n')
 
   // Initialize session manager
   const sessionManager = new SessionManager()
@@ -422,7 +437,7 @@ export async function watch(options: WatchOptions = {}): Promise<void> {
   if (failures.length > 0) {
     const successCount = targets.length - failures.length
     const message = `${failures.length} of ${targets.length} watch session(s) failed to start`
-    console.error(`\nError: ${message}`)
+    console.error(`Error: ${message}\n`)
 
     for (const { index, reason } of failures) {
       const target = targets[index]
@@ -434,16 +449,18 @@ export async function watch(options: WatchOptions = {}): Promise<void> {
     // If some sessions succeeded, show success count and continue
     if (successCount > 0) {
       console.log(`\n✓ ${successCount} session(s) started successfully`)
-      console.warn('\nWarning: Some syncs failed. Run `issync status` to check sync state.')
+      console.warn('Warning: Some syncs failed. Run `issync status` to check sync state.\n')
     } else {
       // All sessions failed - throw error
       throw new Error('All watch sessions failed to start')
     }
+  } else {
+    console.log('✓ All sessions started successfully')
   }
 
   // Setup state.yml monitoring for dynamic sync addition
   const { stateFile } = resolveConfigPath(scope)
-  console.log('\nMonitoring state.yml for new sync entries...')
+  console.log('✓ State file monitoring active\n')
 
   const stateFileWatcher = new StateFileWatcher(stateFile, async () => {
     await handleStateChange(cwd, configCwd, intervalMs, sessionManager, scope)

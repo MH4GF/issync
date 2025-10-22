@@ -57,14 +57,6 @@ export class WatchSession {
       throw new Error(`Local file does not exist: ${this.filePath}`)
     }
 
-    console.log('Starting watch mode...')
-    console.log(`  File:     ${this.filePath}`)
-    console.log(`  Interval: ${this.intervalMs / 1000}s`)
-    console.log('  ⚠️  Before editing locally, ensure remote is up-to-date:')
-    console.log("      Run `issync pull` if you're unsure")
-    console.log('  ⚠️  If conflicts occur, watch mode will notify you')
-    console.log('  Press Ctrl+C to stop\n')
-
     // Start remote polling (performs initial pull synchronously)
     await this.startRemotePolling()
 
@@ -163,17 +155,25 @@ export class WatchSession {
 
     try {
       await this.withLock(async () => {
-        await pull({
+        const hasChanges = await pull({
           cwd: undefined,
           file: this._sync.local_file,
           scope: this._scope,
         })
         this.lastPullCompletedAt = Date.now() // Record pull completion time
-        console.log(`[${new Date().toISOString()}] ✓ Pulled changes from remote`)
+
+        // Only log if there were actual changes
+        if (hasChanges) {
+          console.log(
+            `[${new Date().toISOString()}] ✓ ${this.filePath}: Pulled changes from remote`,
+          )
+        }
       })
     } catch (error) {
       if (error instanceof Error) {
-        console.error(`[${new Date().toISOString()}] Pull error: ${error.message}`)
+        console.error(
+          `[${new Date().toISOString()}] ✗ ${this.filePath}: Pull error: ${error.message}`,
+        )
       }
     }
   }
@@ -196,8 +196,6 @@ export class WatchSession {
   }
 
   private async startRemotePolling(): Promise<void> {
-    console.log('Starting remote polling...')
-
     this.pollingAbortController = new AbortController()
     const signal = this.pollingAbortController.signal
 
@@ -210,7 +208,6 @@ export class WatchSession {
           scope: this._scope,
         })
         this.lastPullCompletedAt = Date.now() // Record initial pull completion time
-        console.log('✓ Initial pull completed')
       } catch (error) {
         if (error instanceof ConfigNotFoundError) {
           console.error('Config not found. Please run "issync init" first.')
@@ -226,7 +223,6 @@ export class WatchSession {
     } else {
       // Safety check already synced, just update timestamp
       this.lastPullCompletedAt = Date.now()
-      console.log('✓ Already synced by safety check')
     }
 
     // Run polling loop in background
@@ -234,8 +230,6 @@ export class WatchSession {
   }
 
   private startFileWatching(): void {
-    console.log('Starting file watcher...')
-
     this.fileWatcher = chokidar.watch(this.filePath, {
       persistent: true,
       ignoreInitial: true,
@@ -250,10 +244,8 @@ export class WatchSession {
     })
 
     this.fileWatcher.on('error', (error: unknown) => {
-      console.error('File watcher error:', error)
+      console.error(`File watcher error (${this.filePath}):`, error)
     })
-
-    console.log('✓ Watch mode started\n')
   }
 
   private async handleFileChange(): Promise<void> {
@@ -262,14 +254,14 @@ export class WatchSession {
     if (timeSinceLastPull < PULL_GRACE_PERIOD_MS) {
       const remainingMs = PULL_GRACE_PERIOD_MS - timeSinceLastPull
       console.log(
-        `[${new Date().toISOString()}] ⚠️  File change detected ${timeSinceLastPull}ms after pull (within grace period). ` +
+        `[${new Date().toISOString()}] ⚠️  ${this.filePath}: File change detected ${timeSinceLastPull}ms after pull (within grace period). ` +
           `This is likely from the pull operation and will be ignored. ` +
           `If you just edited the file, please save again in ${Math.ceil(remainingMs / 1000)}s.`,
       )
       return
     }
 
-    console.log(`[${new Date().toISOString()}] File changed, pushing...`)
+    console.log(`[${new Date().toISOString()}] ${this.filePath}: File changed, pushing...`)
 
     try {
       await this.withLock(async () => {
@@ -278,15 +270,17 @@ export class WatchSession {
           file: this._sync.local_file,
           scope: this._scope,
         })
-        console.log(`[${new Date().toISOString()}] ✓ Pushed changes to remote`)
+        console.log(`[${new Date().toISOString()}] ✓ ${this.filePath}: Pushed changes to remote`)
       })
     } catch (error) {
       if (error instanceof OptimisticLockError) {
         console.error(
-          `[${new Date().toISOString()}] ⚠️  Conflict detected: Remote was modified. Run "issync pull" to sync.`,
+          `[${new Date().toISOString()}] ⚠️  ${this.filePath}: Conflict detected: Remote was modified. Run "issync pull" to sync.`,
         )
       } else if (error instanceof Error) {
-        console.error(`[${new Date().toISOString()}] Push error: ${error.message}`)
+        console.error(
+          `[${new Date().toISOString()}] ✗ ${this.filePath}: Push error: ${error.message}`,
+        )
       }
     }
   }
