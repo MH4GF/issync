@@ -2,8 +2,13 @@ import { existsSync, mkdirSync, readFileSync, writeFileSync } from 'node:fs'
 import { homedir } from 'node:os'
 import path from 'node:path'
 import yaml from 'js-yaml'
-import type { ConfigScope, IssyncState, IssyncSync } from '../types/index.js'
-import { AmbiguousSyncError, ConfigNotFoundError, SyncNotFoundError } from './errors.js'
+import type { IssyncState, IssyncSync } from '../types/index.js'
+import {
+  AmbiguousSyncError,
+  ConfigNotFoundError,
+  DangerousPathError,
+  SyncNotFoundError,
+} from './errors.js'
 
 /**
  * Get home directory, respecting HOME environment variable for testing
@@ -15,59 +20,23 @@ function getHomeDir(): string {
 }
 
 /**
- * Validates that scope and cwd parameters are not used together
- * @throws {Error} When both parameters are provided
+ * Resolves the config file path
+ * Always returns the global config path (~/.issync/state.yml)
+ * For testing, use cwd parameter in loadConfig/saveConfig instead
  */
-function validateScopeAndCwd(scope?: ConfigScope, cwd?: string): void {
-  if (scope !== undefined && cwd !== undefined) {
-    throw new Error(
-      'Cannot specify both scope and cwd parameters. Use scope for new code, cwd for backward compatibility only.',
-    )
-  }
-}
-
-/**
- * Resolves the config file path based on scope
- *
- * Auto-detection behavior (when scope is undefined):
- * 1. Check if global config exists → use global
- * 2. Otherwise → use local
- *
- * This means global config takes precedence when both exist.
- */
-export function resolveConfigPath(scope?: ConfigScope): { stateDir: string; stateFile: string } {
-  if (scope === 'global') {
-    const stateDir = path.join(getHomeDir(), '.issync')
-    return {
-      stateDir,
-      stateFile: path.join(stateDir, 'state.yml'),
-    }
-  }
-  if (scope === 'local') {
-    const stateDir = path.join(process.cwd(), '.issync')
-    return {
-      stateDir,
-      stateFile: path.join(stateDir, 'state.yml'),
-    }
-  }
-  // デフォルト: グローバル優先
-  const globalStateFile = path.join(getHomeDir(), '.issync', 'state.yml')
-  if (existsSync(globalStateFile)) {
-    return {
-      stateDir: path.join(getHomeDir(), '.issync'),
-      stateFile: globalStateFile,
-    }
-  }
-  // フォールバック: ローカル設定
-  const stateDir = path.join(process.cwd(), '.issync')
+export function resolveConfigPath(): { stateDir: string; stateFile: string } {
+  const stateDir = path.join(getHomeDir(), '.issync')
   return {
     stateDir,
     stateFile: path.join(stateDir, 'state.yml'),
   }
 }
 
-// Backward compatibility: getStatePath is deprecated, use resolveConfigPath instead
-export function getStatePath(cwd = process.cwd()): { stateDir: string; stateFile: string } {
+/**
+ * Get state path for testing purposes
+ * @internal
+ */
+function getStatePath(cwd: string): { stateDir: string; stateFile: string } {
   return {
     stateDir: path.join(cwd, '.issync'),
     stateFile: path.join(cwd, '.issync', 'state.yml'),
@@ -114,12 +83,9 @@ function parseState(raw: unknown): { state: IssyncState; migrated: boolean } {
   return { state: { syncs: [] }, migrated: false }
 }
 
-export function loadConfig(scope?: ConfigScope, cwd?: string): IssyncState {
-  validateScopeAndCwd(scope, cwd)
-
-  // Use resolveConfigPath for all cases - it handles global priority when scope is undefined
-  // For backward compatibility with tests, if cwd is provided, use getStatePath
-  const { stateFile } = cwd !== undefined ? getStatePath(cwd) : resolveConfigPath(scope)
+export function loadConfig(cwd?: string): IssyncState {
+  // For testing, if cwd is provided, use getStatePath
+  const { stateFile } = cwd !== undefined ? getStatePath(cwd) : resolveConfigPath()
 
   if (!existsSync(stateFile)) {
     throw new ConfigNotFoundError()
@@ -131,18 +97,15 @@ export function loadConfig(scope?: ConfigScope, cwd?: string): IssyncState {
 
   if (migrated) {
     console.log('Migrated config from legacy format to new multi-sync format')
-    saveConfig(state, scope, scope === undefined ? cwd : undefined)
+    saveConfig(state, cwd)
   }
 
   return state
 }
 
-export function saveConfig(state: IssyncState, scope?: ConfigScope, cwd?: string): void {
-  validateScopeAndCwd(scope, cwd)
-
-  // Use resolveConfigPath for all cases - it handles global priority when scope is undefined
-  // For backward compatibility with tests, if cwd is provided, use getStatePath
-  const { stateDir, stateFile } = cwd !== undefined ? getStatePath(cwd) : resolveConfigPath(scope)
+export function saveConfig(state: IssyncState, cwd?: string): void {
+  // For testing, if cwd is provided, use getStatePath
+  const { stateDir, stateFile } = cwd !== undefined ? getStatePath(cwd) : resolveConfigPath()
 
   // Create directory if it doesn't exist
   if (!existsSync(stateDir)) {
@@ -206,85 +169,34 @@ export function selectSync(
   return { sync: match.sync, index: match.index }
 }
 
-export function configExists(scope?: ConfigScope, cwd?: string): boolean {
-  validateScopeAndCwd(scope, cwd)
-
-  // Use resolveConfigPath for all cases - it handles global priority when scope is undefined
-  // For backward compatibility with tests, if cwd is provided, use getStatePath
-  const { stateFile } = cwd !== undefined ? getStatePath(cwd) : resolveConfigPath(scope)
+export function configExists(cwd?: string): boolean {
+  // For testing, if cwd is provided, use getStatePath
+  const { stateFile } = cwd !== undefined ? getStatePath(cwd) : resolveConfigPath()
   return existsSync(stateFile)
 }
 
 /**
- * Normalizes and validates local file path based on config scope
- * @param localFile - The local file path to normalize
- * @param scope - Config scope (global or local)
+ * Converts a file path to absolute path
+ * @param filePath - The file path to convert
  * @param cwd - Current working directory (default: process.cwd())
- * @returns Normalized file path
+ * @returns Absolute file path
+ * @throws {DangerousPathError} When path is in a system directory
  *
  * Security Note:
- * - Global scope: Allows absolute paths anywhere in the filesystem (user responsibility)
- * - Local scope: Relative paths are recommended and will be resolved within project directory
- * - Path traversal attacks are mitigated by resolvePathWithinBase() for relative paths
- * - System directories (/etc, /sys, /proc, /dev) will trigger warnings for safety
+ * - Converts relative paths to absolute paths
+ * - System directories (/etc, /sys, /proc, /dev, /boot) are blocked for safety
  */
-export function normalizeLocalFilePath(
-  localFile: string,
-  scope?: ConfigScope,
-  cwd = process.cwd(),
-): string {
-  // For global scope, convert to absolute path and validate
-  if (scope === 'global') {
-    const absolutePath = path.isAbsolute(localFile) ? localFile : path.resolve(cwd, localFile)
-    const normalized = path.normalize(absolutePath)
+export function toAbsolutePath(filePath: string, cwd = process.cwd()): string {
+  const absolutePath = path.isAbsolute(filePath) ? filePath : path.resolve(cwd, filePath)
+  const normalized = path.normalize(absolutePath)
 
-    // Warn about potentially dangerous system directories
-    const dangerousDirectories = ['/etc/', '/sys/', '/proc/', '/dev/', '/boot/']
-    for (const dir of dangerousDirectories) {
-      if (normalized.startsWith(dir)) {
-        console.warn(
-          `⚠️  Warning: Using system directory "${dir}". This may cause system instability. Use at your own risk.`,
-        )
-      }
-    }
+  // Block dangerous system directories
+  const dangerousDirectories = ['/etc/', '/sys/', '/proc/', '/dev/', '/boot/']
+  const dangerousDir = dangerousDirectories.find((dir) => normalized.startsWith(dir))
 
-    return normalized
+  if (dangerousDir) {
+    throw new DangerousPathError(normalized, dangerousDir)
   }
 
-  // For local scope, warn if absolute path is used
-  if (scope === 'local' && path.isAbsolute(localFile)) {
-    console.warn(
-      '⚠️  Local config typically uses relative paths. Consider using relative path instead.',
-    )
-  }
-
-  return localFile
-}
-
-export function loadConfigIfExists(scope: ConfigScope): IssyncState | null {
-  try {
-    return loadConfig(scope)
-  } catch (error) {
-    if (error instanceof ConfigNotFoundError) {
-      return null
-    }
-    throw error
-  }
-}
-
-export function checkDuplicateSync(issueUrl: string, scope?: ConfigScope): void {
-  // Only check for cross-scope duplicates when scope is explicitly specified
-  // When scope is undefined (auto-detect), skip cross-scope check as user hasn't
-  // made an explicit choice between global and local
-  if (scope === undefined) {
-    return
-  }
-
-  // Check opposite scope only (more efficient - only one file I/O operation)
-  const oppositeScope = scope === 'global' ? 'local' : 'global'
-  const oppositeConfig = loadConfigIfExists(oppositeScope)
-
-  if (oppositeConfig?.syncs.some((s) => s.issue_url === issueUrl)) {
-    throw new Error(`Issue already configured in ${oppositeScope} config: ${issueUrl}`)
-  }
+  return normalized
 }

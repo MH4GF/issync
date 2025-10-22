@@ -30,7 +30,7 @@ describe('config', () => {
   describe('configExists', () => {
     test('returns false when state file does not exist', () => {
       // Act
-      const result = configExists(undefined, testDir)
+      const result = configExists(testDir)
 
       // Assert: No config file in fresh test directory
       expect(result).toBe(false)
@@ -48,10 +48,10 @@ describe('config', () => {
           },
         ],
       }
-      saveConfig(state, undefined, testDir)
+      saveConfig(state, testDir)
 
       // Act
-      const result = configExists(undefined, testDir)
+      const result = configExists(testDir)
 
       // Assert
       expect(result).toBe(true)
@@ -73,7 +73,7 @@ describe('config', () => {
       }
 
       // Act
-      saveConfig(state, undefined, testDir)
+      saveConfig(state, testDir)
 
       // Assert: Directory should be created
       expect(existsSync('.issync')).toBe(true)
@@ -94,10 +94,10 @@ describe('config', () => {
       }
 
       // Act
-      saveConfig({ syncs: [sync] }, undefined, testDir)
+      saveConfig({ syncs: [sync] }, testDir)
 
       // Assert: Config file should exist and be readable
-      expect(configExists(undefined, testDir)).toBe(true)
+      expect(configExists(testDir)).toBe(true)
     })
 
     test('overwrites existing config file', () => {
@@ -112,7 +112,7 @@ describe('config', () => {
           },
         ],
       }
-      saveConfig(initialState, undefined, testDir)
+      saveConfig(initialState, testDir)
 
       // Act: Save updated config
       const updatedState: IssyncState = {
@@ -129,10 +129,10 @@ describe('config', () => {
           },
         ],
       }
-      saveConfig(updatedState, undefined, testDir)
+      saveConfig(updatedState, testDir)
 
       // Assert: Should be able to load updated config
-      const loadedState = loadConfig(undefined, testDir)
+      const loadedState = loadConfig(testDir)
       expect(loadedState.syncs).toHaveLength(1)
       expect(loadedState.syncs[0]?.issue_url).toBe('https://github.com/owner/repo/issues/2')
       expect(loadedState.syncs[0]?.comment_id).toBe(987654321)
@@ -144,7 +144,7 @@ describe('config', () => {
   describe('loadConfig', () => {
     test('throws ConfigNotFoundError when state file does not exist', () => {
       // Act & Assert: Should throw custom error
-      expect(() => loadConfig(undefined, testDir)).toThrow('.issync/state.yml not found')
+      expect(() => loadConfig(testDir)).toThrow('.issync/state.yml not found')
     })
 
     test('loads config from state file', () => {
@@ -159,10 +159,10 @@ describe('config', () => {
         merge_strategy: 'section-based',
         watch_daemon_pid: 12345,
       }
-      saveConfig({ syncs: [sync] }, undefined, testDir)
+      saveConfig({ syncs: [sync] }, testDir)
 
       // Act
-      const loadedState = loadConfig(undefined, testDir)
+      const loadedState = loadConfig(testDir)
 
       // Assert: All fields should be preserved
       expect(loadedState.syncs).toHaveLength(1)
@@ -185,10 +185,10 @@ describe('config', () => {
         poll_interval: 10,
         merge_strategy: 'simple',
       }
-      saveConfig({ syncs: [sync] }, undefined, testDir)
+      saveConfig({ syncs: [sync] }, testDir)
 
       // Act
-      const loadedState = loadConfig(undefined, testDir)
+      const loadedState = loadConfig(testDir)
 
       // Assert: Required fields should be present
       expect(loadedState.syncs).toHaveLength(1)
@@ -215,7 +215,7 @@ describe('config', () => {
       mkdirSync('.issync', { recursive: true })
       writeFileSync('.issync/state.yml', legacyContent, 'utf-8')
 
-      const loadedState = loadConfig(undefined, testDir)
+      const loadedState = loadConfig(testDir)
 
       expect(loadedState.syncs).toHaveLength(1)
       const sync = loadedState.syncs[0]

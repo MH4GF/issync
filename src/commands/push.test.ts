@@ -45,7 +45,7 @@ describe('push command - multi-sync support', () => {
         },
       ],
     }
-    saveConfig(state, undefined, tempDir)
+    saveConfig(state, tempDir)
 
     await mkdir(path.join(tempDir, 'docs'), { recursive: true })
     await writeFile(path.join(tempDir, 'docs/two.md'), localBody, 'utf-8')
@@ -85,7 +85,7 @@ describe('push command - multi-sync support', () => {
     expect(commentId).toBe(222)
     expect(content).toBe(githubModule.addMarker(localBody))
 
-    const updatedState = loadConfig(undefined, tempDir)
+    const updatedState = loadConfig(tempDir)
     const sync = updatedState.syncs.find((entry) => entry.local_file === 'docs/two.md')
     expect(sync?.last_synced_hash).toBe(calculateHash(localBody))
     expect(sync?.last_synced_at).toBeDefined()
@@ -111,7 +111,7 @@ describe('push command - multi-sync support', () => {
         },
       ],
     }
-    saveConfig(state, undefined, tempDir)
+    saveConfig(state, tempDir)
 
     await mkdir(path.join(tempDir, 'docs'), { recursive: true })
     await writeFile(path.join(tempDir, 'docs/one.md'), localBodyOne, 'utf-8')
@@ -143,7 +143,7 @@ describe('push command - multi-sync support', () => {
 
     expect(updateComment).toHaveBeenCalledTimes(2)
 
-    const updatedState = loadConfig(undefined, tempDir)
+    const updatedState = loadConfig(tempDir)
     const syncOne = updatedState.syncs.find((entry) => entry.local_file === 'docs/one.md')
     const syncTwo = updatedState.syncs.find((entry) => entry.local_file === 'docs/two.md')
 
@@ -173,7 +173,7 @@ describe('push command - multi-sync support', () => {
         },
       ],
     }
-    saveConfig(state, undefined, tempDir)
+    saveConfig(state, tempDir)
 
     await mkdir(path.join(tempDir, 'docs'), { recursive: true })
     await writeFile(path.join(tempDir, 'docs/one.md'), localBodyOne, 'utf-8')
@@ -206,7 +206,7 @@ describe('push command - multi-sync support', () => {
     await expect(push({ cwd: tempDir })).rejects.toThrow('1 of 2 push operation(s) failed')
 
     // Verify successful sync was updated
-    const updatedState = loadConfig(undefined, tempDir)
+    const updatedState = loadConfig(tempDir)
     const syncOne = updatedState.syncs.find((entry) => entry.local_file === 'docs/one.md')
     const syncTwo = updatedState.syncs.find((entry) => entry.local_file === 'docs/two.md')
 
@@ -228,7 +228,7 @@ describe('push command - multi-sync support', () => {
         },
       ],
     }
-    saveConfig(state, undefined, tempDir)
+    saveConfig(state, tempDir)
 
     await mkdir(path.join(tempDir, '..docs'), { recursive: true })
     await writeFile(path.join(tempDir, '..docs/plan.md'), localBody, 'utf-8')
@@ -258,7 +258,7 @@ describe('push command - multi-sync support', () => {
     await push({ cwd: tempDir })
 
     expect(updateComment).toHaveBeenCalledTimes(1)
-    const updatedState = loadConfig(undefined, tempDir)
+    const updatedState = loadConfig(tempDir)
     const sync = updatedState.syncs[0]
     expect(sync?.last_synced_hash).toBe(calculateHash(localBody))
   })
@@ -276,7 +276,7 @@ describe('push command - multi-sync support', () => {
         },
       ],
     }
-    saveConfig(state, undefined, tempDir)
+    saveConfig(state, tempDir)
 
     await mkdir(path.join(tempDir, '.issync/docs'), { recursive: true })
     await writeFile(path.join(tempDir, '.issync/docs/plan-123.md'), localBody, 'utf-8')
@@ -326,7 +326,7 @@ describe('push command - multi-sync support', () => {
         },
       ],
     }
-    saveConfig(state, undefined, tempDir)
+    saveConfig(state, tempDir)
 
     await mkdir(path.join(tempDir, '.issync/docs'), { recursive: true })
     await writeFile(path.join(tempDir, '.issync/docs/plan-123.md'), localBody, 'utf-8')
@@ -365,7 +365,7 @@ describe('push command - multi-sync support', () => {
       expect(updateComment).toHaveBeenCalledTimes(1)
       expectNthCallContent(updateComment, 0, githubModule.addMarker(localBody))
 
-      const updatedState = loadConfig(undefined, tempDir)
+      const updatedState = loadConfig(tempDir)
       const sync = updatedState.syncs[0]
       expect(sync?.last_synced_hash).toBe(calculateHash(localBody))
     } finally {
@@ -387,7 +387,7 @@ describe('push command - multi-sync support', () => {
         },
       ],
     }
-    saveConfig(state, undefined, tempDir)
+    saveConfig(state, tempDir)
 
     await mkdir(path.join(tempDir, '.issync/docs'), { recursive: true })
     await writeFile(path.join(tempDir, '.issync/docs/plan-123.md'), localBody, 'utf-8')

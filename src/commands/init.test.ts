@@ -3,7 +3,7 @@ import { existsSync, mkdirSync, readFileSync, writeFileSync } from 'node:fs'
 import { mkdir, rm } from 'node:fs/promises'
 import path from 'node:path'
 import { loadConfig } from '../lib/config'
-import { FileAlreadyExistsError, InvalidFilePathError } from '../lib/errors'
+import { FileAlreadyExistsError } from '../lib/errors'
 import * as githubModule from '../lib/github'
 import { calculateHash } from '../lib/hash'
 import { createMockGitHubClient } from '../lib/test-helpers'
@@ -50,12 +50,12 @@ describe('init command', () => {
     expect(content).toBeTruthy()
     expect(content.length).toBeGreaterThan(0)
 
-    const state = loadConfig(undefined, TEST_DIR)
+    const state = loadConfig(TEST_DIR)
     expect(state.syncs).toHaveLength(1)
     const config = state.syncs[0]
 
     expect(config?.issue_url).toBe(issueUrl)
-    expect(config?.local_file).toBe(localFile)
+    expect(config?.local_file).toBe(path.join(TEST_DIR, localFile))
     expect(config?.comment_id).toBeUndefined()
     expect(config?.last_synced_hash).toBeUndefined()
   })
@@ -65,11 +65,11 @@ describe('init command', () => {
 
     await init(issueUrl, { cwd: TEST_DIR })
 
-    const state = loadConfig(undefined, TEST_DIR)
+    const state = loadConfig(TEST_DIR)
     expect(state.syncs).toHaveLength(1)
     const config = state.syncs[0]
 
-    expect(config?.local_file).toBe('.issync/docs/plan-123.md')
+    expect(config?.local_file).toBe(path.join(TEST_DIR, '.issync/docs/plan-123.md'))
 
     // Verify file was actually created at the expected path
     const expectedFilePath = path.join(TEST_DIR, '.issync/docs/plan-123.md')
@@ -82,11 +82,11 @@ describe('init command', () => {
 
     await init(issueUrl, { file: customPath, cwd: TEST_DIR })
 
-    const state = loadConfig(undefined, TEST_DIR)
+    const state = loadConfig(TEST_DIR)
     expect(state.syncs).toHaveLength(1)
     const config = state.syncs[0]
 
-    expect(config?.local_file).toBe(customPath)
+    expect(config?.local_file).toBe(path.join(TEST_DIR, customPath))
 
     // Verify file was actually created at the custom path
     const createdFile = path.join(TEST_DIR, customPath)
@@ -97,10 +97,10 @@ describe('init command', () => {
     await init('https://github.com/owner/repo/issues/1', { cwd: TEST_DIR })
     await init('https://github.com/owner/repo/issues/999', { cwd: TEST_DIR })
 
-    const state = loadConfig(undefined, TEST_DIR)
+    const state = loadConfig(TEST_DIR)
     expect(state.syncs).toHaveLength(2)
-    expect(state.syncs[0]?.local_file).toBe('.issync/docs/plan-1.md')
-    expect(state.syncs[1]?.local_file).toBe('.issync/docs/plan-999.md')
+    expect(state.syncs[0]?.local_file).toBe(path.join(TEST_DIR, '.issync/docs/plan-1.md'))
+    expect(state.syncs[1]?.local_file).toBe(path.join(TEST_DIR, '.issync/docs/plan-999.md'))
 
     // Verify both files were created
     expect(existsSync(path.join(TEST_DIR, '.issync/docs/plan-1.md'))).toBe(true)
@@ -116,15 +116,15 @@ describe('init command', () => {
 
     await init(issueUrl, { cwd: TEST_DIR, template: 'template.md' })
 
-    const state = loadConfig(undefined, TEST_DIR)
+    const state = loadConfig(TEST_DIR)
     const targetFile = state.syncs[0]?.local_file
-    expect(targetFile).toBe('.issync/docs/plan-456.md')
+    expect(targetFile).toBe(path.join(TEST_DIR, '.issync/docs/plan-456.md'))
 
     // Verify template content was used
     if (!targetFile) {
       throw new Error('targetFile is undefined')
     }
-    const content = readFileSync(path.join(TEST_DIR, targetFile), 'utf-8')
+    const content = readFileSync(targetFile, 'utf-8')
     expect(content).toBe(templateContent)
   })
 
@@ -226,13 +226,8 @@ describe('init command', () => {
     expect(content.length).toBeGreaterThan(0)
   })
 
-  test('rejects file paths that escape the working directory', () => {
-    const issueUrl = 'https://github.com/owner/repo/issues/123'
-
-    expect(init(issueUrl, { file: '../plan.md', cwd: TEST_DIR })).rejects.toThrow(
-      InvalidFilePathError,
-    )
-  })
+  // Note: Path traversal validation was removed with local config support.
+  // Global config uses absolute paths, so '../plan.md' is allowed and resolves correctly.
 
   test('throws error for invalid GitHub Issue URL', () => {
     const invalidUrl = 'https://github.com/owner/repo/pull/123' // PR URL, not Issue
@@ -269,10 +264,13 @@ describe('init command', () => {
       file: 'docs/notes.md',
     })
 
-    const state = loadConfig(undefined, TEST_DIR)
+    const state = loadConfig(TEST_DIR)
     expect(state.syncs).toHaveLength(2)
     const files = state.syncs.map((sync) => sync.local_file).sort()
-    expect(files).toEqual(['docs/notes.md', 'docs/plan.md'])
+    expect(files).toEqual([
+      path.join(TEST_DIR, 'docs/notes.md'),
+      path.join(TEST_DIR, 'docs/plan.md'),
+    ])
   })
 
   test('creates .issync directory if it does not exist', async () => {
@@ -314,7 +312,7 @@ describe('init command', () => {
     expect(existsSync(targetPath)).toBe(true)
     expect(readFileSync(targetPath, 'utf-8')).toBe(existingContent) // unwrapped
 
-    const state = loadConfig(undefined, TEST_DIR)
+    const state = loadConfig(TEST_DIR)
     const sync = state.syncs[0]
     expect(sync).toBeDefined()
     expect(sync?.comment_id).toBe(123)
@@ -343,7 +341,7 @@ describe('init command', () => {
     const content = readFileSync(targetPath, 'utf-8')
     expect(content).toBeTruthy() // Has content from template
 
-    const state = loadConfig(undefined, TEST_DIR)
+    const state = loadConfig(TEST_DIR)
     const sync = state.syncs[0]
     expect(sync).toBeDefined()
     expect(sync?.comment_id).toBeUndefined() // No comment_id since pull failed

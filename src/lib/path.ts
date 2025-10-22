@@ -18,17 +18,17 @@ function _escapesBase(relativePath: string): boolean {
  * @param basePath - The base directory (will be resolved to absolute)
  * @param targetPath - The target path (relative to base, or absolute if allowAbsolute=true)
  * @param label - Label for error messages
- * @param allowAbsolute - Allow absolute paths (for global scope). Defaults to false.
+ * @param allowAbsolute - Allow absolute paths. Defaults to false.
  * @returns Resolved absolute path
  * @throws InvalidFilePathError if path traversal is detected or targets protected directory
  *
  * @example
- * // Local scope: relative paths only
+ * // Relative paths only (allowAbsolute=false)
  * resolvePathWithinBase('/base', 'docs/plan.md')
  * // => '/base/docs/plan.md'
  *
  * @example
- * // Global scope: absolute paths allowed
+ * // Absolute paths allowed (allowAbsolute=true)
  * resolvePathWithinBase('/base', '/Users/user/docs/plan.md', 'local_file', true)
  * // => '/Users/user/docs/plan.md'
  */
@@ -69,8 +69,8 @@ export function resolvePathWithinBase(
 
 /**
  * Resolves a file path, automatically allowing absolute paths if the path is absolute.
- * This is a convenience wrapper for resolvePathWithinBase that handles the common pattern
- * of allowing absolute paths in global scope and relative paths in local scope.
+ * This is a convenience wrapper for resolvePathWithinBase that automatically sets
+ * allowAbsolute=true when the provided path is absolute.
  *
  * @param basePath - The base directory path
  * @param filePath - The file path (relative or absolute)

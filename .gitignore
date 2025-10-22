@@ -176,3 +176,4 @@ dist
 
 # issync local state
 .issync/
+.test-tmp/

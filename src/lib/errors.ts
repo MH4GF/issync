@@ -35,6 +35,16 @@ export class InvalidFilePathError extends IssyncError {
   }
 }
 
+export class DangerousPathError extends IssyncError {
+  constructor(path: string, systemDir: string) {
+    super(
+      `Path "${path}" in system directory "${systemDir}" is not allowed for security reasons.\n` +
+        'Please use a path in your home directory or project directory instead.',
+    )
+    this.name = 'DangerousPathError'
+  }
+}
+
 export class FileNotFoundError extends IssyncError {
   constructor(path: string) {
     super(`File not found: ${path}`)
@@ -75,12 +85,5 @@ export class GitHubAuthenticationError extends IssyncError {
   constructor(message = 'GitHub authentication failed. Check GITHUB_TOKEN.') {
     super(message)
     this.name = 'GitHubAuthenticationError'
-  }
-}
-
-export class MutuallyExclusiveOptionsError extends IssyncError {
-  constructor(option1: string, option2: string) {
-    super(`Cannot use both --${option1} and --${option2} options`)
-    this.name = 'MutuallyExclusiveOptionsError'
   }
 }
