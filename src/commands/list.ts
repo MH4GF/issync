@@ -2,7 +2,7 @@ import { loadConfig } from '../lib/config.js'
 import { ConfigNotFoundError } from '../lib/errors.js'
 import type { IssyncSync } from '../types/index.js'
 
-export interface ListOptions {
+interface ListOptions {
   cwd?: string
 }
 
@@ -88,7 +88,7 @@ export function list(options: ListOptions = {}): void {
   // Load state.yml
   let state: ReturnType<typeof loadConfig>
   try {
-    state = loadConfig(undefined, cwd)
+    state = loadConfig(cwd)
   } catch (error) {
     if (error instanceof ConfigNotFoundError) {
       throw new Error("No syncs configured. Run 'issync init <issue-url>' to get started.")
