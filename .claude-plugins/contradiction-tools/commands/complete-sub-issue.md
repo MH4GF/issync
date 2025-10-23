@@ -6,11 +6,12 @@ description: サブissue完了時に親issueの進捗ドキュメントを自動
 
 あなたはユーザーのサブissue完了時に、親issueの進捗ドキュメントを自動的に更新するサポートをしています。このコマンドは以下のワークフローを自動化します：
 1. サブissue情報のフェッチと親issue番号の抽出
-2. サブissueの進捗ドキュメントから完了情報を抽出
-3. 親issueの進捗ドキュメントを更新（Outcomes & Retrospectives、Open Questions）
-4. Follow-up事項の適切な処理提案（Open Questions追加または/create-sub-issue実行提案）
-5. サブissueのclose
-6. 完了通知
+2. 未初期化のissueがあれば `issync init` で自動初期化
+3. サブissueの進捗ドキュメントから完了情報を抽出
+4. 親issueの進捗ドキュメントを更新（Outcomes & Retrospectives、Open Questions）
+5. Follow-up事項の適切な処理提案（Open Questions追加または/create-sub-issue実行提案）
+6. サブissueのclose
+7. 完了通知
 
 ## 使用方法
 
@@ -33,87 +34,54 @@ description: サブissue完了時に親issueの進捗ドキュメントを自動
 
 ## 前提条件
 
-実行前に以下が必要です：
-- [ ] 親issueの進捗ドキュメントがローカルに存在する（`.issync/state.yml`で管理）
-- [ ] `issync watch`が実行中（親issueへの変更は自動同期される）
-- [ ] サブissueの進捗ドキュメントに`Outcomes & Retrospectives`セクションが記載されている
-- [ ] `GITHUB_TOKEN`環境変数が設定されている（`export GITHUB_TOKEN=$(gh auth token)`）
-- [ ] `gh` CLIがインストールされている
+- `issync watch`が実行中
+- `GITHUB_TOKEN`環境変数が設定済み（`export GITHUB_TOKEN=$(gh auth token)`）
+- `gh` CLIがインストール済み
+
+未初期化のissueは自動的に `issync init` で初期化します。
 
 ## 実行ステップ
 
 ### ステップ1: サブissue情報をフェッチ
 
-サブissue URLから以下を取得：
-
-1. **Issue本文を取得**（`gh issue view <issue_url> --json body`）
-2. **親issue番号を抽出**（"Part of #123"パターン）
-
-**親issue番号抽出ロジック**:
-```regex
-Part of #(\d+)
+```bash
+gh issue view <issue_url> --json body,state,title
 ```
 
-**エラーハンドリング**: 無効なURL、親issue番号不在時は明確なエラーメッセージを表示
+- 親issue番号を抽出（正規表現: `Part of #(\d+)`）
+- issue状態を確認（open/closed）
+- 無効なURL、親issue番号不在時はエラー表示
 
 ### ステップ2: サブissueの進捗ドキュメントを読み込み
 
-サブissueがissyncで管理されている場合、以下を抽出：
+`issync list`で登録状況を確認。未登録の場合は自動初期化（詳細は「issync管理外のissue処理」参照）。
 
-1. **Outcomes & Retrospectivesセクション**:
-   - 実装内容の1行サマリー
-   - 主な発見や学び
+抽出する情報：
+- **Outcomes & Retrospectives**: 実装内容サマリー、発見や学び
+- **Follow-up Issues**: 将来対応すべき事項（存在する場合）
 
-2. **Follow-up Issuesセクション**（存在する場合）:
-   - 今回のスコープでは対応しなかったが、将来的に別issueとして扱うべき事項
-
-**サブissueがissync管理されていない場合**:
-```
-警告: サブissueの進捗ドキュメントが見つかりません。
-Outcomes & Retrospectivesセクションは「（記載なし）」として記録されます。
-```
+初期化失敗時は「（記載なし）」として続行可。
 
 ### ステップ3: 親issueの進捗ドキュメントを特定
-
-`issync list` コマンドを実行して、親issue番号に対応する進捗ドキュメントを検索：
 
 ```bash
 issync list
 ```
 
-このコマンドは state.yml から全同期設定を読み込み、テーブル形式で表示します：
-```
-Issue URL                                      Local File                         Last Synced
-https://github.com/owner/repo/issues/123      .issync/docs/task-dashboard.md     2h ago
-```
+親issue番号に一致する `issue_url` と `local_file` を取得。未登録の場合は自動初期化（詳細は「issync管理外のissue処理」参照）。
 
-出力から親issue番号に一致する `issue_url` と `local_file` を取得してください。
-
-**エラーハンドリング**: state.yml不在、親issue未初期化時はissync initを案内
+初期化失敗時は処理を中断（親issueは必須）。
 
 ### ステップ4: 親issueのOutcomes & Retrospectivesセクションを更新
 
-サブタスク完了サマリーを追加：
-
-**追加フォーマット**:
+追加フォーマット:
 ```markdown
-**サブタスク完了 (YYYY-MM-DD): [サブissueタイトル] (#[サブissue番号])**
-- [実装内容の1行サマリー]
+**サブタスク完了 (YYYY-MM-DD): [サブissueタイトル] (#[番号])**
+- [実装内容サマリー]
 - [主な発見や学び（あれば）]
 ```
 
-**例**:
-```markdown
-**サブタスク完了 (2025-10-15): Status変更時の自動アクション設計 (#124)**
-- GitHub ActionsでCI成功時のStatus自動変更を実装
-- Octokit APIを使用したProjects Status更新の知見を獲得
-```
-
-**サブissueのOutcomes & Retrospectivesが空の場合**:
-```markdown
-**サブタスク完了 (2025-10-15): Status変更時の自動アクション設計 (#124)**
-- （記載なし）
-```
+情報が空の場合は `- （記載なし）` と記載。
 
 ### ステップ5: Follow-up Issuesの適切な処理
 
@@ -130,19 +98,18 @@ https://github.com/owner/repo/issues/123      .issync/docs/task-dashboard.md    
 
 ### ステップ6: サブissueをclose
 
+openの場合のみ実行:
 ```bash
 gh issue close <サブissue URL> --comment "Completed. Summary recorded in parent issue #<親issue番号>."
 ```
 
-エラー時は警告を表示し手動closeを依頼。
+すでにclosedの場合はスキップし、完了通知で明記。エラー時は警告を表示。
 
 ### ステップ7: 完了通知
 
-編集内容のサマリーを出力（watchが自動同期）。フォーマットは「出力フォーマット」セクション参照。
+編集内容のサマリーを出力（watchが自動同期）。
 
 ## 出力フォーマット
-
-全ステップ完了後、以下の形式でサマリーを提供：
 
 ```markdown
 ## /complete-sub-issue 実行結果
@@ -154,7 +121,7 @@ gh issue close <サブissue URL> --comment "Completed. Summary recorded in paren
 ### 更新内容
 - ✅ Outcomes & Retrospectives: サブタスク完了サマリー追加 (進捗ドキュメント:[line_number])
 - ✅ Follow-up Issues処理: Open Questionsに[X]件追加
-- ✅ サブissue #[サブissue番号] をclose
+- ✅ サブissue #[サブissue番号]: [closeした / すでにclosed]
 - ✅ 自動同期完了（watchモードで親issueに反映）
 
 ### 推奨アクション: 新規サブissue作成 (該当する場合のみ表示)
@@ -172,48 +139,43 @@ gh issue close <サブissue URL> --comment "Completed. Summary recorded in paren
 
 ---
 
-## 重要な注意事項
+## issync管理外のissue処理
 
-**技術的制約**:
-- gh CLIで"Part of #123"パターンから親issue番号を抽出
-- `.issync/state.yml`から親issueの進捗ドキュメントを特定
-- issync watch実行中を前提（明示的なpushは不要）
-
-**Follow-up処理方針**（詳細はステップ5参照）:
-- 論点・調査事項 → Open Questionsに自動追加
-- 実装タスク → `/create-sub-issue`実行を提案
-- **親issueのFollow-up Issuesセクションへの転記は禁止**
+未登録のissueを検出した場合、自動的に初期化:
+```bash
+issync init <issue_url>
+```
 
 **エラーハンドリング**:
-- state.yml不在、親issue未初期化 → issync init案内
-- サブissueの進捗ドキュメント不在 → 「（記載なし）」として記録
-- issue close失敗 → 警告表示、手動close依頼
+- 親issue初期化失敗 → 処理を中断（必須のため）
+- サブissue初期化失敗 → 「（記載なし）」として続行可
+
+## エラーハンドリング
+
+- 無効なURL、親issue番号不在 → エラー表示
+- issueがすでにclosed → close処理をスキップ
+- issue close失敗 → 警告表示
 
 ---
 
 ## 実行例
 
-**入力**: `/complete-sub-issue https://github.com/MH4GF/issync/issues/124`
+```
+/complete-sub-issue https://github.com/MH4GF/issync/issues/124
+```
 
-**処理**:
-1. サブissue #124（Status変更時の自動アクション設計）から親issue #123を特定
-2. サブissueの進捗ドキュメントからOutcomes & RetrospectivesとFollow-up Issuesを抽出
-3. 親issueの進捗ドキュメント（.issync/docs/task-dashboard.md）を更新:
-   - Outcomes & Retrospectives: サブタスク完了サマリー追加
-   - Open Questions: 「failedステートの自動判定方法の調査」を追加
-4. 実装タスク（「リトライロジック実装」「E2Eテスト環境構築」）は`/create-sub-issue`実行を提案
-5. サブissue #124をclose
-
-**出力**: 「出力フォーマット」セクション参照
+1. サブissue #124から親issue #123を特定
+2. 未登録のissueがあれば自動初期化
+3. サブissueの進捗情報を抽出
+4. 親issueの進捗ドキュメントを更新
+5. Follow-up Issuesを分類処理
+6. サブissue #124をclose
 
 ---
 
 ## 運用フロー
 
 1. `/create-sub-issue`でサブissue作成
-2. サブissueで開発（plan → retrospective）
-3. サブissueの進捗ドキュメントにOutcomes & RetrospectivesとFollow-up Issuesを記入
-4. `/complete-sub-issue`で親issueに自動反映＆サブissueclose
-5. 必要に応じて`/create-sub-issue`で次のサブissueを作成
-
-**設計原則**: GitHub Sub-issuesを完全なSSOTとし、進捗ドキュメントのTasksセクションは使用しない。サブissueの成果を親issueに確実に反映し、知見蓄積と次のタスク計画を自動化する。
+2. サブissueで開発（plan → retrospective）、進捗ドキュメントに成果を記入
+3. `/complete-sub-issue`で親issueに自動反映＆サブissueclose
+4. 必要に応じて`/create-sub-issue`で次のサブissueを作成
