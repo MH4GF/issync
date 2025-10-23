@@ -16,23 +16,24 @@
 
 ## 実行フロー
 
-### ステップ1: state.ymlの確認と選択
+### ステップ1: 同期中のファイル一覧の確認と選択
 
 **引数が指定されている場合**: そのパスを使用し、このステップをスキップして次へ進んでください。
 
-**引数が指定されていない場合**: `.issync/state.yml`を読み込み、同期中のファイル一覧を表示してください。
+**引数が指定されていない場合**: `issync list` コマンドを実行して、同期中のファイル一覧を取得してください。
 
-**state.ymlが存在しない/syncsが空の場合**:
+```bash
+issync list
 ```
-エラー: .issync/state.ymlが見つからないか、同期中のファイルがありません。
-明示的にパスを指定してください: /add-question <file_path>
-```
+
+このコマンドは state.yml から全同期設定を読み込み、人間が読みやすいテーブル形式で表示します。
+出力から issue_url と local_file の情報を取得できます。
 
 **複数ファイルがある場合**: 選択を促してください
 ```
 対象の進捗ドキュメントを選択してください:
-1. .issync/docs/task-dashboard.md (最終同期: 2025-10-14T08:20:50Z, Issue: route06/liam-internal/issues/5829)
-2. docs/進捗ドキュメント (最終同期: 2025-10-14T07:07:44Z, Issue: MH4GF/issync/issues/1)
+1. .issync/docs/task-dashboard.md (最終同期: 2h ago, Issue: route06/liam-internal/issues/5829)
+2. docs/進捗ドキュメント (最終同期: 3d ago, Issue: MH4GF/issync/issues/1)
 
 番号を入力してください (1-2):
 ```
@@ -40,7 +41,7 @@
 **1つのみの場合**: 確認を表示して自動選択
 ```
 対象: .issync/docs/task-dashboard.md
-  最終同期: 2025-10-14T08:20:50Z
+  最終同期: 2h ago
   Issue: route06/liam-internal/issues/5829
 
 このファイルに質問を追加しますか? (y/n)
