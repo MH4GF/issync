@@ -7,7 +7,7 @@
     {
       "name": "contradiction-tools",
       "source": "./.claude-plugins/contradiction-tools",
-      "description": "矛盾解消駆動開発のためのツール群(/plan, /architecture-decision, /add-question, /compact-plan, /create-sub-issue, /complete-sub-issue)"
+      "description": "矛盾解消駆動開発のためのツール群(/plan, /architecture-decision, /compact-plan, /create-sub-issue, /complete-sub-issue, /understand-progress)"
     }
   ]
 }

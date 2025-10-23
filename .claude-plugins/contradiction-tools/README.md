@@ -4,7 +4,7 @@
 
 ## 概要
 
-このpluginは7つのスラッシュコマンドを提供し、進捗ドキュメントの管理を効率化します：
+このpluginは6つのスラッシュコマンドを提供し、進捗ドキュメントの管理を効率化します：
 
 ### `/plan`: plan実行ワークフロー
 
@@ -33,16 +33,6 @@ POC完了後、POCで得た知見を基にアーキテクチャ・設計方針�
 8. issync pushで同期
 
 **重要**: POCの実装結果を具体的に記録し、アーキテクチャ決定の根拠を明確にします。
-
-### `/add-question`: Open Question追加ワークフロー
-
-進捗ドキュメントに新しいOpen Questionを追加する際に、優先度評価と最適な配置位置を提案します。以下のプロセスをガイドします：
-
-1. 質問内容の入力（対話形式）
-2. 優先度評価（最優先/高/中/低）
-3. 既存質問との関係分析
-4. 配置位置の提案
-5. Open Questionsセクションへの追加
 
 ### `/compact-plan`: 進捗ドキュメント圧縮ツール
 
@@ -142,10 +132,9 @@ Claude Codeで以下のコマンドを実行し、GitHubから直接マーケッ
 ```bash
 /plan                   # plan実行ワークフロー
 /architecture-decision  # アーキテクチャ決定ワークフロー
-/add-question           # Open Question追加ワークフロー
 /compact-plan           # 進捗ドキュメント圧縮ツール
-/create-sub-issue     # タスクのサブissue化ワークフロー
-/complete-sub-issue       # サブissue完了ワークフロー
+/create-sub-issue       # タスクのサブissue化ワークフロー
+/complete-sub-issue     # サブissue完了ワークフロー
 ```
 
 #### 更新方法
@@ -283,43 +272,6 @@ POC PR #456完了時：
 - POC PRをクローズ
 - watchモードが起動している場合は自動的にGitHub Issueに同期
 
-### `/add-question`: Open Question追加
-
-#### 基本的なワークフロー
-
-1. コマンドを実行:
-   ```
-   /add-question
-   ```
-
-2. プロンプトに従って以下の情報を提供:
-   - **質問のタイトル** (簡潔に)
-   - **詳細説明** (背景、検討事項、選択肢など)
-
-3. pluginが以下を実行:
-   - 既存のOpen Questionsを分析
-   - 優先度を評価（最優先/高/中/低）
-   - 配置位置を提案（既存質問との関係を考慮）
-   - 質問番号を自動採番（Q7, Q8...）
-
-4. 提案内容を確認:
-   - 優先度評価の理由
-   - 配置位置の理由
-   - 新しい質問番号
-
-5. 承認後、pluginが進捗ドキュメントを更新:
-   - Open Questionsセクションに追加
-   - issyncのwatchモードが起動している場合は自動的にGitHub Issueに同期
-
-#### 実行例
-
-新しい質問「エラーハンドリング戦略」を追加すると、pluginは：
-- 既存のQ5〜Q12を分析
-- 「高優先度」と評価（実装に直接影響するため）
-- Q6とQ7の間に配置を提案（アーキテクチャ決定関連の質問の近くに配置）
-- ユーザーの承認後、Open Questionsセクションを更新
-- watchモードが起動している場合は自動的にGitHub Issueに同期
-
 ### `/compact-plan`: 進捗ドキュメント圧縮
 
 #### 基本的なワークフロー
@@ -406,16 +358,6 @@ architecture-decisionステートでアーキテクチャを決定する時に�
 
 **重要**: このコマンドは、architecture-decisionステート専用です。POC PRをクローズし、Decision LogとSpecification / 仕様を記入します。
 
-### `/add-question`
-
-開発のどの段階でも、新しいOpen Questionを追加したい時にこのコマンドを使用してください：
-- **plan**: 初期設計で新たな質問が見つかった時
-- **poc**: 技術検証中に新しい疑問が生まれた時
-- **architecture-decision**: アーキテクチャ検討で追加の選択肢が見つかった時
-- **implement**: 実装準備中に新たな検討事項が発生した時
-
-このコマンドは、質問の優先度を自動評価し、最適な配置位置を提案することで、Open Questionsセクションの整合性を保ちます。
-
 ### `/compact-plan`
 
 以下のような状況で使用してください：
@@ -461,7 +403,6 @@ architecture-decisionステートでアーキテクチャを決定する時に�
 - プロジェクトに以下のセクションを含む `進捗ドキュメント` ファイルが必要:
   - **`/plan`用**: progress-document-template.mdから生成された初期構造
   - **`/architecture-decision`用**: Discoveries & Insights, Decision Log, Specification / 仕様, Validation & Acceptance Criteria
-  - **`/add-question`用**: Open Questions / 残論点
   - **`/compact-plan`用**: docs/progress-document-template.md（圧縮の基準として使用）
   - **`/create-sub-issue`用**: Tasks, Purpose/Overview, .issync.yml（issync init完了）
   - **`/complete-sub-issue`用**: Tasks, Outcomes & Retrospectives, Open Questions, Follow-up Issues, .issync/state.yml（issync watch実行中）
@@ -488,7 +429,6 @@ contradiction-tools/
 ├── commands/
 │   ├── 進捗ドキュメント                     # plan実行コマンド
 │   ├── architecture-decision.md    # アーキテクチャ決定コマンド
-│   ├── add-question.md             # Open Question追加コマンド
 │   ├── compact-進捗ドキュメント             # 進捗ドキュメント圧縮コマンド
 │   ├── create-sub-issue.md       # タスクのサブissue化コマンド
 │   └── complete-sub-issue.md         # サブissue完了コマンド
@@ -502,7 +442,6 @@ contradiction-tools/
 1. コマンドプロンプトを編集:
    - `/plan`: `commands/進捗ドキュメント`
    - `/architecture-decision`: `commands/architecture-decision.md`
-   - `/add-question`: `commands/add-question.md`
    - `/compact-plan`: `commands/compact-進捗ドキュメント`
    - `/create-sub-issue`: `commands/create-sub-issue.md`
    - `/complete-sub-issue`: `commands/complete-sub-issue.md`

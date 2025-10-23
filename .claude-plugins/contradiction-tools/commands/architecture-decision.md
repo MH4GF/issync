@@ -4,7 +4,7 @@ description: POCの知見を基にアーキテクチャ・設計方針を決定�
 
 # /architecture-decision: アーキテクチャ決定ワークフロー
 
-あなたはユーザーの `.issync/docs/plan-*.md` ファイルのアーキテクチャ決定フェーズをサポートしています。このコマンドは以下の8ステップのワークフローを自動化します：
+あなたはユーザーの `.issync/docs/plan-*.md` ファイルのアーキテクチャ決定フェーズをサポートしています。このコマンドは以下の9ステップのワークフローを自動化します：
 
 1. 現在のStatusを検証
 2. POC PR URLを受け取り、PR情報を取得
@@ -14,6 +14,7 @@ description: POCの知見を基にアーキテクチャ・設計方針を決定�
 6. Acceptance Criteriaの妥当性検証
 7. POC PRをクローズ
 8. issync pushで同期（必要な場合）
+9. GitHub Projects Status自動変更（architecture-decision → implement）
 
 ## コンテキスト
 
@@ -255,6 +256,31 @@ issync push
 
 ---
 
+### ステップ8: GitHub Projects Status自動変更
+
+architecture-decision完了後、Statusを自動的に`implement`に変更します。
+
+**実行手順**:
+1. Issue URLからowner/repo/issue_numberを抽出
+2. GraphQL APIでProject IDを取得（タイトルに"Workflow"を含むProject）
+3. `gh project field-list`でField IDとimplement Option IDを取得
+4. `gh project item-list`でItem IDを取得
+5. `gh project item-edit`でStatus変更
+
+**エラーハンドリング**:
+- **認証スコープ不足**: `gh auth refresh -s project --hostname github.com` を実行後、再度 /architecture-decision 実行
+- **ID取得失敗**: GitHub Projects UIで手動変更
+- **Status変更失敗**: エラー詳細と手動変更用のghコマンドを表示
+
+**成功時の出力**:
+```
+✓ GitHub Projects Statusを `implement` に変更しました
+  Project: <project_title> (#<project_number>)
+  Issue: #<issue_number>
+```
+
+---
+
 ## 出力フォーマット
 
 全ステップ完了後、以下の形式でサマリーを提供：
@@ -270,16 +296,20 @@ issync push
 - ✅ ステップ5: Acceptance Criteria検証（調整: [あり/なし]）
 - ✅ ステップ6: POC PRクローズ（PR #123）
 - ✅ ステップ7: issync push完了（watchモードで自動同期）
+- ✅ ステップ8: GitHub Projects Status変更（architecture-decision → implement）
 
 ### 記録された決定事項
 1. [決定事項1のタイトル]
 2. [決定事項2のタイトル]
 ...
 
+### GitHub Projects Status変更
+- Status: `architecture-decision` → `implement` ✅
+- Project: {project_title} (#{project_number})
+
 ### 次のアクション
 - [ ] 進捗ドキュメントの内容（Decision Log、Specification、Acceptance Criteria）をレビューしてください
 - [ ] アーキテクチャ決定が適切か確認してください
-- [ ] 承認後、Statusを `implement` に変更してください
 - [ ] implementのチェックリストを確認し、本実装を開始してください
 ```
 
@@ -397,6 +427,16 @@ watchモードが起動しているため、自動的にGitHub Issueに同期さ
 
 ---
 
+### ステップ8: GitHub Projects Status変更
+
+Issue #17のStatusを`implement`に変更します...
+
+✅ GitHub Projects Statusを `implement` に変更しました
+  Project: Liam Workflow Board(PoC) (#201)
+  Issue: #17
+
+---
+
 ## /architecture-decision 実行結果
 
 ### 完了したステップ
@@ -407,16 +447,20 @@ watchモードが起動しているため、自動的にGitHub Issueに同期さ
 - ✅ ステップ5: Acceptance Criteria検証（調整: あり - ポーリング間隔を30秒に変更）
 - ✅ ステップ6: POC PRクローズ（PR #456）
 - ✅ ステップ7: issync push完了（watchモードで自動同期）
+- ✅ ステップ8: GitHub Projects Status変更（architecture-decision → implement）
 
 ### 記録された決定事項
 1. Watch daemonの実装方針（chokidar + setInterval）
 2. ポーリング間隔の設定（30秒）
 3. エラーハンドリング戦略（3回リトライ + 指数バックオフ）
 
+### GitHub Projects Status変更
+- Status: `architecture-decision` → `implement` ✅
+- Project: Liam Workflow Board(PoC) (#201)
+
 ### 次のアクション
 - [ ] 進捗ドキュメントの内容（Decision Log、Specification、Acceptance Criteria）をレビューしてください
 - [ ] アーキテクチャ決定が適切か確認してください
-- [ ] 承認後、Statusを `implement` に変更してください
 - [ ] implementのチェックリストを確認し、本実装を開始してください
 
 ---
@@ -440,15 +484,14 @@ Statusを architecture-decision に変更
    ├─ Specification記入
    ├─ Acceptance Criteria検証
    ├─ POC PRクローズ
-   └─ issync push（自動同期）
+   ├─ issync push（自動同期）
+   └─ Status自動変更（architecture-decision → implement）
    ↓
 アーキテクチャ決定完了
    ↓
 人間が進捗ドキュメントをレビュー
    ↓
-承認後、Statusを implement に変更
-   ↓
-本実装開始
+承認後、本実装開始
 ```
 
-**重要**: アーキテクチャ決定完了後、必ず人間が進捗ドキュメントの内容（Decision Log、Specification、Acceptance Criteria）をレビューし、承認してからStatusを変更してください。
+**重要**: アーキテクチャ決定完了後、必ず人間が進捗ドキュメントの内容（Decision Log、Specification、Acceptance Criteria）をレビューし、承認してから本実装を開始してください。Statusは自動的に`implement`に変更されます。
