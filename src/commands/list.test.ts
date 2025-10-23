@@ -138,7 +138,7 @@ describe('list command', () => {
         },
       ],
     }
-    saveConfig(state, undefined, tempDir)
+    saveConfig(state, tempDir)
 
     // Act
     list({ cwd: tempDir })

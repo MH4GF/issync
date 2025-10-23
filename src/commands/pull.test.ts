@@ -40,7 +40,7 @@ describe('pull command - multi-sync support', () => {
         },
       ],
     }
-    saveConfig(state, undefined, tempDir)
+    saveConfig(state, tempDir)
 
     const remoteBody = '# Remote Content'
     const mockGitHubClient: Pick<GitHubClientInstance, 'getComment'> = {
@@ -56,7 +56,7 @@ describe('pull command - multi-sync support', () => {
     const pulledContent = readFileSync(path.join(tempDir, 'docs/two.md'), 'utf-8')
     expect(pulledContent).toBe(remoteBody)
 
-    const updatedState = loadConfig(undefined, tempDir)
+    const updatedState = loadConfig(tempDir)
     const sync = updatedState.syncs.find((entry) => entry.local_file === 'docs/two.md')
     expect(sync?.last_synced_hash).toBe(calculateHash(remoteBody))
     expect(sync?.last_synced_at).toBeDefined()
@@ -79,7 +79,7 @@ describe('pull command - multi-sync support', () => {
         },
       ],
     }
-    saveConfig(state, undefined, tempDir)
+    saveConfig(state, tempDir)
 
     const mockGitHubClient: Pick<GitHubClientInstance, 'getComment'> = {
       getComment: (_, __, commentId) => {
@@ -111,7 +111,7 @@ describe('pull command - multi-sync support', () => {
     expect(pulledContentOne).toBe(remoteBodyOne)
     expect(pulledContentTwo).toBe(remoteBodyTwo)
 
-    const updatedState = loadConfig(undefined, tempDir)
+    const updatedState = loadConfig(tempDir)
     const syncOne = updatedState.syncs.find((entry) => entry.local_file === 'docs/one.md')
     const syncTwo = updatedState.syncs.find((entry) => entry.local_file === 'docs/two.md')
 
@@ -139,7 +139,7 @@ describe('pull command - multi-sync support', () => {
         },
       ],
     }
-    saveConfig(state, undefined, tempDir)
+    saveConfig(state, tempDir)
 
     const mockGitHubClient: Pick<GitHubClientInstance, 'getComment'> = {
       getComment: (_, __, commentId) => {
@@ -162,7 +162,7 @@ describe('pull command - multi-sync support', () => {
     await expect(pull({ cwd: tempDir })).rejects.toThrow('1 of 2 pull operation(s) failed')
 
     // Verify successful sync was updated
-    const updatedState = loadConfig(undefined, tempDir)
+    const updatedState = loadConfig(tempDir)
     const syncOne = updatedState.syncs.find((entry) => entry.local_file === 'docs/one.md')
     const syncTwo = updatedState.syncs.find((entry) => entry.local_file === 'docs/two.md')
 
@@ -187,7 +187,7 @@ describe('pull command - multi-sync support', () => {
         },
       ],
     }
-    saveConfig(state, undefined, tempDir)
+    saveConfig(state, tempDir)
 
     const remoteBody = '# Remote Content'
     const mockGitHubClient: Pick<GitHubClientInstance, 'getComment'> = {
@@ -218,7 +218,7 @@ describe('pull command - multi-sync support', () => {
         },
       ],
     }
-    saveConfig(state, undefined, tempDir)
+    saveConfig(state, tempDir)
 
     const mockGitHubClient: Pick<GitHubClientInstance, 'getComment'> = {
       getComment: () =>
@@ -239,7 +239,7 @@ describe('pull command - multi-sync support', () => {
     expect(existsSync(planPath)).toBe(false)
 
     // Verify hash and timestamp were NOT updated
-    const updatedState = loadConfig(undefined, tempDir)
+    const updatedState = loadConfig(tempDir)
     const sync = updatedState.syncs[0]
     expect(sync.last_synced_hash).toBe(remoteHash)
     expect(sync.last_synced_at).toBe('2025-01-01T00:00:00Z') // Unchanged
@@ -259,7 +259,7 @@ describe('pull command - multi-sync support', () => {
         },
       ],
     }
-    saveConfig(state, undefined, tempDir)
+    saveConfig(state, tempDir)
 
     const mockGitHubClient: Pick<GitHubClientInstance, 'getComment'> = {
       getComment: () =>
@@ -289,7 +289,7 @@ describe('pull command - multi-sync support', () => {
         },
       ],
     }
-    saveConfig(state, undefined, tempDir)
+    saveConfig(state, tempDir)
 
     const mockGitHubClient: Pick<GitHubClientInstance, 'getComment'> = {
       getComment: () =>
@@ -332,7 +332,7 @@ describe('pull command - multi-sync support', () => {
         },
       ],
     }
-    saveConfig(state, undefined, tempDir)
+    saveConfig(state, tempDir)
 
     const mockGitHubClient: Pick<GitHubClientInstance, 'getComment'> = {
       getComment: (_, __, commentId) => {
@@ -386,7 +386,7 @@ describe('pull command - multi-sync support', () => {
         },
       ],
     }
-    saveConfig(state, undefined, tempDir)
+    saveConfig(state, tempDir)
 
     const mockGitHubClient: Pick<GitHubClientInstance, 'getComment'> = {
       getComment: (_, __, commentId) => {
@@ -414,138 +414,5 @@ describe('pull command - multi-sync support', () => {
     const hasChanges = await pull({ cwd: tempDir })
 
     expect(hasChanges).toBe(false)
-  })
-
-  test('should work with --global scope option', async () => {
-    const state: IssyncState = {
-      syncs: [
-        {
-          issue_url: 'https://github.com/owner/repo/issues/1',
-          local_file: 'docs/plan.md', // relative path for testing
-          comment_id: 123,
-          last_synced_at: '2025-01-01T00:00:00Z',
-          last_synced_hash: 'old-hash',
-        },
-      ],
-    }
-
-    const loadConfigSpy = spyOn(await import('../lib/config.js'), 'loadConfig').mockReturnValue(
-      state,
-    )
-    const saveConfigSpy = spyOn(await import('../lib/config.js'), 'saveConfig').mockImplementation(
-      () => {},
-    )
-
-    const newContent = '# New Content'
-
-    const getCommentSpy = mock(() => ({
-      id: 123,
-      body: `<!-- issync:v1 -->\n${newContent}`,
-      updated_at: '2025-01-02T00:00:00Z',
-    }))
-
-    await mock.module('../lib/github.js', () => ({
-      ...githubModule,
-      createGitHubClient: () =>
-        ({
-          getComment: getCommentSpy,
-        }) as unknown as GitHubClientInstance,
-    }))
-
-    await pull({ scope: 'global', file: 'docs/plan.md' })
-
-    // Verify loadConfig was called with scope='global' and cwd=undefined
-    expect(loadConfigSpy).toHaveBeenCalledWith('global', undefined)
-    // Verify saveConfig was called with scope='global' and cwd=undefined
-    expect(saveConfigSpy).toHaveBeenCalledWith(state, 'global', undefined)
-  })
-
-  test('should work with --local scope option', async () => {
-    const state: IssyncState = {
-      syncs: [
-        {
-          issue_url: 'https://github.com/owner/repo/issues/1',
-          local_file: 'docs/plan.md',
-          comment_id: 123,
-          last_synced_at: '2025-01-01T00:00:00Z',
-          last_synced_hash: 'old-hash',
-        },
-      ],
-    }
-
-    const loadConfigSpy = spyOn(await import('../lib/config.js'), 'loadConfig').mockReturnValue(
-      state,
-    )
-    const saveConfigSpy = spyOn(await import('../lib/config.js'), 'saveConfig').mockImplementation(
-      () => {},
-    )
-
-    const newContent = '# New Content'
-
-    const getCommentSpy = mock(() => ({
-      id: 123,
-      body: `<!-- issync:v1 -->\n${newContent}`,
-      updated_at: '2025-01-02T00:00:00Z',
-    }))
-
-    await mock.module('../lib/github.js', () => ({
-      ...githubModule,
-      createGitHubClient: () =>
-        ({
-          getComment: getCommentSpy,
-        }) as unknown as GitHubClientInstance,
-    }))
-
-    await pull({ scope: 'local', file: 'docs/plan.md' })
-
-    // Verify loadConfig was called with scope='local' and cwd=undefined
-    expect(loadConfigSpy).toHaveBeenCalledWith('local', undefined)
-    // Verify saveConfig was called with scope='local' and cwd=undefined
-    expect(saveConfigSpy).toHaveBeenCalledWith(state, 'local', undefined)
-  })
-
-  test('should use process.cwd() when scope is not specified', async () => {
-    const state: IssyncState = {
-      syncs: [
-        {
-          issue_url: 'https://github.com/owner/repo/issues/1',
-          local_file: 'docs/plan.md',
-          comment_id: 123,
-          last_synced_at: '2025-01-01T00:00:00Z',
-          last_synced_hash: 'old-hash',
-        },
-      ],
-    }
-
-    const loadConfigSpy = spyOn(await import('../lib/config.js'), 'loadConfig').mockReturnValue(
-      state,
-    )
-    const saveConfigSpy = spyOn(await import('../lib/config.js'), 'saveConfig').mockImplementation(
-      () => {},
-    )
-
-    const newContent = '# New Content'
-
-    const getCommentSpy = mock(() => ({
-      id: 123,
-      body: `<!-- issync:v1 -->\n${newContent}`,
-      updated_at: '2025-01-02T00:00:00Z',
-    }))
-
-    await mock.module('../lib/github.js', () => ({
-      ...githubModule,
-      createGitHubClient: () =>
-        ({
-          getComment: getCommentSpy,
-        }) as unknown as GitHubClientInstance,
-    }))
-
-    await pull({ file: 'docs/plan.md' })
-
-    // Verify loadConfig was called with scope=undefined and cwd=undefined
-    // (will use getStatePath(cwd) with cwd defaulting to process.cwd())
-    expect(loadConfigSpy).toHaveBeenCalledWith(undefined, undefined)
-    // Verify saveConfig was called with scope=undefined and cwd=undefined
-    expect(saveConfigSpy).toHaveBeenCalledWith(state, undefined, undefined)
   })
 })

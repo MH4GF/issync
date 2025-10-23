@@ -9,7 +9,7 @@ import {
 } from '../lib/errors.js'
 import { createGitHubClient, parseIssueUrl } from '../lib/github.js'
 import { calculateHash } from '../lib/hash.js'
-import type { ConfigScope, IssyncState, IssyncSync, SelectorOptions } from '../types/index.js'
+import type { IssyncState, IssyncSync, SelectorOptions } from '../types/index.js'
 import { pull } from './pull.js'
 import { push } from './push.js'
 import {
@@ -97,20 +97,13 @@ function resolveLocalFilePath(localFile: string, cwd: string): string {
  * Returns true if safety check passed (watch can start)
  * Exported for testing
  *
- * NOTE: The scope parameter ensures consistency - all pull/push operations during
- * safety check use the same config scope as the watch command itself.
- * If scope is undefined, the auto-detection logic in resolveConfigPath() applies.
- *
  * DESIGN PRINCIPLE: The cwd parameter is for internal file path resolution ONLY.
- * When calling pull/push, we always pass cwd=undefined to rely on scope parameter
- * or global-first auto-detection. Never pass cwd to pull/push, as it breaks the
- * global-first behavior when scope is undefined.
+ * When calling pull/push, we always pass cwd=undefined to use global config.
  */
 export async function _performSafetyCheck(
   sync: IssyncSync,
   cwd = process.cwd(),
   resolvedFilePath?: string,
-  scope?: ConfigScope,
 ): Promise<void> {
   if (!sync.comment_id) {
     throw new Error(
@@ -121,15 +114,12 @@ export async function _performSafetyCheck(
 
   const lastSyncedHash = sync.last_synced_hash
   const localFilePath = resolvedFilePath ?? resolveLocalFilePath(sync.local_file, cwd)
-  // Always pass undefined to pull/push to rely on scope or global-first auto-detection
-  // This ensures consistent behavior: explicit scope takes precedence, then global config
-  const resolvedCwd = undefined
 
   if (!lastSyncedHash) {
     console.log(
       '⚠️  No sync history found. Pulling from remote to establish baseline before starting watch...',
     )
-    await pull({ cwd: resolvedCwd, file: sync.local_file, scope })
+    await pull({ file: sync.local_file })
     console.log('✓ Baseline established from remote')
     return
   }
@@ -137,7 +127,7 @@ export async function _performSafetyCheck(
   // Read local file
   if (!existsSync(localFilePath)) {
     console.log('⚠️  Local file missing. Pulling from remote to restore before starting watch...')
-    await pull({ cwd: resolvedCwd, file: sync.local_file, scope })
+    await pull({ file: sync.local_file })
     console.log('✓ Local file restored from remote')
     return
   }
@@ -162,14 +152,12 @@ export async function _performSafetyCheck(
   if (localChanged) {
     // Only local changed → Auto push
     console.log('⚠️  Local changes detected. Pushing to remote before starting watch...')
-    // NOTE: Use the same scope as watch command to maintain config consistency
-    await push({ cwd: resolvedCwd, file: sync.local_file, scope })
+    await push({ file: sync.local_file })
     console.log('✓ Local changes pushed')
   } else if (remoteChanged) {
     // Only remote changed → Auto pull
     console.log('⚠️  Remote changes detected. Pulling from remote before starting watch...')
-    // NOTE: Use the same scope as watch command to maintain config consistency
-    await pull({ cwd: resolvedCwd, file: sync.local_file, scope })
+    await pull({ file: sync.local_file })
     console.log('✓ Remote changes pulled')
   }
   // else: Neither changed → No-op, proceed to watch
@@ -187,9 +175,8 @@ async function prepareTargets(
   options: WatchOptions,
   cwd: string,
   configCwd: string | undefined,
-  scope?: ConfigScope,
 ): Promise<PreparedTarget[]> {
-  const state = loadConfig(scope, configCwd)
+  const state = loadConfig(configCwd)
   const syncs = determineSyncs(state, options, cwd)
 
   if (syncs.length === 0) {
@@ -202,7 +189,7 @@ async function prepareTargets(
   }))
 
   for (const target of targets) {
-    await _performSafetyCheck(target.sync, cwd, target.resolvedPath, scope)
+    await _performSafetyCheck(target.sync, cwd, target.resolvedPath)
   }
 
   return targets
@@ -265,15 +252,11 @@ function findUnwatchedSyncs(
  * @param cwd Current working directory
  * @returns Array of successfully prepared targets
  */
-async function prepareNewTargets(
-  newSyncs: IssyncSync[],
-  cwd: string,
-  scope?: ConfigScope,
-): Promise<PreparedTarget[]> {
+async function prepareNewTargets(newSyncs: IssyncSync[], cwd: string): Promise<PreparedTarget[]> {
   const results = await Promise.allSettled(
     newSyncs.map(async (sync) => {
       const resolvedPath = resolveLocalFilePath(sync.local_file, cwd)
-      await _performSafetyCheck(sync, cwd, resolvedPath, scope)
+      await _performSafetyCheck(sync, cwd, resolvedPath)
       return { sync, resolvedPath }
     }),
   )
@@ -303,27 +286,26 @@ async function detectAndStartNewSessions(
   configCwd: string | undefined,
   intervalMs: number,
   sessionManager: SessionManager,
-  scope?: ConfigScope,
 ): Promise<{
   successCount: number
   failures: Array<{ target: PreparedTarget; error: unknown }>
 }> {
   const trackedIssueUrls = sessionManager.getTrackedUrls()
-  const currentState = loadConfig(scope, configCwd)
+  const currentState = loadConfig(configCwd)
   const newSyncs = findUnwatchedSyncs(currentState, trackedIssueUrls)
 
   if (newSyncs.length === 0) {
     return { successCount: 0, failures: [] }
   }
 
-  const newTargets = await prepareNewTargets(newSyncs, cwd, scope)
+  const newTargets = await prepareNewTargets(newSyncs, cwd)
   if (newTargets.length === 0) {
     return { successCount: 0, failures: [] }
   }
 
   const results = await Promise.allSettled(
     newTargets.map(({ sync, resolvedPath }) =>
-      sessionManager.startSession(sync, resolvedPath, intervalMs, cwd, true, scope),
+      sessionManager.startSession(sync, resolvedPath, intervalMs, cwd, true),
     ),
   )
 
@@ -348,7 +330,6 @@ async function handleStateChange(
   configCwd: string | undefined,
   intervalMs: number,
   sessionManager: SessionManager,
-  scope?: ConfigScope,
 ): Promise<void> {
   try {
     const { successCount, failures } = await detectAndStartNewSessions(
@@ -356,7 +337,6 @@ async function handleStateChange(
       configCwd,
       intervalMs,
       sessionManager,
-      scope,
     )
 
     // Only log if there are new syncs (success or failure)
@@ -379,17 +359,13 @@ async function handleStateChange(
 
 export async function watch(options: WatchOptions = {}): Promise<void> {
   const cwd = options.cwd ?? process.cwd()
-  const scope = options.scope
   const intervalSeconds = options.interval ?? DEFAULT_POLL_INTERVAL_SECONDS
   const intervalMs = intervalSeconds * 1000
-
-  // For config operations, only pass cwd when scope is explicitly undefined
-  // This ensures global-first auto-detection when no scope is specified
-  const configCwd = scope === undefined ? options.cwd : undefined
+  const configCwd = options.cwd
 
   let targets: PreparedTarget[]
   try {
-    targets = await prepareTargets(options, cwd, configCwd, scope)
+    targets = await prepareTargets(options, cwd, configCwd)
   } catch (error) {
     handleWatchSetupError(error)
     throw error
@@ -423,7 +399,7 @@ export async function watch(options: WatchOptions = {}): Promise<void> {
   // to work with syncs that succeeded while investigating failures.
   const results = await Promise.allSettled(
     targets.map(({ sync, resolvedPath }) =>
-      sessionManager.startSession(sync, resolvedPath, intervalMs, cwd, true, scope),
+      sessionManager.startSession(sync, resolvedPath, intervalMs, cwd, true),
     ),
   )
 
@@ -459,11 +435,11 @@ export async function watch(options: WatchOptions = {}): Promise<void> {
   }
 
   // Setup state.yml monitoring for dynamic sync addition
-  const { stateFile } = resolveConfigPath(scope)
+  const { stateFile } = resolveConfigPath()
   console.log('✓ State file monitoring active\n')
 
   const stateFileWatcher = new StateFileWatcher(stateFile, async () => {
-    await handleStateChange(cwd, configCwd, intervalMs, sessionManager, scope)
+    await handleStateChange(cwd, configCwd, intervalMs, sessionManager)
   })
 
   stateFileWatcher.start()

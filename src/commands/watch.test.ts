@@ -138,9 +138,7 @@ describe('watch command (chokidar mocked)', () => {
     await waitFor(() => pushMock.mock.calls.length === 1)
     expect(pushMock).toHaveBeenCalledTimes(1)
     expect(pushMock.mock.calls[0]?.[0]).toEqual({
-      cwd: undefined,
       file: relativeFile,
-      scope: undefined,
     })
     expect(pullMock).not.toHaveBeenCalled()
   })
@@ -171,9 +169,7 @@ describe('watch command (chokidar mocked)', () => {
     await waitFor(() => pullMock.mock.calls.length >= 1, { timeout: 2000 })
     expect(pullMock.mock.calls.length).toBeGreaterThanOrEqual(1)
     expect(pullMock.mock.calls[0]?.[0]).toEqual({
-      cwd: undefined,
       file: relativeFile,
-      scope: undefined,
     })
   })
 
