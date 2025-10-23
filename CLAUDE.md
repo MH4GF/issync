@@ -67,9 +67,10 @@ This project uses **Lefthook** to automatically enforce code quality before comm
 1. **init**: Parse GitHub Issue URL → Create state.yml config → Optional initial pull
 2. **pull**: Fetch remote comment → Calculate hash → Write to local file → Update config
 3. **push**: Read local file → Verify remote hash (optimistic lock) → Update comment → Update config
-4. **watch**: Background daemon that polls remote + watches local file changes → Auto pull/push
-5. **stop**: Stop watch daemon by PID
-6. **status**: Show sync state from state.yml
+4. **list**: Display all sync configurations from state.yml in table format
+5. **watch**: Background daemon that polls remote + watches local file changes → Auto pull/push
+6. **stop**: Stop watch daemon by PID
+7. **status**: Show sync state from state.yml
 
 ### Core Components
 

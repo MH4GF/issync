@@ -84,6 +84,14 @@ program
   })
 
 program
+  .command('list')
+  .description('List all sync configurations')
+  .action(async () => {
+    const { list } = await import('./commands/list.js')
+    await _handleCommand(() => list())
+  })
+
+program
   .command('push')
   .description('Push local changes to GitHub Issue comment')
   .option('-f, --file <path>', 'Select sync target by local file path')

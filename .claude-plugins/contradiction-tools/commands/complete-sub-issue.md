@@ -75,15 +75,19 @@ Outcomes & Retrospectivesセクションは「（記載なし）」として記�
 
 ### ステップ3: 親issueの進捗ドキュメントを特定
 
-`.issync/state.yml`から親issue番号に対応する進捗ドキュメントを検索：
+`issync list` コマンドを実行して、親issue番号に対応する進捗ドキュメントを検索：
 
-**state.yml構造**:
-```yaml
-syncs:
-  - issue_url: https://github.com/owner/repo/issues/123
-    local_file: .issync/docs/task-dashboard.md
-    ...
+```bash
+issync list
 ```
+
+このコマンドは state.yml から全同期設定を読み込み、テーブル形式で表示します：
+```
+Issue URL                                      Local File                         Last Synced
+https://github.com/owner/repo/issues/123      .issync/docs/task-dashboard.md     2h ago
+```
+
+出力から親issue番号に一致する `issue_url` と `local_file` を取得してください。
 
 **エラーハンドリング**: state.yml不在、親issue未初期化時はissync initを案内
 

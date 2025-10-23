@@ -52,9 +52,16 @@ description: 新規タスクをGitHub Issueとして作成し、親issueとの�
 
 **引数モード**: 引数から複数のタスク概要を取得（使用方法セクション参照）
 
-### ステップ2: .issync/state.ymlから親issue情報を取得
+### ステップ2: 親issue情報を取得
 
-`.issync/state.yml`から取得:
+`issync list` コマンドを実行して、同期中のファイル一覧から親issue情報を取得:
+
+```bash
+issync list
+```
+
+このコマンドは state.yml から全同期設定を読み込み、人間が読みやすいテーブル形式で表示します。
+出力から以下の情報を取得:
 - `issue_url`: 親issueのURL
 - `local_file`: 進捗ドキュメントのパス
 
