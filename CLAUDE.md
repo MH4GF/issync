@@ -64,12 +64,12 @@ This project uses **Lefthook** to automatically enforce code quality before comm
 ## Architecture
 
 ### Command Flow
-1. **init**: Parse GitHub Issue URL → Create .issync.yml config → Optional initial pull
+1. **init**: Parse GitHub Issue URL → Create state.yml config → Optional initial pull
 2. **pull**: Fetch remote comment → Calculate hash → Write to local file → Update config
 3. **push**: Read local file → Verify remote hash (optimistic lock) → Update comment → Update config
 4. **watch**: Background daemon that polls remote + watches local file changes → Auto pull/push
 5. **stop**: Stop watch daemon by PID
-6. **status**: Show sync state from .issync.yml
+6. **status**: Show sync state from state.yml
 
 ### Core Components
 
@@ -81,47 +81,47 @@ This project uses **Lefthook** to automatically enforce code quality before comm
 - `addMarker()`, `removeMarker()`, `hasIssyncMarker()`: issync comment identification using HTML comment markers
 - `findIssyncComment()`: Searches for issync-managed comment by marker detection (with comment_id fallback)
 
-**`src/lib/config.ts`**: Manages `.issync.yml` configuration file.
+**`src/lib/config.ts`**: Manages `state.yml` configuration file.
 - `loadConfig()`, `saveConfig()`, `configExists()`: YAML read/write operations
 
 **`src/lib/hash.ts`**: SHA-256 hash calculation for optimistic locking.
 
-**`src/commands/watch/SessionManager.ts`**: (v0.8.2+) Manages multiple watch sessions
+**`src/commands/watch/SessionManager.ts`**: Manages multiple watch sessions
 - `startSession()`: Start new watch session with validation
 - `stopAll()`: Stop all active sessions gracefully with detailed failure tracking
 - `getTrackedUrls()`: Get currently tracked issue URLs for state monitoring
 
-**`src/commands/watch/WatchSession.ts`**: (v0.8.2+) Individual sync session management
+**`src/commands/watch/WatchSession.ts`**: Individual sync session management
 - Remote polling (setInterval) + local file watching (chokidar)
 - Grace period handling to prevent pull→push loops
 - Independent error handling per session
 
-**`src/commands/watch/StateFileWatcher.ts`**: (v0.8.2+) Monitors `.issync/state.yml` for dynamic sync addition
+**`src/commands/watch/StateFileWatcher.ts`**: Monitors `state.yml` for dynamic sync addition
 - Detects state file changes using chokidar
 - Triggers callback when new syncs are added
 - Enables watch mode to add new targets without restart
 
-**`src/commands/watch/errorReporter.ts`**: (v0.8.2+) Unified error handling utilities
+**`src/commands/watch/errorReporter.ts`**: Unified error handling utilities
 - `formatError()`: Type-safe error formatting
 - `reportPreparationFailures()`: Report sync preparation failures
 - `reportSessionStartupFailures()`: Report session startup failures
 
 **`src/types/index.ts`**: Core TypeScript interfaces:
-- `IssyncConfig`: .issync.yml structure (issue_url, comment_id, local_file, last_synced_hash, etc.)
+- `IssyncState`: state.yml structure containing array of syncs
+- `IssyncSync`: Individual sync configuration (issue_url, comment_id, local_file, last_synced_hash, etc.)
 - `GitHubIssueInfo`: Parsed Issue metadata (owner, repo, issue_number)
 - `CommentData`: GitHub comment response (id, body, updated_at)
 
 ### Configuration File (state.yml)
 
-issync supports two config file locations:
-- **Local**: `./.issync/state.yml` (project-specific, git-ignored)
-- **Global**: `~/.issync/state.yml` (shared across projects)
+issync uses a global configuration file:
+- **Location**: `~/.issync/state.yml` (shared across all projects)
 
 ```yaml
 syncs:
   - issue_url: https://github.com/owner/repo/issues/123
     comment_id: 123456789               # Set after first sync
-    local_file: .issync/docs/plan-123.md
+    local_file: /Users/user/project/.issync/docs/plan-123.md
     last_synced_hash: abc123def         # Remote content hash for optimistic locking
     last_synced_at: 2025-10-12T10:30:00Z
     poll_interval: 10                   # Seconds between remote polls (optional)
@@ -129,12 +129,10 @@ syncs:
     watch_daemon_pid: 12345             # PID of watch process (if running, optional)
   - issue_url: https://github.com/owner/repo/issues/456
     comment_id: 987654321
-    local_file: .issync/docs/design-456.md
+    local_file: /Users/user/project/.issync/docs/design-456.md
     last_synced_hash: def456abc
     last_synced_at: 2025-10-13T11:00:00Z
 ```
-
-- Commands accept `--global` or `--local` flags to override
 
 ### issync Comment Identification
 
@@ -163,56 +161,11 @@ This approach enables multiple sessions to discover the same remote comment with
 
 ## Testing Strategy
 
-**Framework**: Bun Test (built-in, zero dependencies)
-- Jest-compatible API (`describe`, `test`, `expect`)
-- TypeScript native (no transpilation)
-- Fast execution (~150ms for 8 tests)
+**Framework**: Bun Test (Jest-compatible, TypeScript native, ~150ms execution)
 
-**TDD Workflow**: Write tests first, then implement features.
+**Workflow**: TDD - write tests first, co-locate with source files (`hash.ts` → `hash.test.ts`)
 
-**Test Placement**: Co-locate tests with source files (e.g., `hash.ts` → `hash.test.ts`)
-
-### Testing Principles (Vladimir Khorikov)
-
-Follow the **four pillars of a good test**:
-
-1. **Protection against regressions**: Tests should catch bugs when code changes
-2. **Resistance to refactoring**: Tests should not fail when refactoring (testing behavior, not implementation)
-3. **Fast feedback**: Tests should run quickly
-4. **Maintainability**: Tests should be easy to read and maintain
-
-**Key Guidelines:**
-
-- **Prefer integration tests over unit tests with mocks**: Test real behavior with real dependencies when possible
-  - ✅ Test `GitHubClient` with real Octokit (or use recorded fixtures)
-  - ✅ Test `config.ts` with real file system operations
-  - ❌ Avoid excessive mocking that couples tests to implementation
-
-- **Mock only external dependencies**: Mock network calls, file system in CI, or slow operations
-  - GitHub API calls → Mock in some tests, use test fixtures
-  - File system → Use temp directories, mock only when necessary
-  - Time/Date → Mock when testing time-based logic
-
-- **AAA Pattern**: Structure tests as Arrange, Act, Assert
-  ```typescript
-  test('should parse GitHub Issue URL', () => {
-    // Arrange
-    const client = new GitHubClient()
-    const url = 'https://github.com/owner/repo/issues/123'
-
-    // Act
-    const result = client.parseIssueUrl(url)
-
-    // Assert
-    expect(result).toEqual({ owner: 'owner', repo: 'repo', issue_number: 123 })
-  })
-  ```
-
-- **Test behavior, not implementation**: Focus on inputs and outputs, not internal state
-  - ✅ Test that `push` updates remote comment with correct content
-  - ❌ Don't test that `push` calls `calculateHash()` internally
-
-- **One assertion per test** (when practical): Each test should verify one behavior
+**Principles**: Follow Vladimir Khorikov's four pillars - protection against regressions, resistance to refactoring, fast feedback, maintainability. Prefer integration tests over mocked unit tests. Test behavior (inputs/outputs), not implementation details. Use AAA pattern (Arrange, Act, Assert).
 
 ## Authentication
 
@@ -225,46 +178,17 @@ GitHub API access requires a token:
 
 **CRITICAL: Always start watch mode BEFORE editing any synced files**
 
-The MVP version of `pull` performs unconditional overwrites. If you start editing a file before launching watch mode, and the remote is out of date, you WILL lose local changes when watch mode starts and pulls the old remote version.
+The MVP's `pull` performs unconditional overwrites. Editing files before starting watch mode can result in data loss when remote is out of date.
 
-### Required Workflow (Session Start)
+### Required Workflow
 
 ```bash
-# 1. Set GitHub token using gh CLI
-export GITHUB_TOKEN=$(gh auth token)
-
-# 2. FIRST: Start watch mode (do this BEFORE any edits)
-bun run dev watch
-
-# 3. THEN: Begin editing files
-# Claude Code or other AI agents can now safely read/edit the file
+export GITHUB_TOKEN=$(gh auth token)  # Get token from gh CLI
+bun run dev watch                     # Start watch FIRST
+# Now safe to edit files
 ```
 
-**Note**: We use `gh auth token` to automatically get your GitHub token from the GitHub CLI. Make sure you're logged in with `gh auth login` first.
-
-### Important Notes
-
-- **Never edit before watch starts**: If you edit a file and then start watch, your changes may be overwritten by an outdated remote version
-- **Keep watch running**: Leave watch mode running in a separate terminal throughout your session
-- **Stop with Ctrl+C**: When done, stop watch mode with Ctrl+C
-
-### Why This Matters
-
-The MVP's pull operation is a simple overwrite (no merge logic). This means:
-- If remote is behind local → Starting watch will overwrite local with old content
-- **Data loss can occur** if the workflow is not followed
-- Phase 2 will implement section-based merging to reduce this risk
-
-### Real-World Example (Actual Data Loss)
-
-In our own development, we lost 45 lines of progress because:
-1. We edited docs/plan.md locally without watch running
-2. Remote Issue comment was still at an old version
-3. We started watch mode
-4. Pull immediately overwrote local with the old remote version
-5. Had to restore from git checkout
-
-**Lesson**: Always start watch FIRST, edit SECOND.
+**Rules**: Never edit before watch starts. Keep watch running throughout session. Stop with Ctrl+C when done.
 
 ## Key Implementation Notes
 
@@ -278,57 +202,15 @@ In our own development, we lost 45 lines of progress because:
 
 ### Watch Mode Implementation
 - **Remote polling**: setInterval to fetch comment every `poll_interval` seconds
-- **Local file watching**: Use `chokidar` to detect file changes
-- **Dynamic file addition**: Monitors `.issync/state.yml` for changes and automatically adds new sync entries to watch targets without requiring restart
-  - New syncs are validated with safety checks before being added
-  - Maintains partial failure tolerance using Promise.allSettled
-  - Requires new syncs to have `comment_id` (must run `push` after `init`)
-- **Daemon process**: Fork/spawn background process, store PID in config
-- **Rate limiting**: GitHub API has 5000 req/hour limit (360 req/hour at 10s intervals per watch process)
-
-### Phase 1 (MVP) Scope
-Focus on basic sync commands (init, pull, push) and simple watch mode. Skip advanced features:
-- ❌ Section-based markdown merging (Phase 2)
-- ❌ Conflict resolution UI (Phase 2)
-- ❌ Advanced error handling/retry logic (Phase 3)
-
-## Current Development Status
-
-**Completed:**
-- Project setup (Bun + TypeScript)
-- CLI framework skeleton (all commands stubbed)
-- GitHub API client (URL parsing, CRUD operations)
-- Config management (.issync.yml)
-- Hash utilities
-- Test infrastructure (Bun Test)
-- **Phase 1 (MVP):**
-  - `init` command with template support and existing comment detection
-  - `pull` command with hash-based sync
-  - `push` command with optimistic locking
-  - `watch` mode with bidirectional sync and safety checks
-  - Multi-sync support (multiple files per project)
-  - Dynamic file addition to watch mode (automatically detects new syncs)
-- **issync Comment Identification (2025-10-14):**
-  - HTML comment markers for automatic comment discovery
-  - Error handling for network failures
-  - Progress indicators for long-running operations
-  - Auto-repair for deleted markers
-- **Code Quality Improvements (v0.8.2, 2025-10-17):**
-  - Watch mode modularization (SessionManager, WatchSession, StateFileWatcher, errorReporter)
-  - Enhanced error handling with type-safe formatting
-  - Comprehensive test coverage (130 tests passing)
-
-**Next Steps:**
-- Phase 2: Section-based markdown merging
-- Phase 2: Daemon mode for watch
-- Phase 2: Conflict resolution UI
+- **Local file watching**: chokidar detects file changes
+- **Dynamic file addition**: Monitors `state.yml` for new syncs, validates with safety checks, maintains partial failure tolerance (Promise.allSettled). New syncs require `comment_id` (run `push` after `init`)
+- **Rate limiting**: GitHub API limit 5000 req/hour (360 req/hour at 10s intervals)
 
 ## Important Files
 
 - `docs/plan-*.md`: Progress documents - living development plans (progress, decisions, architecture)
 - `src/types/index.ts`: Core data structures
-- `.issync/state.yml`: Local configuration (project-specific, git-ignored by default)
-- `~/.issync/state.yml`: Global configuration (optional, shared across projects)
+- `~/.issync/state.yml`: Global configuration (shared across all projects)
 
 ## Glossary
 
@@ -341,9 +223,6 @@ issyncで管理されるドキュメントの総称。GitHub Issueコメント�
 - テンプレート: `docs/progress-document-template.md`から生成
 - 用途: 開発進捗の記録、アーキテクチャ決定、タスク管理、振り返り
 - 同期先: GitHub Issueコメント（HTML comment markersで識別）
-
-**別名・旧称:**
-- 以前は「plan.md」と呼ばれていたが、特定のファイル名と混同されるため「進捗ドキュメント」に統一（2025-10-21）
 
 **関連用語:**
 - Living documentation: 継続的に更新される文書
