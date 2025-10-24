@@ -82,6 +82,7 @@ retrospective
 
 **横断的オペレーション（どのフェーズでも使用可能）:**
 
+- `/contradiction-tools:understand-progress`: セッション開始時に進捗ドキュメントを選択・読み込み
 - `/contradiction-tools:create-sub-issue`: タスクをサブ issue 化
 - `/contradiction-tools:complete-sub-issue`: サブ issue 完了を親 issue に反映
 - `/contradiction-tools:compact-plan`: 進捗ドキュメント圧縮（500 行以上で推奨）
@@ -207,6 +208,46 @@ POC 完了後、POC で得た知見を分析し、人間の意思決定のため
    - 削減された行数と削減率
    - 適用された圧縮処理の詳細
    - 検出された矛盾（ある場合）
+
+---
+
+### `/contradiction-tools:understand-progress` - 進捗ドキュメント読み込み
+
+**何ができる:**
+セッション開始時に、state.yml から同期中の進捗ドキュメントを選択して読み込みます。複数の進捗ドキュメントがある場合は選択肢を提示し、1つの場合は自動選択します。読み込み後、Issue URL、最終同期時刻、重要なセクション情報を表示します。
+
+**いつ使う:**
+
+- セッション開始時（進捗ドキュメントのコンテキストを把握したい時）
+- 複数のタスクを同時進行している時（どの進捗ドキュメントで作業するか選択したい時）
+- 進捗ドキュメントの現在の状態を確認したい時
+
+**使い方:**
+
+1. コマンドを実行:
+
+   ```bash
+   /contradiction-tools:understand-progress                    # state.ymlから選択
+   /contradiction-tools:understand-progress <file_path>        # 明示的パス指定
+   ```
+
+2. plugin が以下を自動実行:
+
+   - **引数なしの場合**: `issync list` で同期中のファイル一覧を取得
+   - **複数ファイル**: 選択肢を提示（番号入力）
+   - **1つのみ**: 確認後に自動選択
+   - **引数ありの場合**: 指定パスを直接読み込み
+
+3. Read ツールでファイルを読み込み、以下の情報を表示:
+   - Issue URL と最終同期時刻
+   - Purpose/Overview の要約
+   - Open Questions の件数
+   - 推測される Status（plan/poc/architecture-decision/implement 等）
+
+4. 完了後にやること:
+   - 進捗ドキュメントの内容を確認
+   - Open Questions を確認し、必要に応じて解消
+   - 次のステップ（POC/実装等）を開始
 
 ---
 
@@ -401,6 +442,7 @@ contradiction-tools/
 │   ├── plan.md                     # plan実行コマンド
 │   ├── review-poc.md               # POCレビューコマンド
 │   ├── compact-plan.md             # 進捗ドキュメント圧縮コマンド
+│   ├── understand-progress.md      # 進捗ドキュメント読み込みコマンド
 │   ├── create-sub-issue.md         # タスクのサブissue化コマンド
 │   └── complete-sub-issue.md       # サブissue完了コマンド
 └── README.md                       # このファイル
@@ -414,6 +456,7 @@ contradiction-tools/
    - `/contradiction-tools:plan`: `commands/plan.md`
    - `/contradiction-tools:review-poc`: `commands/review-poc.md`
    - `/contradiction-tools:compact-plan`: `commands/compact-plan.md`
+   - `/contradiction-tools:understand-progress`: `commands/understand-progress.md`
    - `/contradiction-tools:create-sub-issue`: `commands/create-sub-issue.md`
    - `/contradiction-tools:complete-sub-issue`: `commands/complete-sub-issue.md`
 2. メタデータを変更する場合は `plugin.json` を更新
