@@ -43,16 +43,23 @@ description: サブissue完了時に親issueの進捗ドキュメントを自動
 
 ## 実行ステップ
 
-### ステップ1: サブissue情報をフェッチ
+### ステップ1: サブissue情報をフェッチと親issue番号の取得
 
+**親issue番号の取得**:
+
+GitHub Sub-issues APIが利用可能です:
 ```bash
-gh issue view <issue_url> --json body,state,title
+gh api /repos/{owner}/{repo}/issues/{issue_number}/parent
 ```
 
-- 親issue番号を抽出（正規表現: `Part of #(\d+)`）
+このエンドポイントから親issueの `number`, `title`, `url`, `state` などが取得できます。
+
+APIで取得できない場合（Sub-issuesとして紐づけられていない場合など）は、issueのbodyや関連情報から親issue番号を柔軟に探してください。
+
+**その他の確認事項**:
 - issue状態を確認（open/closed）
-- 無効なURL、親issue番号不在時はエラー表示
 - **ユーザーに関連PR URLを確認**（ステップ3で使用）
+- 無効なURL、親issue番号不在時はエラー表示
 
 ### ステップ2: サブissueの進捗ドキュメントを読み込み
 
