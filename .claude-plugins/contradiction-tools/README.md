@@ -1,91 +1,327 @@
 # contradiction-tools Plugin
 
-矛盾解消駆動開発のためのツール群を提供するClaude Code pluginです。
+GitHub Issue を単一の真実の情報源として、進捗ドキュメントをローカルファイルと双方向同期しながら、AI 駆動開発のワークフロー（plan → POC → architecture-decision → implement）を自動化する Claude Code plugin。issync と連携し、矛盾解消駆動開発における進捗ドキュメントの作成・更新・レビュー・圧縮を効率化します。
 
-## 概要
+## Quick Start
 
-このpluginは6つのスラッシュコマンドを提供し、進捗ドキュメントの管理を効率化します：
+### 前提条件
 
-### `/plan`: plan実行ワークフロー
+1. **issync CLI**のインストール（進捗ドキュメントの同期に使用）:
 
-planフェーズの進捗ドキュメント初期作成をガイドします。以下の6ステップを自動化します：
-
-1. GitHub Issue内容の確認
-2. コードベース調査（CRITICAL）
-3. 進捗ドキュメント基本セクションの記入
-4. Open Questionsの精査
-5. Tasksの初期化
-6. issync pushで同期
-
-**重要**: コードベース調査を先に実施することで、Open Questionsを真に不明な点（アーキテクチャ選択・仕様の曖昧性）のみに絞ります。
-
-### `/architecture-decision`: アーキテクチャ決定ワークフロー
-
-POC完了後、POCで得た知見を基にアーキテクチャ・設計方針を決定します。以下の8ステップを自動化します：
-
-1. 現在のStatusを検証（architecture-decisionであることを確認）
-2. POC PR情報を取得（description, commits, diff, comments）
-3. Discoveries & Insightsを参照
-4. Decision Logを記入（技術選定、アーキテクチャ決定、トレードオフ）
-5. Specification / 仕様セクションを記入（システム仕様、アーキテクチャ、設計方針）
-6. Acceptance Criteriaの妥当性検証（POCの結果を踏まえて調整）
-7. POC PRをクローズ
-8. issync pushで同期
-
-**重要**: POCの実装結果を具体的に記録し、アーキテクチャ決定の根拠を明確にします。
-
-### `/compact-plan`: 進捗ドキュメント圧縮ツール
-
-進捗ドキュメントが大きくなりすぎた際に、情報量を保持したまま文量を削減します。以下の処理を自動化します：
-
-1. 重複情報の削減
-2. 解決済みOpen Questionsの整理
-3. 完了済みPhaseの簡潔化
-4. 矛盾検出と報告
-
-### `/create-sub-issue`: タスクのサブissue化ワークフロー
-
-新規タスクをGitHub Issueとして作成し、親issueとのリンクを自動管理します。以下のプロセスを自動化します：
-
-1. タスクの概要入力（インタラクティブモード: 1つ / 引数モード: 複数可）
-2. .issync/state.ymlから親issue情報を取得
-3. LLMが親issueのコンテキストを理解し、適切なタイトルと本文を生成
-4. ユーザー確認後にGitHub Issueを作成
-5. Sub-issues APIで親issueと紐づけ
-6. 完了後、`/plan`実行を推奨
-
-**設計原則**: デフォルトで1つのサブissueを作成（階層的分解）。複数の独立したタスクが明確な場合は引数モードで一括作成。詳細は `create-sub-issue.md` を参照。
-
-### `/complete-sub-issue`: サブissue完了ワークフロー
-
-サブissue完了時に親issueの進捗ドキュメントを自動更新し、完了サマリーとFollow-up事項を親issueに反映します。以下のプロセスを自動化します：
-
-1. サブissue情報のフェッチと親issue番号の抽出
-2. サブissueの進捗ドキュメントから完了情報を抽出（Outcomes & Retrospectives、Follow-up Issues）
-3. 親issueの進捗ドキュメントを更新
-   - Tasksセクション: 該当タスクを完了マーク
-   - Outcomes & Retrospectives: サブタスク完了サマリー追加
-   - Follow-up Issuesの振り分け（Tasks、Open Questions、Follow-up Issuesに適切に配置）
-4. サブissueのclose
-5. 完了通知（watchモードで自動同期）
-
-**Follow-up Issues振り分けロジック**:
-- 「実装タスク」→ 親issueの**Tasksセクション**に`(未Issue化)`として追加
-- 「未解決の質問・改善課題」→ 親issueの**Open Questionsセクション**に追加
-- 「別issueとして扱うべき申し送り事項」→ 親issueの**Follow-up Issuesセクション**に追加
-
-## インストール
-
-### issyncリポジトリをcloneした場合
-
-1. マーケットプレイスを追加:
    ```bash
-   # Claude Codeで実行:
+   npm install -g @mh4gf/issync
+   ```
+
+2. **GitHub CLI (`gh`)**のインストール（GitHub 操作に使用）:
+
+   - インストール方法: https://cli.github.com/
+
+3. **GITHUB_TOKEN 環境変数**の設定:
+
+   ```bash
+   export GITHUB_TOKEN=$(gh auth token)
+   ```
+
+4. **issync watch**の起動（推奨）:
+   ```bash
+   issync watch
+   ```
+
+### インストール
+
+**Claude Code 上で**以下のコマンドを実行します：
+
+1. マーケットプレイスを追加（GitHub から直接）:
+
+   ```
+   /plugin marketplace add MH4GF/issync
+   ```
+
+2. plugin をインストール:
+
+   ```
+   /plugin install contradiction-tools@issync-plugins
+   ```
+
+3. インストール確認:
+
+   ```
+   /plugin list
+   ```
+
+   `contradiction-tools` が表示されていれば成功です。
+
+### 最初のコマンド
+
+```bash
+# 新規タスクの進捗ドキュメント作成
+/contradiction-tools:plan https://github.com/owner/repo/issues/123
+
+# 完了後、進捗ドキュメントをレビューしてStatusを変更
+```
+
+## Workflow Overview
+
+この plugin は、矛盾解消駆動開発のワークフローをサポートする 6 つのコマンドを提供します：
+
+**メインフロー:**
+
+```
+/contradiction-tools:plan (plan)
+    ↓
+POC実装
+    ↓
+/contradiction-tools:review-poc (architecture-decision)
+    ↓
+人間のレビュー・承認
+    ↓
+implement
+    ↓
+retrospective
+```
+
+**横断的オペレーション（どのフェーズでも使用可能）:**
+
+- `/contradiction-tools:create-sub-issue`: タスクをサブ issue 化
+- `/contradiction-tools:complete-sub-issue`: サブ issue 完了を親 issue に反映
+- `/contradiction-tools:compact-plan`: 進捗ドキュメント圧縮（500 行以上で推奨）
+
+## Commands
+
+### `/contradiction-tools:plan` - 進捗ドキュメント初期作成
+
+**何ができる:**
+GitHub Issue からコードベース調査を含む全てのコンテキストを自動収集し、精度の高い進捗ドキュメントを生成します。`issync init`の実行から、コードベース調査、基本セクションの記入、Open Questions の精査、GitHub Projects Status の自動変更（plan → poc）まで、全てを一括実行します。
+
+**ユーザーがやること:**
+issue 上に同期された進捗ドキュメントの Open Questions を見て判断するだけ。コードベース調査や進捗ドキュメント作成は全て自動化されます。
+
+**いつ使う:**
+
+- GitHub Issue 作成後すぐ
+
+**使い方:**
+
+1. 前提条件を確認:
+
+   - GitHub Issue が作成されている
+   - `issync watch` が起動している（推奨）
+
+2. コマンドを実行:
+
+   ```bash
+   /contradiction-tools:plan https://github.com/owner/repo/issues/123
+   ```
+
+3. plugin が以下を自動実行:
+
+   - **ステップ 1**: ファイル名決定 & `issync init` 実行
+   - **ステップ 2**: GitHub Issue 内容の確認
+   - **ステップ 3**: コードベース調査（類似機能、技術スタック、テストコード、関連ファイル、ドキュメント）
+   - **ステップ 4**: 進捗ドキュメント基本セクション記入（Purpose/Overview、Context & Direction、Acceptance Criteria）
+   - **ステップ 5**: Open Questions 精査（コードで確認可能な情報を除外し、5-10 項目に絞り込み）
+   - **ステップ 6**: issync push で同期
+   - **ステップ 7**: GitHub Projects Status を自動変更（plan → poc）
+
+4. 完了後にやること:
+   - Open Questions を確認し、判断が必要な項目について決定
+   - POC 実装を開始
+
+---
+
+### `/contradiction-tools:review-poc` - POC レビュー
+
+**何ができる:**
+POC 完了後、POC で得た知見を分析し、人間の意思決定のための材料を整理します。POC PR 情報取得、Acceptance Criteria 検証、Discoveries & Insights 追記、Open Questions 強化、Decision Log 推奨案記入、POC PR クローズ、issync push による同期を一括実行します。
+
+**いつ使う:**
+
+- POC 完了後（技術検証が完了し、実装の知見が得られた時）
+- アーキテクチャ決定前（人間が意思決定するための材料が必要な時）
+- 本実装前（implement に進む前に、POC の結果を整理する時）
+
+**使い方:**
+
+1. 前提条件を確認:
+
+   - 現在の GitHub Issue Status が `architecture-decision` である
+   - POC 実装が完了し、PR が作成されている
+   - `GITHUB_TOKEN` 環境変数が設定されている（`export GITHUB_TOKEN=$(gh auth token)`）
+
+2. コマンドを実行:
+
+   ```bash
+   /contradiction-tools:review-poc https://github.com/owner/repo/pull/123
+   ```
+
+3. plugin が以下を自動実行:
+
+   - **ステップ 1**: POC PR 情報取得（description, commits, diff, comments）
+   - **ステップ 2**: Discoveries & Insights 参照
+   - **ステップ 3**: Acceptance Criteria 検証（達成/未達成を明確化、未達成の理由分析）
+   - **ステップ 4**: Discoveries & Insights 追記（POC で発見した技術的事実）
+   - **ステップ 5**: Open Questions 追加（未達成項目の論点化、選択肢の明確化）
+   - **ステップ 6**: Decision Log 推奨案記入（人間の最終決定を前提とした推奨案）
+   - **ステップ 7**: Specification / 仕様記入（POC で確認された部分のみ、オプショナル）
+   - **ステップ 8**: POC PR クローズ
+   - **ステップ 9**: issync push で同期
+
+4. 完了後、**人間が進捗ドキュメントをレビュー**:
+   - POC 検証結果の確認
+   - Open Questions の検討・意思決定
+   - Decision Log 推奨案の承認/修正/却下
+   - 承認後、手動で Status を `implement` に変更
+
+---
+
+### `/contradiction-tools:compact-plan` - 進捗ドキュメント圧縮
+
+**何ができる:**
+進捗ドキュメントが大きくなりすぎた際に、情報量を保持したまま文量を削減します。重複情報の削減、解決済み Open Questions の整理、完了済み Phase の簡潔化、矛盾検出と報告を一括実行します。
+
+**いつ使う:**
+
+- 進捗ドキュメントが 500 行以上に膨らんだ時（読みづらくなる前に定期的に圧縮）
+- Phase が完了した時（完了フェーズの詳細を簡潔化）
+- Open Questions が大量に解決された時（解決済み質問を整理）
+- retrospective 前（振り返りを書く前にドキュメントを整理）
+- 矛盾の疑いがある時（矛盾検出機能で一貫性をチェック）
+
+**使い方:**
+
+1. コマンドを実行（ファイルパスを指定）:
+
+   ```bash
+   /contradiction-tools:compact-plan .issync/docs/plan-123-example.md
+   ```
+
+2. plugin が以下を自動実行:
+
+   - 進捗ドキュメントの分析（総行数、セクション別行数、重複、矛盾）
+   - progress-document-template.md との比較
+   - 圧縮処理の適用
+   - 矛盾検出とレポート
+   - watch モードが起動している場合は自動的に GitHub Issue に同期
+
+3. 圧縮結果レポートを確認:
+   - 削減された行数と削減率
+   - 適用された圧縮処理の詳細
+   - 検出された矛盾（ある場合）
+
+---
+
+### `/contradiction-tools:create-sub-issue` - タスクのサブ issue 化
+
+**何ができる:**
+新規タスクを GitHub Issue として作成し、親 issue とのリンクを自動管理します。タスク概要入力、親 issue 情報取得、LLM によるタイトル・本文生成、GitHub Issue 作成、Sub-issues API による紐づけを一括実行します。
+
+**いつ使う:**
+
+- plan: 初期タスクを整理し、サブ issue を作成する時
+- architecture-decision: アーキテクチャ決定後、実装タスクをサブ issue 化したい時
+- implement: 実装中に新たなタスクが判明した時
+
+**使い方:**
+
+1. コマンドを実行:
+
+   ```bash
+   /contradiction-tools:create-sub-issue                          # インタラクティブモード（1つのタスク概要を入力）
+   /contradiction-tools:create-sub-issue "自動アクション設計" "CI/CD統合"  # 引数モード（複数可）
+   ```
+
+2. **インタラクティブモード**の場合:
+
+   - プロンプト: 「1 つのサブ issue を作成します。タスク概要を入力してください」
+   - タスク概要を 1 つ入力（例: "Status 変更時の自動アクション設計"）
+   - LLM が親 issue のコンテキストから適切なタイトルと本文を生成
+   - ユーザー確認後、GitHub Issue を作成
+   - Sub-issues API で親 issue と紐づけ
+
+3. **引数モード**の場合:
+
+   - 引数で指定された複数のタスク概要から一括作成
+   - 各タスクに対して LLM がタイトルと本文を生成
+   - Sub-issues 順序設定で作成順序を維持
+
+4. 作成されたサブ issue を確認:
+   - 各サブ issue の Status を適切に設定（plan 等）
+   - 必要に応じて各サブ issue で `/contradiction-tools:plan` コマンドを実行
+
+**設計原則:**
+
+- **インタラクティブモード**: デフォルトで 1 つのサブ issue を作成（階層的分解）
+- **引数モード**: 複数の独立したタスクが明確な場合に一括作成
+- **推奨ワークフロー**: まず 1 つ作成 → `/contradiction-tools:plan`で詳細化 → 必要に応じて孫 issue を作成
+
+---
+
+### `/contradiction-tools:complete-sub-issue` - サブ issue 完了
+
+**何ができる:**
+サブ issue 完了時に親 issue の進捗ドキュメントを自動更新し、完了サマリーと Follow-up 事項を親 issue に反映します。サブ issue 情報のフェッチ、完了情報の抽出、親 issue 更新、サブ issue クローズ、完了通知を一括実行します。
+
+**いつ使う:**
+
+- retrospective: サブ issue の振り返り記入後、親 issue に完了情報を反映する時
+- サブ issue の close 時: 完了サマリーと Follow-up 事項を親 issue に自動転記したい時
+
+**使い方:**
+
+1. 前提条件を確認:
+
+   - サブ issue の進捗ドキュメントに Outcomes & Retrospectives と Follow-up Issues が記入されている
+   - 親 issue の進捗ドキュメントがローカルに存在
+   - `issync watch`が実行中（推奨）
+
+2. コマンドを実行:
+
+   ```bash
+   /contradiction-tools:complete-sub-issue https://github.com/owner/repo/issues/124
+   ```
+
+3. plugin が以下を自動実行:
+   - サブ issue 情報のフェッチと親 issue 番号の抽出
+   - サブ issue の進捗ドキュメントから完了情報を抽出（Outcomes & Retrospectives、Follow-up Issues）
+   - 親 issue の進捗ドキュメントを更新
+     - Tasks セクション: 該当タスクを完了マーク
+     - Outcomes & Retrospectives: サブタスク完了サマリー追加
+     - Follow-up Issues の振り分け（Tasks、Open Questions、Follow-up Issues に適切に配置）
+   - サブ issue の close
+   - 完了通知（watch モードで自動同期）
+
+**Follow-up Issues 振り分けロジック:**
+
+- 「実装タスク」→ 親 issue の**Tasks セクション**に`(未Issue化)`として追加
+- 「未解決の質問・改善課題」→ 親 issue の**Open Questions セクション**に追加
+- 「別 issue として扱うべき申し送り事項」→ 親 issue の**Follow-up Issues セクション**に追加
+
+**運用フロー:**
+
+1. サブ issue で開発完了（plan → retrospective）
+2. サブ issue の進捗ドキュメントに Outcomes & Retrospectives と Follow-up Issues を記入
+3. `/complete-sub-issue <サブissue URL>`を実行
+4. 親 issue の Tasks セクションが自動で完了マーク
+5. 親 issue の Outcomes & Retrospectives にサブタスク完了サマリーが自動追加
+6. サブ issue の Follow-up Issues が親 issue の適切なセクションに自動振り分け
+7. サブ issue が自動で close
+
+## Appendix
+
+### 詳細なインストール方法
+
+#### issync リポジトリを clone した場合（開発者向け）
+
+1. ローカルパスでマーケットプレイスを追加:
+
+   ```bash
+   # Claude Codeで実行（絶対パスを使用）:
    /plugin marketplace add <リポジトリのパス>/.claude-plugins
    # 例: /plugin marketplace add /Users/mh4gf/ghq/github.com/MH4GF/issync/.claude-plugins
    ```
 
-2. pluginをインストール:
+2. plugin をインストール:
+
    ```bash
    /plugin install contradiction-tools@issync-plugins
    ```
@@ -95,51 +331,9 @@ POC完了後、POCで得た知見を基にアーキテクチャ・設計方針�
    /plugin list
    ```
 
-### 他のプロジェクトで使用する場合
+#### Plugin 更新方法
 
-このpluginは他のプロジェクトでも利用できます。GitHubから直接インストールできるため、リポジトリのcloneは不要です。
-
-#### 1. マーケットプレイスを追加
-
-Claude Codeで以下のコマンドを実行し、GitHubから直接マーケットプレイスを追加します：
-
-```bash
-/plugin marketplace add MH4GF/issync
-```
-
-#### 2. pluginをインストール
-
-マーケットプレイスを追加したら、pluginをインストールします：
-
-```bash
-/plugin install contradiction-tools@issync-plugins
-```
-
-#### 3. インストール確認
-
-正しくインストールされたか確認します：
-
-```bash
-/plugin list
-```
-
-`contradiction-tools` が表示されていれば成功です。
-
-#### 4. 使い方
-
-インストール後は、どのプロジェクトでも以下のコマンドが使えます：
-
-```bash
-/plan                   # plan実行ワークフロー
-/architecture-decision  # アーキテクチャ決定ワークフロー
-/compact-plan           # 進捗ドキュメント圧縮ツール
-/create-sub-issue       # タスクのサブissue化ワークフロー
-/complete-sub-issue     # サブissue完了ワークフロー
-```
-
-#### 更新方法
-
-pluginが更新された場合、以下の手順で最新版に更新できます：
+plugin が更新された場合、以下の手順で最新版に更新できます：
 
 ```bash
 # 1. マーケットプレイスを更新（GitHubから最新情報を取得）
@@ -149,11 +343,9 @@ pluginが更新された場合、以下の手順で最新版に更新できま�
 /plugin install contradiction-tools@issync-plugins
 ```
 
-マーケットプレイスの更新により、GitHubリポジトリの最新のplugin情報が取り込まれます。
+### トラブルシューティング
 
-#### トラブルシューティング
-
-**Q: pluginが見つからないと言われる**
+**Q: plugin が見つからないと言われる**
 
 A: マーケットプレイス名を確認してください。正しい形式は `contradiction-tools@issync-plugins` です（`@issync-plugins` はマーケットプレイス名）。
 
@@ -172,9 +364,9 @@ A: 以下を試してください：
 /plugin install contradiction-tools@issync-plugins
 ```
 
-**Q: ローカル開発版を使いたい（plugin開発者向け）**
+**Q: ローカル開発版を使いたい（plugin 開発者向け）**
 
-A: issyncリポジトリをcloneし、ローカルパスからマーケットプレイスを追加してください：
+A: issync リポジトリを clone し、ローカルパスからマーケットプレイスを追加してください：
 
 ```bash
 # issyncリポジトリをclone
@@ -199,254 +391,35 @@ git clone https://github.com/MH4GF/issync.git
 /plugin install contradiction-tools@issync-plugins
 ```
 
-## 使い方
-
-### `/plan`: plan実行
-
-#### 基本的なワークフロー
-
-1. 前提条件を確認:
-   - GitHub Issueが作成されている
-   - `issync init --template` が完了し、進捗ドキュメントが存在する
-   - issync watch modeが起動している（推奨）
-
-2. コマンドを実行:
-   ```
-   /plan
-   ```
-
-3. pluginが以下を自動実行:
-   - **ステップ1**: GitHub Issue内容を確認
-   - **ステップ2**: コードベース調査（類似機能、技術スタック、テストコード、関連ファイル、ドキュメント）
-   - **ステップ3**: 進捗ドキュメント基本セクション記入（Purpose/Overview、Context & Direction、Acceptance Criteria、Work Plan Phase 1）
-   - **ステップ4**: Open Questions精査（5-10項目に絞り込み）
-   - **ステップ5**: Tasks初期化
-   - **ステップ6**: issync pushで同期
-
-4. 完了後、進捗ドキュメントの内容をレビューしてから Statusを `poc` に変更
-
-#### 実行例
-
-新規タスクの進捗ドキュメント作成時：
-- GitHub Issueの要求を理解
-- コードベースを調査（既存の類似機能を発見、使用技術スタックを確認）
-- Purpose/Overview、Context & Direction、Acceptance Criteriaを記入
-- Open Questionsをコードで確認できないもののみ3項目に絞り込み
-- Work Plan Phase 1とTasksを初期化
-- watchモードが起動している場合は自動的にGitHub Issueに同期
-
-### `/architecture-decision`: アーキテクチャ決定
-
-#### 基本的なワークフロー
-
-1. 前提条件を確認:
-   - 現在のGitHub Issue Statusが `architecture-decision` である
-   - POC実装が完了し、PRが作成されている
-   - `GITHUB_TOKEN` 環境変数が設定されている（`export GITHUB_TOKEN=$(gh auth token)`）
-
-2. コマンドを実行:
-   ```
-   /architecture-decision https://github.com/owner/repo/pull/123
-   ```
-
-3. pluginが以下を自動実行:
-   - **ステップ1**: Status検証（architecture-decisionであることを確認）
-   - **ステップ2**: POC PR情報取得（description, commits, diff, comments）
-   - **ステップ3**: Discoveries & Insights参照
-   - **ステップ4**: Decision Log記入（技術選定、アーキテクチャ決定、トレードオフ）
-   - **ステップ5**: Specification / 仕様記入（システム仕様、アーキテクチャ、設計方針）
-   - **ステップ6**: Acceptance Criteria検証（実現可能性確認、必要に応じて調整）
-   - **ステップ7**: POC PRクローズ
-   - **ステップ8**: issync pushで同期
-
-4. 完了後、進捗ドキュメントの内容をレビューしてから Statusを `implement` に変更
-
-#### 実行例
-
-POC PR #456完了時：
-- PRから技術的知見を収集（chokidarの安定性、GitHub API rate limit制約）
-- Discoveries & Insightsの既存発見事項を確認
-- Decision Logにアーキテクチャ決定を記録（Watch daemon実装方針、ポーリング間隔30秒）
-- Specification / 仕様にシステム仕様を記入（mermaid図でアーキテクチャを可視化）
-- Acceptance Criteriaを調整（「1秒以内」→「30秒間隔」に変更）
-- POC PRをクローズ
-- watchモードが起動している場合は自動的にGitHub Issueに同期
-
-### `/compact-plan`: 進捗ドキュメント圧縮
-
-#### 基本的なワークフロー
-
-1. コマンドを実行（ファイルパスを指定）:
-   ```bash
-   /compact-plan .issync/docs/plan-123-example.md
-   ```
-
-2. pluginが以下を自動実行:
-   - 進捗ドキュメントの分析（総行数、セクション別行数、重複、矛盾）
-   - progress-document-template.mdとの比較
-   - 圧縮処理の適用
-   - 矛盾検出とレポート
-   - watchモードが起動している場合は自動的にGitHub Issueに同期
-
-3. 圧縮結果レポートを確認:
-   - 削減された行数と削減率
-   - 適用された圧縮処理の詳細
-   - 検出された矛盾（ある場合）
-
-#### 実行例
-
-進捗ドキュメントが779行に膨らんだ場合、pluginは：
-- 重複情報を削減（5箇所）
-- 解決済みOpen Questionsを整理（3件）
-- 完了Phase（Phase 1）を簡潔化
-- 完了タスクを削除（12件）
-- 矛盾を検出してレポート
-- 結果: 779行 → 450行（42%削減）
-
-### `/create-sub-issue`: タスクのサブissue化
-
-#### 基本的なワークフロー
-
-1. コマンドを実行:
-   ```bash
-   /create-sub-issue                          # インタラクティブモード（1つのタスク概要を入力）
-   /create-sub-issue "自動アクション設計" "CI/CD統合"  # 引数モード（複数可）
-   ```
-
-2. **インタラクティブモード**の場合:
-   - プロンプト: 「1つのサブissueを作成します。タスク概要を入力してください」
-   - タスク概要を1つ入力（例: "Status変更時の自動アクション設計"）
-   - LLMが親issueのコンテキストから適切なタイトルと本文を生成
-   - ユーザー確認後、GitHub Issueを作成
-   - Sub-issues APIで親issueと紐づけ
-
-3. **引数モード**の場合:
-   - 引数で指定された複数のタスク概要から一括作成
-   - 各タスクに対してLLMがタイトルと本文を生成
-   - Sub-issues順序設定で作成順序を維持
-
-4. 作成されたサブissueを確認:
-   - 各サブissueのStatusを適切に設定（plan等）
-   - 必要に応じて各サブissueで `/plan` コマンドを実行
-
-#### 実行例
-
-3つの大きなタスクをサブissue化する場合、pluginは：
-- .issync.ymlから親issue #123を取得
-- 3つの`(未Issue化)`タスクを抽出して表示
-- ユーザーの承認後、GitHub Issueを3件作成（#124, #125, #126）
-- Tasksセクションを自動更新（`(未Issue化)` → `(#124)`, `(#125)`, `(#126)`）
-- watchモードが起動している場合は自動的にGitHub Issueに同期
-
-## いつ使うか
-
-### `/plan`
-
-planフェーズで進捗ドキュメントを初期作成する時にこのコマンドを使用してください：
-- **新規タスクの進捗ドキュメント作成時**: GitHub Issue作成後、`issync init --template` の直後
-- **コードベース調査を徹底したい時**: 既存パターンや技術スタックを事前に確認
-- **Open Questionsを適切に絞り込みたい時**: コードで確認可能な情報を質問にしない
-
-**重要**: このコマンドは、planステート専用です。他のステートでは使用しません。
-
-### `/architecture-decision`
-
-architecture-decisionステートでアーキテクチャを決定する時にこのコマンドを使用してください：
-- **POC完了後**: 技術検証が完了し、実装の知見が得られた時
-- **アーキテクチャ決定時**: 技術選定、設計方針、システム仕様を確定する時
-- **本実装前**: implementに進む前に、設計を固める時
-
-**重要**: このコマンドは、architecture-decisionステート専用です。POC PRをクローズし、Decision LogとSpecification / 仕様を記入します。
-
-### `/compact-plan`
-
-以下のような状況で使用してください：
-- **進捗ドキュメントが500行以上に膨らんだ時**: 読みづらくなる前に定期的に圧縮
-- **Phaseが完了した時**: 完了フェーズの詳細を簡潔化
-- **Open Questionsが大量に解決された時**: 解決済み質問を整理
-- **retrospective前**: 振り返りを書く前にドキュメントを整理
-- **矛盾の疑いがある時**: 矛盾検出機能で一貫性をチェック
-
-### `/create-sub-issue`
-
-開発のどの段階でも、新規タスクをサブissue化したい時にこのコマンドを使用してください：
-- **plan**: 初期タスクを整理し、サブissueを作成する時
-- **architecture-decision**: アーキテクチャ決定後、実装タスクをサブissue化したい時
-- **implement**: 実装中に新たなタスクが判明した時
-
-**設計原則**:
-- **インタラクティブモード**: デフォルトで1つのサブissueを作成（階層的分解）
-- **引数モード**: 複数の独立したタスクが明確な場合に一括作成
-- **推奨ワークフロー**: まず1つ作成 → `/plan`で詳細化 → 必要に応じて孫issueを作成
-
-これは矛盾解消駆動開発ワークフローをサポートする横断的オペレーションです。
-
-### `/complete-sub-issue`
-
-サブissueが完了し、親issueに成果を反映したい時にこのコマンドを使用してください：
-- **retrospective**: サブissueの振り返り記入後、親issueに完了情報を反映する時
-- **サブissueのclose時**: 完了サマリーとFollow-up事項を親issueに自動転記したい時
-
-**運用フロー**:
-1. サブissueで開発完了（plan → retrospective）
-2. サブissueの進捗ドキュメントにOutcomes & RetrospectivesとFollow-up Issuesを記入
-3. `/complete-sub-issue <サブissue URL>`を実行
-4. 親issueのTasksセクションが自動で完了マーク
-5. 親issueのOutcomes & Retrospectivesにサブタスク完了サマリーが自動追加
-6. サブissueのFollow-up Issuesが親issueの適切なセクションに自動振り分け
-7. サブissueが自動でclose
-
-これは矛盾解消駆動開発ワークフローをサポートする横断的オペレーションです。
-
-## 必要要件
-
-- プロジェクトに以下のセクションを含む `進捗ドキュメント` ファイルが必要:
-  - **`/plan`用**: progress-document-template.mdから生成された初期構造
-  - **`/architecture-decision`用**: Discoveries & Insights, Decision Log, Specification / 仕様, Validation & Acceptance Criteria
-  - **`/compact-plan`用**: docs/progress-document-template.md（圧縮の基準として使用）
-  - **`/create-sub-issue`用**: Tasks, Purpose/Overview, .issync.yml（issync init完了）
-  - **`/complete-sub-issue`用**: Tasks, Outcomes & Retrospectives, Open Questions, Follow-up Issues, .issync/state.yml（issync watch実行中）
-- (オプション) 自動同期用のissync CLIツール
-- **`/architecture-decision`用の追加要件**:
-  - `gh` CLI（PR情報取得・PRクローズのため）
-  - `GITHUB_TOKEN`環境変数（`export GITHUB_TOKEN=$(gh auth token)`）
-  - 現在のGitHub Issue Statusが `architecture-decision` である
-- **`/create-sub-issue`用の追加要件**:
-  - `gh` CLI（GitHub Issueを作成するため）
-  - `GITHUB_TOKEN`環境変数（`export GITHUB_TOKEN=$(gh auth token)`）
-- **`/complete-sub-issue`用の追加要件**:
-  - `gh` CLI（サブissueをcloseするため）
-  - `GITHUB_TOKEN`環境変数（`export GITHUB_TOKEN=$(gh auth token)`）
-  - 親issueの進捗ドキュメントがローカルに存在
-  - `issync watch`が実行中（親issueへの変更を自動同期するため）
-
-## Pluginの構造
+### Plugin の構造
 
 ```
 contradiction-tools/
 ├── .claude-plugin/
 │   └── plugin.json                 # Pluginメタデータ
 ├── commands/
-│   ├── 進捗ドキュメント                     # plan実行コマンド
-│   ├── architecture-decision.md    # アーキテクチャ決定コマンド
-│   ├── compact-進捗ドキュメント             # 進捗ドキュメント圧縮コマンド
-│   ├── create-sub-issue.md       # タスクのサブissue化コマンド
-│   └── complete-sub-issue.md         # サブissue完了コマンド
+│   ├── plan.md                     # plan実行コマンド
+│   ├── review-poc.md               # POCレビューコマンド
+│   ├── compact-plan.md             # 進捗ドキュメント圧縮コマンド
+│   ├── create-sub-issue.md         # タスクのサブissue化コマンド
+│   └── complete-sub-issue.md       # サブissue完了コマンド
 └── README.md                       # このファイル
 ```
 
-## 開発
+### Plugin 開発
 
-このpluginを変更するには：
+この plugin を変更するには：
 
 1. コマンドプロンプトを編集:
-   - `/plan`: `commands/進捗ドキュメント`
-   - `/architecture-decision`: `commands/architecture-decision.md`
-   - `/compact-plan`: `commands/compact-進捗ドキュメント`
-   - `/create-sub-issue`: `commands/create-sub-issue.md`
-   - `/complete-sub-issue`: `commands/complete-sub-issue.md`
+   - `/contradiction-tools:plan`: `commands/plan.md`
+   - `/contradiction-tools:review-poc`: `commands/review-poc.md`
+   - `/contradiction-tools:compact-plan`: `commands/compact-plan.md`
+   - `/contradiction-tools:create-sub-issue`: `commands/create-sub-issue.md`
+   - `/contradiction-tools:complete-sub-issue`: `commands/complete-sub-issue.md`
 2. メタデータを変更する場合は `plugin.json` を更新
-3. ローカルでテスト: `/plugin install contradiction-tools` で再インストール
+3. ローカルでテスト: `/plugin install contradiction-tools@issync-plugins` で再インストール
+
+---
 
 ## ライセンス
 
