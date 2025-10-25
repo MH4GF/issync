@@ -9,22 +9,36 @@ description: 進捗ドキュメントを選択してコンテキストを理解
 ## 使用方法
 
 ```bash
-/understand-progress                    # 引数なし: state.ymlから選択
-/understand-progress <file_path>        # 明示的パス指定（後方互換性）
+/understand-progress                                          # 引数なし: state.ymlから選択
+/understand-progress https://github.com/owner/repo/issues/123 # Issue URL指定
 ```
 
 **引数**:
-- `file_path` (オプション): 読み込む進捗ドキュメントファイルのパス
+- `issue_url` (オプション): GitHub Issue URL
   - 省略時: state.ymlから同期中のファイルを選択
-  - 明示的指定: `/understand-progress docs/plan-5883-context-reader-command.md`
+  - Issue URL指定: `/understand-progress https://github.com/owner/repo/issues/123`
 
 ## 実行フロー
 
-### 1. state.ymlの確認と選択
+### 1. 引数の判定と処理
 
-**引数が指定されている場合**: そのパスを使用し、このステップをスキップして次へ進んでください。
+**引数がある場合** (Issue URL指定):
 
-**引数が指定されていない場合**: `issync list` コマンドを実行して、同期中のファイル一覧を取得してください。
+1. `issync list` コマンドを実行して、同期中のファイル一覧を取得
+2. 引数のIssue URLと一致する同期設定を検索
+3. **見つかった場合**: そのlocal_fileをステップ3で使用
+4. **見つからない場合**: `issync init <issue_url>` を実行して新規同期を開始
+   ```bash
+   issync init https://github.com/owner/repo/issues/123
+   ```
+   - init後、再度 `issync list` で local_file を確認
+   - 取得したlocal_fileをステップ3で使用
+
+**引数がない場合**: 次のステップ2へ進む
+
+### 2. state.ymlからの選択（引数がない場合のみ）
+
+`issync list` コマンドを実行して、同期中のファイル一覧を取得してください。
 
 ```bash
 issync list
@@ -51,7 +65,7 @@ issync list
 このファイルを読み込みますか? (y/n)
 ```
 
-### 2. 進捗ドキュメントの読み込み
+### 3. 進捗ドキュメントの読み込み
 
 選択されたファイルをClaude CodeのReadツールで読み込んでください。
 
@@ -61,7 +75,7 @@ issync list
 
 そして、Readツールを使用してファイルを読み込んでください。
 
-### 3. コンテキスト理解のサポート（オプション）
+### 4. コンテキスト理解のサポート（オプション）
 
 ファイル読み込み後、以下の情報を簡潔に表示すると便利です：
 
@@ -102,10 +116,12 @@ issync list
 
 ## 重要な注意事項
 
-1. **state.yml優先**: 引数がない場合は必ずstate.ymlから選択
-2. **Readツール使用**: セクション抽出や整形はClaude CodeのReadツールに任せる
-3. **シンプルな責務**: このコマンドはファイル選択のみを担当
-4. **エラーハンドリング**: state.yml不在時は明確なエラーメッセージを表示
+1. **Issue URL指定**: 引数指定時はGitHub Issue URL形式で指定
+2. **自動初期化**: Issue URLが未同期の場合、`issync init` を自動実行して同期を開始
+3. **state.yml優先**: 引数がない場合はstate.ymlから選択
+4. **Readツール使用**: セクション抽出や整形はClaude CodeのReadツールに任せる
+5. **シンプルな責務**: このコマンドはファイル選択と読み込みを担当
+6. **エラーハンドリング**: state.yml不在時やissync initの失敗時は明確なエラーメッセージを表示
 
 ## 実行を開始
 
