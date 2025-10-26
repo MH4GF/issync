@@ -5,7 +5,12 @@ import tseslint from 'typescript-eslint'
 
 export default tseslint.config(
   {
-    ignores: ['dist/**', 'node_modules/**', '.issync/**', 'coverage/**'],
+    ignores: [
+      '**/dist/**', // All dist directories in workspaces
+      '**/node_modules/**', // All node_modules
+      '**/.issync/**', // All .issync directories
+      '**/coverage/**', // All coverage directories
+    ],
   },
   eslint.configs.recommended,
   ...tseslint.configs.recommended,

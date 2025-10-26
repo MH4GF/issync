@@ -6,6 +6,12 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 **issync** is a CLI tool that syncs text between GitHub Issue comments and local files. It enables AI-driven development by allowing AI agents to maintain living documentation (progress documents) in GitHub Issues as a single source of truth, while multiple local sessions can read and write to the same document concurrently.
 
+**Project Structure:**
+This is a bun workspaces monorepo with the following structure:
+- `packages/cli/` - The issync CLI tool (published to npm as `@mh4gf/issync`)
+- `apps/` - Future: Deployable applications (e.g., orchestrator web app)
+- `internal-packages/` - Future: Shared internal packages (e.g., common GitHub API client, type definitions)
+
 **Core Design Philosophy:**
 - **AI Agent Transparency**: AI coding agents (Claude Code, Devin, etc.) should not need to know issync exists. They use normal Read()/Edit() operations on files.
 - **Background Sync**: `watch` mode runs in the background, automatically syncing remote ↔ local changes.
@@ -74,40 +80,40 @@ This project uses **Lefthook** to automatically enforce code quality before comm
 
 ### Core Components
 
-**`src/cli.ts`**: CLI entry point using commander.js. All commands are skeleton implementations (TODO).
+**`packages/cli/src/cli.ts`**: CLI entry point using commander.js. All commands are skeleton implementations (TODO).
 
-**`src/lib/github.ts`**: GitHub API client wrapping Octokit.
+**`packages/cli/src/lib/github.ts`**: GitHub API client wrapping Octokit.
 - `parseIssueUrl()`: Extract owner/repo/issue_number from GitHub URL
 - `getComment()`, `createComment()`, `updateComment()`, `listComments()`: CRUD operations on Issue comments
 - `addMarker()`, `removeMarker()`, `hasIssyncMarker()`: issync comment identification using HTML comment markers
 - `findIssyncComment()`: Searches for issync-managed comment by marker detection (with comment_id fallback)
 
-**`src/lib/config.ts`**: Manages `state.yml` configuration file.
+**`packages/cli/src/lib/config.ts`**: Manages `state.yml` configuration file.
 - `loadConfig()`, `saveConfig()`, `configExists()`: YAML read/write operations
 
-**`src/lib/hash.ts`**: SHA-256 hash calculation for optimistic locking.
+**`packages/cli/src/lib/hash.ts`**: SHA-256 hash calculation for optimistic locking.
 
-**`src/commands/watch/SessionManager.ts`**: Manages multiple watch sessions
+**`packages/cli/src/commands/watch/SessionManager.ts`**: Manages multiple watch sessions
 - `startSession()`: Start new watch session with validation
 - `stopAll()`: Stop all active sessions gracefully with detailed failure tracking
 - `getTrackedUrls()`: Get currently tracked issue URLs for state monitoring
 
-**`src/commands/watch/WatchSession.ts`**: Individual sync session management
+**`packages/cli/src/commands/watch/WatchSession.ts`**: Individual sync session management
 - Remote polling (setInterval) + local file watching (chokidar)
 - Grace period handling to prevent pull→push loops
 - Independent error handling per session
 
-**`src/commands/watch/StateFileWatcher.ts`**: Monitors `state.yml` for dynamic sync addition
+**`packages/cli/src/commands/watch/StateFileWatcher.ts`**: Monitors `state.yml` for dynamic sync addition
 - Detects state file changes using chokidar
 - Triggers callback when new syncs are added
 - Enables watch mode to add new targets without restart
 
-**`src/commands/watch/errorReporter.ts`**: Unified error handling utilities
+**`packages/cli/src/commands/watch/errorReporter.ts`**: Unified error handling utilities
 - `formatError()`: Type-safe error formatting
 - `reportPreparationFailures()`: Report sync preparation failures
 - `reportSessionStartupFailures()`: Report session startup failures
 
-**`src/types/index.ts`**: Core TypeScript interfaces:
+**`packages/cli/src/types/index.ts`**: Core TypeScript interfaces:
 - `IssyncState`: state.yml structure containing array of syncs
 - `IssyncSync`: Individual sync configuration (issue_url, comment_id, local_file, last_synced_hash, etc.)
 - `GitHubIssueInfo`: Parsed Issue metadata (owner, repo, issue_number)

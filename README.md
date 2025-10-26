@@ -309,7 +309,12 @@ Documents managed by issync that synchronize bidirectionally between GitHub Issu
 
 ## Development
 
-See [CLAUDE.md](./CLAUDE.md) for development setup and architecture details.
+This project uses a **bun workspaces** monorepo structure:
+- `packages/cli/` - The issync CLI tool (published to npm as `@mh4gf/issync`)
+- `apps/` - Future: Deployable applications (e.g., orchestrator web app)
+- `internal-packages/` - Future: Shared internal packages
+
+Most development happens in `packages/cli/`. See [CLAUDE.md](./CLAUDE.md) for detailed development setup and architecture.
 
 ```bash
 # Install dependencies

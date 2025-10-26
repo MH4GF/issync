@@ -3,13 +3,10 @@
   "version": "0.11.0",
   "description": "CLI tool to sync text between GitHub Issue comments and local files",
   "type": "module",
-  "bin": {
-    "issync": "./dist/cli.js"
-  },
-  "files": [
-    "dist",
-    "README.md",
-    "LICENSE"
+  "workspaces": [
+    "packages/*",
+    "apps/*",
+    "internal-packages/*"
   ],
   "repository": {
     "type": "git",
@@ -20,12 +17,11 @@
     "url": "https://github.com/MH4GF/issync/issues"
   },
   "scripts": {
-    "build": "bun build ./src/cli.ts --outdir ./dist --target node --format esm --external @octokit/rest --external chokidar --external commander --external js-yaml",
-    "prepare": "bun run build",
-    "dev": "bun run ./src/cli.ts",
-    "type-check": "tsc --noEmit",
-    "test": "bun test",
-    "test:watch": "bun test --watch",
+    "build": "bun run --cwd packages/cli build",
+    "dev": "bun run --cwd packages/cli dev",
+    "type-check": "tsc --build --force",
+    "test": "bun test packages/cli",
+    "test:watch": "bun test packages/cli --watch",
     "format": "biome format --write .",
     "format:check": "biome format .",
     "lint": "biome lint --write .",
@@ -47,12 +43,6 @@
   ],
   "author": "MH4GF",
   "license": "MIT",
-  "dependencies": {
-    "@octokit/rest": "^21.0.2",
-    "chokidar": "^4.0.3",
-    "commander": "^12.1.0",
-    "js-yaml": "^4.1.0"
-  },
   "devDependencies": {
     "@biomejs/biome": "^2.2.5",
     "@eslint/js": "^9.37.0",
