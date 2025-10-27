@@ -19,7 +19,7 @@
   "scripts": {
     "build": "bun run --cwd packages/cli build",
     "dev": "bun run --cwd packages/cli dev",
-    "type-check": "tsc --build --force",
+    "type-check": "tsc --noEmit -p packages/cli && tsc --noEmit -p apps/web",
     "test": "bun test packages/cli",
     "test:watch": "bun test packages/cli --watch",
     "format": "biome format --write .",
@@ -29,7 +29,7 @@
     "lint:eslint": "eslint .",
     "lint:fix": "eslint . --fix",
     "check": "biome check --write .",
-    "check:ci": "biome check . && eslint . && tsc --noEmit && bun test && knip-bun",
+    "check:ci": "biome check . && eslint . && tsc --noEmit -p packages/cli && tsc --noEmit -p apps/web && bun test && knip-bun",
     "knip": "knip-bun",
     "knip:fix": "knip-bun --fix"
   },

@@ -10,6 +10,7 @@ export default tseslint.config(
       '**/node_modules/**', // All node_modules
       '**/.issync/**', // All .issync directories
       '**/coverage/**', // All coverage directories
+      '**/.next/**', // Next.js build output
     ],
   },
   eslint.configs.recommended,
