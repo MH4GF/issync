@@ -239,8 +239,48 @@ plan.md先頭行 `<!-- Template Version: X (YYYY-MM-DD) -->` を確認し、最�
 
 ---
 
+## Version 12 (2025-10-27)
+
+### 変更内容
+
+**概要**: ステートマシンを8ステートから6ステートに簡素化し、Stageフィールドを導入
+
+**変更されたセクション:**
+- **ステートマシン**: 8ステート（plan/poc/architecture-decision/implement/merge/retrospective/failed/done）→ 6ステート（plan/poc/architecture-decision/implement/retrospective/done）
+- **削除されたステート**: merge（implement × To Reviewで表現）、failed（運用されていないため削除）
+- **新規フィールド**: GitHub Projects カスタムフィールド「Stage」を導入（To Start / In Progress / To Review / (empty)）
+
+**理由:**
+- **問題**: 人間のアクションとAIのアクションが区別できず、「人間が何をすべきか」「待ちの状態か」が不明確
+- **解決**: Stageフィールドで各ステート内の進行状況を3段階で表現
+- **シンプル化**: mergeとfailedは冗長なステートであり、削除することでステートマシンが簡潔に
+
+**影響範囲:**
+- スラッシュコマンド: `/plan`、`/review-poc`にStage自動設定機能を追加
+- GitHub Projects設定: Stageカスタムフィールドと3つのビュー（Full Workflow Board、Human Action Required、AI Working）を追加
+- CI自動遷移ロジック: Status変更時にStageも同時に設定
+
+### マイグレーション手順
+
+#### 1. GitHub Projectsの設定更新（必須）
+
+- **Statusフィールド**: `merge`/`failed`削除 → 6ステート（plan/poc/architecture-decision/implement/retrospective/done）
+- **Stageフィールド追加**: Single Select（To Start/In Progress/To Review/(empty)）
+- **ビュー追加（推奨）**: Full Workflow Board（6カラム）、Human Action Required（Stage: To Start/To Review）、AI Working（Stage: In Progress）
+
+#### 2. 既存進捗ドキュメントの更新（オプショナル）
+
+新規は自動適用。既存は次回更新時に任意でステートマシン図を6ステートに更新。一斉更新不要。
+
+#### 3. スラッシュコマンドの更新（自動）
+
+`/plan`と`/review-poc`は既にStage自動設定対応済み。追加設定不要。
+
+---
+
 ## 更新履歴
 
+- **Version 12 (2025-10-27)**: ステートマシンを6ステートに簡素化、Stageフィールドを導入（人間/AIアクションの区別を明確化）
 - **Version 11 (2025-10-22)**: ドキュメントタイトルを "Development Plan" から "Progress Document" に変更（用語統一）
 - **Version 10 (2025-10-17)**: Open Questionsに「検討案」フォーマットを追加、AIエージェント主導の意思決定を加速
 - **Version 9 (2025-10-17)**: ステート名から`before-`プレフィックスを削除（破壊的変更）

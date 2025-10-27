@@ -4,17 +4,19 @@ description: POC実装の結果をレビューし、人間の意思決定のた�
 
 # /review-poc: POCレビューワークフロー
 
-あなたはユーザーの `.issync/docs/plan-*.md` ファイルのPOCレビューフェーズをサポートしています。このコマンドは以下の9ステップのワークフローを自動化します：
+あなたはユーザーの `.issync/docs/plan-*.md` ファイルのPOCレビューフェーズをサポートしています。このコマンドは以下の11ステップのワークフローを自動化します：
 
-1. POC PR URLを受け取り、PR情報を取得
-2. Discoveries & Insightsを参照
-3. **Acceptance Criteriaの検証（達成/未達成を明確化）**
-4. **Discoveries & Insightsへの追記**
-5. **Open Questionsへの論点追加（強化）**
-6. **Decision Log推奨案の記入（人間の最終決定を前提）**
-7. Specification / 仕様の記入（オプショナル）
-8. POC PRをクローズ
-9. issync pushで同期（必要な場合）
+1. Stage設定（In Progress）
+2. POC PR URLを受け取り、PR情報を取得
+3. Discoveries & Insightsを参照
+4. **Acceptance Criteriaの検証（達成/未達成を明確化）**
+5. **Discoveries & Insightsへの追記**
+6. **Open Questionsへの論点追加（強化）**
+7. **Decision Log推奨案の記入（人間の最終決定を前提）**
+8. Specification / 仕様の記入（オプショナル）
+9. POC PRをクローズ
+10. issync pushで同期（必要な場合）
+11. Stage更新（To Review）
 
 **重要**: このコマンドは**人間の意思決定のための材料を提供する**ことが目的です。最終的なアーキテクチャ決定は人間が行います。
 
@@ -40,9 +42,15 @@ description: POC実装の結果をレビューし、人間の意思決定のた�
 
 ## 実行ステップ
 
-### ステップ1: POC PR URLの受け取りとPR情報取得
+### ステップ1: Stage設定（AI作業開始）
 
-#### 1.1 POC PR URLの受け取り
+`gh project item-edit`でStage→`In Progress`に設定。失敗時も作業継続（警告のみ）。
+
+---
+
+### ステップ2: POC PR URLの受け取りとPR情報取得
+
+#### 2.1 POC PR URLの受け取り
 
 ユーザーにPOC PR URLを確認してください：
 
@@ -50,7 +58,7 @@ description: POC実装の結果をレビューし、人間の意思決定のた�
 POC PR URLを教えてください（例: https://github.com/owner/repo/pull/123）
 ```
 
-#### 1.2 PR情報の取得
+#### 2.2 PR情報の取得
 
 POC PRから以下の情報を取得します：
 
@@ -76,7 +84,7 @@ gh pr diff <PR URL>
 
 ---
 
-### ステップ2: Discoveries & Insightsの参照
+### ステップ3: Discoveries & Insightsの参照
 
 進捗ドキュメントの`Discoveries & Insights`セクションを読み、POC実装中に発見された技術的制約・複雑性を確認：
 
@@ -92,7 +100,7 @@ gh pr diff <PR URL>
 
 ---
 
-### ステップ3: Acceptance Criteriaの検証（大幅強化）
+### ステップ4: Acceptance Criteriaの検証（大幅強化）
 
 **目的**: POCがAcceptance Criteriaを満たしているかを詳細に検証し、未達成項目の理由を明確化する。
 
@@ -167,7 +175,7 @@ gh pr diff <PR URL>
 
 ---
 
-### ステップ4: Discoveries & Insightsへの追記
+### ステップ5: Discoveries & Insightsへの追記
 
 POC実装で新たに発見した技術的事実を追記します。
 
@@ -212,7 +220,7 @@ POC実装で新たに発見した技術的事実を追記します。
 
 ---
 
-### ステップ5: Open Questionsへの論点追加（大幅強化）
+### ステップ6: Open Questionsへの論点追加（大幅強化）
 
 **目的**: 未達成のAcceptance Criteriaや技術的な選択肢について、人間が意思決定するための論点を明確化する。
 
@@ -307,7 +315,7 @@ POC実装で新たに発見した技術的事実を追記します。
 
 ---
 
-### ステップ6: Decision Log推奨案の記入
+### ステップ7: Decision Log推奨案の記入
 
 **重要**: このステップで記入するのは**推奨案**であり、**最終決定ではありません**。人間がレビュー・承認してから確定します。
 
@@ -381,7 +389,7 @@ POCの知見を基に、以下の形式でDecision Log推奨案を記入しま�
 
 ---
 
-### ステップ7: Specification / 仕様の記入（オプショナル）
+### ステップ8: Specification / 仕様の記入（オプショナル）
 
 **重要**: このステップは**POCで明確になった部分のみ**記入してください。不確実な部分は記入しません。
 
@@ -455,7 +463,7 @@ graph TD
 
 ---
 
-### ステップ8: POC PRのクローズ
+### ステップ9: POC PRのクローズ
 
 POC PRをクローズします：
 
@@ -468,7 +476,7 @@ gh pr close <PR URL> --comment "POC完了。レビュー結果を進捗ドキュ
 
 ---
 
-### ステップ9: issync pushで同期
+### ステップ10: issync pushで同期
 
 **注意**: issyncのwatchモードが起動している場合は、ファイルの変更が自動的にGitHub Issueに同期されます。明示的なpushコマンドは不要です。
 
@@ -484,6 +492,14 @@ ps aux | grep "issync watch" | grep -v grep
 ```bash
 issync push
 ```
+
+---
+
+### ステップ11: Stage更新（レビュー待ち）
+
+`gh project item-edit`でStage→`To Review`に設定。
+
+**重要**: 人間承認後、Status→`implement`、Stage→`To Start`を手動で変更。
 
 ---
 
@@ -593,143 +609,23 @@ issync push
 
 ---
 
-## 実行例
+## 出力サマリー形式
 
-**ユーザー:** `/review-poc https://github.com/owner/repo/pull/456`
-
-**アシスタント:**
-
-### ステップ1: POC PR情報取得
-
-PR #456の情報を取得します...
-
-**PR情報**:
-- Title: "POC: Watch daemon implementation"
-- State: open
-- Commits: 5個のコミット
-- Comments: 2個のレビューコメント
-
-[PR diffを取得し、主要な変更点を確認]
-
----
-
-### ステップ2: Discoveries & Insights参照
-
-進捗ドキュメントのDiscoveries & Insightsを確認します...
-
-**確認した発見事項**:
-1. chokidarライブラリによるファイル監視の安定性
-2. GitHub API rate limitの制約（5000 req/hour）
-3. ポーリング間隔は30秒が最適
-
----
-
-### ステップ3: Acceptance Criteria検証
-
-既存のAcceptance Criteriaを検証します...
-
-**検証結果**:
-- ✅ 達成: 2項目（ファイル変更検知、リモートポーリング）
-- ❌ 未達成: 1項目（1秒以内の同期 → GitHub API rate limit制約により不可能）
-- ⚠️ スコープ外: 1項目（Webhook対応 → Phase 2に延期）
-
-進捗ドキュメントに「POC検証結果」セクションを追加しました。
-
----
-
-### ステップ4: Discoveries & Insights追記
-
-POCで新たに発見した事実を追記します...
-
-**追記した発見**:
-1. GitHub API rate limitの実測値（5000 req/hour = 最短7.2秒間隔）
-2. chokidarの安定性（クロスプラットフォームで動作確認）
-3. Pull→Pushループのリスクとgrace period実装
-
----
-
-### ステップ5: Open Questions追加
-
-未達成のAcceptance Criteriaと技術的選択肢について論点を追加します...
-
-**追加した論点**:
-- Q1: GitHub API rate limitを考慮した最適なポーリング間隔は？（Option A: 30秒 / Option B: 10秒 / Option C: 設定可能）
-- Q2: Pull→Pushループ防止のgrace periodは何秒が適切か？（Option A: 5秒 / Option B: 10秒 / Option C: 動的調整）
-
----
-
-### ステップ6: Decision Log推奨案記入
-
-POCの知見を基に、Decision Log推奨案を記入します...
-
-**記録した推奨案**:
-1. Watch daemonの実装方針（chokidar + setInterval） - [ ] 承認待ち
-2. ポーリング間隔（設定可能、デフォルト30秒） - [ ] 承認待ち（Open Question Q1で議論中）
-3. Pull→Pushループ防止策（Grace period 10秒） - [ ] 承認待ち
-
----
-
-### ステップ7: Specification / 仕様記入
-
-アーキテクチャ仕様を記入します...
-
-**記入内容**:
-- Watch Daemon アーキテクチャ（mermaid図を含む）
-- ファイル監視仕様（chokidar）
-- リモート同期仕様（setInterval、30秒間隔）
-- Grace period仕様（10秒）
-
----
-
-### ステップ8: POC PRクローズ
-
-PR #456をクローズします...
-
-✅ PRクローズ完了（コメント付き）
-
----
-
-### ステップ9: issync同期
-
-watchモードが起動しているため、自動的にGitHub Issueに同期されます。
-
----
-
+```markdown
 ## /review-poc 実行結果
 
 ### 完了したステップ
-- ✅ ステップ1: POC PR情報取得（PR #456: "POC: Watch daemon implementation"）
-- ✅ ステップ2: Discoveries & Insights参照（3項目を確認）
-- ✅ ステップ3: Acceptance Criteria検証（達成: 2項目、未達成: 1項目、スコープ外: 1項目）
-- ✅ ステップ4: Discoveries & Insights追記（3個の発見を追加）
-- ✅ ステップ5: Open Questions追加（2個の論点を追加）
-- ✅ ステップ6: Decision Log推奨案記入（3個の推奨案を記録）
-- ✅ ステップ7: Specification / 仕様記入
-- ✅ ステップ8: POC PRクローズ（PR #456）
-- ✅ ステップ9: issync push完了（watchモードで自動同期）
+- ✅ ステップ1-11: 全ステップ完了
 
-### Acceptance Criteria検証結果
-- ✅ 達成:
-  - ファイル変更検知（chokidar）
-  - リモートポーリング（setInterval）
-- ❌ 未達成:
-  - 1秒以内の同期（GitHub API rate limit制約により不可能）
-- ⚠️ スコープ外:
-  - Webhook対応（Phase 2に延期）
-
-### 追加されたOpen Questions
-1. Q1: GitHub API rate limitを考慮した最適なポーリング間隔は？
-2. Q2: Pull→Pushループ防止のgrace periodは何秒が適切か？
-
-### Decision Log推奨案
-1. Watch daemonの実装方針（chokidar + setInterval） - [ ] 承認待ち
-2. ポーリング間隔（設定可能、デフォルト30秒） - [ ] 承認待ち
-3. Pull→Pushループ防止策（Grace period 10秒） - [ ] 承認待ち
+### POC検証結果
+- ✅ 達成: [達成項目数]項目
+- ❌ 未達成: [未達成項目数]項目
+- ⚠️ スコープ外: [スコープ外項目数]項目
 
 ### 次のアクション（重要）
-- [ ] **進捗ドキュメントの内容（POC検証結果、Open Questions、Decision Log推奨案）をレビューしてください**
-- [ ] **Open Questionsを検討し、意思決定を行ってください**
-- [ ] **Decision Log推奨案を承認/修正/却下してください**
+- [ ] 進捗ドキュメントの内容（POC検証結果、Open Questions、Decision Log推奨案）をレビュー
+- [ ] Open Questionsを検討し、意思決定を行う
+- [ ] Decision Log推奨案を承認/修正/却下
 - [ ] **承認後、GitHub Projects Statusを手動で`implement`に変更してください**
 - [ ] **implementのチェックリストを確認し、本実装を開始してください**
 

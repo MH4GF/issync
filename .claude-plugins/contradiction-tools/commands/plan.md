@@ -6,13 +6,13 @@ description: planフェーズのプロセスを標準化し、コードベース
 
 進捗ドキュメント（`.issync/docs/plan-{番号}-{slug}.md`）を初期作成するコマンドです。以下の7ステップを自動化します：
 
-1. 前提条件確認 & ファイル名決定 & issync init実行
+1. 前提条件確認 & ファイル名決定 & issync init実行 & Stage設定（In Progress）
 2. GitHub Issue内容の確認
 3. コードベース調査（CRITICAL）
 4. 基本セクションの記入
 5. Open Questionsの精査
-6. issync pushで同期
-7. GitHub Projects Status自動変更（plan → poc）
+6. issync pushで同期 & Stage更新（To Review）
+7. GitHub Projects Status & Stage自動変更（plan → poc, Stage → To Start）
 
 **Note**: Template v7では、Tasksセクションが削除されています。タスクは `/create-sub-issue` コマンドで作成します。
 
@@ -31,7 +31,7 @@ description: planフェーズのプロセスを標準化し、コードベース
 
 ## 実行ステップ
 
-### ステップ1: 前提条件確認 & ファイル名決定 & issync init
+### ステップ1: 前提条件確認 & ファイル名決定 & issync init & Stage設定
 
 **ファイル名決定**:
 1. Issue URLを確認（例: `https://github.com/owner/repo/issues/123`）
@@ -41,6 +41,10 @@ description: planフェーズのプロセスを標準化し、コードベース
 - **ケース A**: issync未初期化 → `issync init <Issue URL> --file .issync/docs/plan-{番号}-{slug}.md`
 - **ケース B**: 進捗ドキュメント不存在 → 新規sync追加または `issync pull --issue <Issue URL>`
 - **ケース C**: 準備完了 → 次へ
+
+**Stage設定（AI作業開始）**:
+
+`gh project item-edit`でStage→`In Progress`に設定。失敗時も作業継続（警告のみ）。
 
 ### ステップ2: GitHub Issue内容の確認
 
@@ -107,32 +111,18 @@ Read: package.json (テストスクリプトとフレームワーク確認)
   - トレードオフ: [制約や懸念点]
 ```
 
-### ステップ6: issync pushで同期
+### ステップ6: issync pushで同期 & Stage更新
 
+**同期**:
 watchモード起動中は自動同期。起動していない場合は `issync push` を実行。
 
-### ステップ7: GitHub Projects Status自動変更
+**Stage更新（レビュー待ち）**: `gh project item-edit`でStage→`To Review`に設定。
 
-plan完了後、Statusを自動的に`poc`に変更します。
+### ステップ7: GitHub Projects Status & Stage自動変更
 
-**実行手順**:
-1. Issue URLからowner/repo/issue_numberを抽出
-2. GraphQL APIでProject IDを取得（タイトルに"Workflow"を含むProject）
-3. `gh project field-list`でField IDとpoc Option IDを取得
-4. `gh project item-list`でItem IDを取得
-5. `gh project item-edit`でStatus変更
+Status→`poc`、Stage→`To Start`に変更。GraphQL APIでProject ID取得後、`gh project item-edit`で両フィールドを更新。
 
-**エラーハンドリング**:
-- **認証スコープ不足**: `gh auth refresh -s project --hostname github.com` を実行後、再度 /plan 実行
-- **ID取得失敗**: GitHub Projects UIで手動変更
-- **Status変更失敗**: エラー詳細と手動変更用のghコマンドを表示
-
-**成功時の出力**:
-```
-✓ GitHub Projects Statusを `poc` に変更しました
-  Project: <project_title> (#<project_number>)
-  Issue: #<issue_number>
-```
+**エラー時**: 認証スコープ不足の場合は`gh auth refresh -s project`実行。失敗時はGitHub Projects UIで手動変更。
 
 ## 出力フォーマット
 
@@ -149,8 +139,9 @@ plan完了後、Statusを自動的に`poc`に変更します。
 - Issue番号: {番号}
 - Slug: {slug}
 
-### GitHub Projects Status変更
+### GitHub Projects Status & Stage変更
 - Status: `plan` → `poc` ✅
+- Stage: `To Start` ✅ （人間がDevinに指示すべき）
 - Project: {project_title} (#{project_number})
 
 ### 次のアクション
@@ -162,21 +153,27 @@ plan完了後、Statusを自動的に`poc`に変更します。
 
 ## 重要な注意事項
 
-- **ファイル命名**: ステップ1の命名規則を厳守
 - **コードベース調査**: ステップ3を省略しない（省略すると不要なOpen Questionsが大量発生）
-- **Discoveries記録**: 調査結果は必ず記録（後フェーズで参照）
 - **Open Questions**: コードで確認可能な情報は記載しない、5-10項目に絞る
-- **日付形式**: YYYY-MM-DD形式を使用
 
 ## 補足: ステートマシンとの統合
 
 **ワークフロー**:
 ```
-GitHub Issue作成
+GitHub Issue作成（Status: plan, Stage: To Start）
    ↓
-/plan実行 → コードベース調査 → 進捗ドキュメント作成 → Status自動変更（plan → poc）
+/plan実行開始 → Stage自動変更（To Start → In Progress）
+   ↓
+コードベース調査 → 進捗ドキュメント作成
+   ↓
+issync push → Stage自動変更（In Progress → To Review）
+   ↓
+Status & Stage自動変更（Status: plan → poc, Stage: To Review → To Start）
    ↓
 人間レビュー → POC開始（Devin起動）
 ```
 
-**重要**: `/plan`コマンド完了時に自動的にStatusが`poc`に変更されます。人間による手動のStatus変更は不要です。
+**重要**:
+- `/plan`コマンド完了時に自動的にStatusが`poc`、Stageが`To Start`に変更されます
+- 人間による手動のStatus/Stage変更は不要です
+- Stage変更により、人間が「何をすべきか」が明確になります（To Start = Devinに指示）
