@@ -82,6 +82,20 @@ gh pr diff <PR URL>
 - ⚠️ 警告を表示：「このPRは既にクローズされています。レビュー情報の記入のみを実行します。」
 - ステップ8（PRクローズ）をスキップして続行
 
+#### 2.3 PRに対応するissueの特定
+
+1. **PR本文の解析**
+   - 本文中のissue言及を理解（"Resolves:", "Fixes #123", "Part of #456" など、自然言語として柔軟に解釈）
+   - 完全URL形式（`https://github.com/.../issues/番号`）を優先、`#番号`はPRと同一リポジトリと判断
+
+2. **複数/未検出時の処理**
+   - 複数issue: ユーザーに選択させる
+   - 未検出: issue URLまたは番号の入力を促す
+
+3. **使用**
+   - 進捗ドキュメント検索: `.issync/docs/plan-{issue番号}-*.md`
+   - GitHub Projects操作（Stage更新）
+
 ---
 
 ### ステップ3: Discoveries & Insightsの参照
