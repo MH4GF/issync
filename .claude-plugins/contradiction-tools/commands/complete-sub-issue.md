@@ -8,7 +8,7 @@ description: サブissue完了時に親issueの進捗ドキュメントを自動
 1. サブissue情報のフェッチと親issue番号の抽出
 2. 未初期化のissueがあれば `issync init` で自動初期化
 3. サブissueの進捗ドキュメントから完了情報を抽出
-4. **振り返り未記入時はPRから自動生成**（ユーザーに関連PR URLを確認）
+4. **PRの内容を常に確認し、振り返り未記入時は自動生成、Follow-up Issuesは常に抽出**（ユーザーに関連PR URLを確認）
 5. 親issueの進捗ドキュメントを更新（Outcomes & Retrospectives、Open Questions）
 6. Follow-up事項の適切な処理提案（Open Questions追加または/create-sub-issue実行提案）
 7. サブissueのclose（closeコメントに関連PR URLを含める）
@@ -54,11 +54,10 @@ gh api /repos/{owner}/{repo}/issues/{issue_number}/parent
 
 このエンドポイントから親issueの `number`, `title`, `url`, `state` などが取得できます。
 
-APIで取得できない場合（Sub-issuesとして紐づけられていない場合など）は、issueのbodyや関連情報から親issue番号を柔軟に探してください。
+APIで取得できない場合は、issueのbodyや関連情報から親issue番号を柔軟に探してください。
 
-**その他の確認事項**:
-- issue状態を確認（open/closed）
-- **ユーザーに関連PR URLを確認**（ステップ3で使用）
+**確認事項**:
+- issue状態（open/closed）
 - 無効なURL、親issue番号不在時はエラー表示
 
 ### ステップ2: サブissueの進捗ドキュメントを読み込み
@@ -71,9 +70,10 @@ APIで取得できない場合（Sub-issuesとして紐づけられていない�
 
 初期化失敗時は「（記載なし）」として続行可。
 
-### ステップ3: 振り返り未記入時の自動生成
+### ステップ3: PRの内容確認と振り返り処理
 
-Outcomes & Retrospectives が空または「（記載なし）」の場合：
+**このステップは振り返りの記入状態に関わらず、常に実行します。**
+理由: PRレビューで新たなFollow-up Issuesが発生している可能性があるため。
 
 1. **ユーザーに関連PR URLを確認**
    ```
@@ -82,24 +82,24 @@ Outcomes & Retrospectives が空または「（記載なし）」の場合：
 
 2. **PRの内容を分析**
    ```bash
-   gh pr view <PR URL> --json title,body,commits
+   gh pr view <PR URL> --json title,body,commits,reviews,comments
    gh pr diff <PR URL>
    ```
 
-   以下の情報を抽出：
-   - PR title と description
-   - Commits（コミットメッセージから実装内容を把握）
-   - Diff（変更内容の概要）
+   抽出情報: title, description, commits, diff, reviews, comments（PRレビューで指摘された事項含む）
 
-3. **振り返りを生成してサブissueの進捗ドキュメントに追記**
+3. **振り返り本文の処理（Outcomes & Retrospectives が空または「（記載なし）」の場合のみ）**
    - **実装内容**: 何を実装したか（事実ベース）
    - **技術的な発見や学び**: どのような課題があり、どう解決したか
-   - **Follow-up Issues**: PRで見つかった改善点や未対応事項
 
-4. **生成内容をユーザーに確認**
-   編集内容を表示し、承認を得てから進捗ドキュメントに反映
+   生成した内容をユーザーに確認し、承認を得てからサブissueの進捗ドキュメントに追記
 
-**Note**: 振り返りが既に記入されている場合、このステップはスキップ
+4. **Follow-up Issuesの抽出（常に実行）**
+   PR description、レビューコメント、コミットメッセージから未対応事項を抽出し、サブissueの進捗ドキュメントの Follow-up Issues セクションに追記（既存の内容とマージ）。ユーザー確認後に反映。
+
+**Note**:
+- 振り返り本文が既に記入されている場合、実装内容や学びの生成/追記はスキップ
+- Follow-up Issuesは常にPRから抽出して、既存の内容と統合
 
 ### ステップ4: 親issueの進捗ドキュメントを特定
 
@@ -107,9 +107,7 @@ Outcomes & Retrospectives が空または「（記載なし）」の場合：
 issync list
 ```
 
-親issue番号に一致する `issue_url` と `local_file` を取得。未登録の場合は自動初期化（詳細は「issync管理外のissue処理」参照）。
-
-初期化失敗時は処理を中断（親issueは必須）。
+親issue番号に一致する `issue_url` と `local_file` を取得。未登録の場合は自動初期化（`issync init`）。初期化失敗時は処理を中断（親issueは必須）。
 
 ### ステップ5: 親issueのOutcomes & Retrospectivesセクションを更新
 
@@ -142,9 +140,7 @@ openの場合のみ実行:
 gh issue close <サブissue URL> --comment "Completed. Summary recorded in parent issue #<親issue番号>. Related PR: <PR URL>"
 ```
 
-**Note**: PR URLはステップ3で取得したものを使用。振り返り自動生成をスキップした場合でも、PR URLを含めることを推奨。
-
-すでにclosedの場合はスキップし、完了通知で明記。エラー時は警告を表示。
+**Note**: PR URLはステップ3で取得。常に含めること。すでにclosedの場合はスキップ。
 
 ### ステップ8: 完了通知
 
@@ -160,9 +156,11 @@ gh issue close <サブissue URL> --comment "Completed. Summary recorded in paren
 - 親issue: #[親issue番号]
 
 ### 更新内容
-- ✅ 振り返り自動生成: [生成した / スキップ（既に記入済み）]
-- ✅ Outcomes & Retrospectives: サブタスク完了サマリー追加 (進捗ドキュメント:[line_number])
-- ✅ Follow-up Issues処理: Open Questionsに[X]件追加
+- ✅ PRの内容確認: 完了
+- ✅ 振り返り本文: [生成して追記 / 既に記入済みのためスキップ]
+- ✅ Follow-up Issues: PRから[Y]件抽出、サブissueの進捗ドキュメントに追記
+- ✅ 親issueのOutcomes & Retrospectives: サブタスク完了サマリー追加 (進捗ドキュメント:[line_number])
+- ✅ 親issueのOpen Questions: [X]件追加
 - ✅ サブissue #[サブissue番号]: [closeした（Related PR: [PR URL]） / すでにclosed]
 - ✅ 自動同期完了（watchモードで親issueに反映）
 
@@ -181,19 +179,14 @@ gh issue close <サブissue URL> --comment "Completed. Summary recorded in paren
 
 ---
 
-## issync管理外のissue処理
-
-未登録のissueを検出した場合、自動的に初期化:
-```bash
-issync init <issue_url>
-```
-
-**エラーハンドリング**:
-- 親issue初期化失敗 → 処理を中断（必須のため）
-- サブissue初期化失敗 → 「（記載なし）」として続行可
-
 ## エラーハンドリング
 
+**issync管理外のissue**:
+- 未登録のissue検出時 → `issync init <issue_url>` で自動初期化
+- 親issue初期化失敗 → 処理を中断（必須）
+- サブissue初期化失敗 → 「（記載なし）」として続行
+
+**その他**:
 - 無効なURL、親issue番号不在 → エラー表示
 - issueがすでにclosed → close処理をスキップ
 - issue close失敗 → 警告表示
@@ -202,17 +195,11 @@ issync init <issue_url>
 
 ## 実行例
 
-```
+```bash
 /complete-sub-issue https://github.com/MH4GF/issync/issues/124
 ```
 
-1. サブissue #124から親issue #123を特定
-2. 未登録のissueがあれば自動初期化
-3. サブissueの進捗情報を抽出
-4. 振り返り未記入の場合、ユーザーに関連PR URLを確認してPRから振り返りを自動生成
-5. 親issueの進捗ドキュメントを更新
-6. Follow-up Issuesを分類処理
-7. サブissue #124をclose（closeコメントに関連PR URLを含める）
+実行フローは冒頭のワークフロー（ステップ1-8）を参照。
 
 ---
 
@@ -223,5 +210,7 @@ issync init <issue_url>
    - 進捗ドキュメントに成果を記入（任意）
    - 振り返り未記入でもPRからの自動生成が可能
 3. `/complete-sub-issue`で親issueに自動反映＆サブissueclose
-   - 振り返り未記入の場合は関連PR URLを確認
+   - 常に関連PR URLを確認
+   - 振り返り未記入の場合: PRから振り返りを自動生成
+   - Follow-up Issues: PRから常に抽出して最新化
 4. 必要に応じて`/create-sub-issue`で次のサブissueを作成
