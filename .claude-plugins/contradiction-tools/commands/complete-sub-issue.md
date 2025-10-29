@@ -14,7 +14,8 @@ description: サブissue完了時に親issueの進捗ドキュメントを自動
 7. サブissueのclose（closeコメントに関連PR URLを含める）
 8. issync remove実行（完了したサブissueの同期設定を削除）
 9. GitHub Projects Status変更（done）
-10. 完了通知
+10. GitHub Issueへの同期（issync push）
+11. 完了通知
 
 ## 使用方法
 
@@ -37,7 +38,6 @@ description: サブissue完了時に親issueの進捗ドキュメントを自動
 
 ## 前提条件
 
-- `issync watch`が実行中
 - `GITHUB_TOKEN`環境変数: `export GITHUB_TOKEN=$(gh auth token)`
 - `gh` CLIがインストール済み
 - 未初期化issueは自動初期化（詳細は「エラーハンドリング」参照）
@@ -150,9 +150,17 @@ gh project item-edit --id <item-id> --project-id <project-id> --field-id <status
 
 **エラー時**: 認証エラーは`gh auth refresh -s project`、その他失敗時は警告のみで作業継続（手動変更案内）
 
-### ステップ10: 完了通知
+### ステップ10: GitHub Issueへの同期
 
-編集内容のサマリーを出力（watchが自動同期）。出力フォーマットは次セクション参照。
+親issueの進捗ドキュメントの変更をGitHub Issueに同期してください。
+
+```bash
+issync push
+```
+
+### ステップ11: 完了通知
+
+編集内容のサマリーを出力。出力フォーマットは次セクション参照。
 
 ## 出力フォーマット
 
@@ -172,7 +180,7 @@ gh project item-edit --id <item-id> --project-id <project-id> --field-id <status
 - ✅ サブissue #[サブissue番号]: [closeした（Related PR: [PR URL]） / すでにclosed]
 - ✅ issync remove実行: [✅ 成功 / ⚠️ スキップ（未登録） / ⚠️ 失敗]
 - ✅ GitHub Projects Status: `done`に変更 [✅ 成功 / ⚠️ 失敗（手動変更推奨）]
-- ✅ 自動同期完了（watchモードで親issueに反映）
+- ✅ GitHub Issueへの同期: 完了（issync push）
 
 ### 推奨アクション: 新規サブissue作成 (該当する場合のみ表示)
 以下のタスクは `/create-sub-issue` での新規サブissue化を推奨します：

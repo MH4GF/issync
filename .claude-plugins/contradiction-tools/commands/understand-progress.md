@@ -89,7 +89,7 @@ issync list
 **更新方法:**
 - EditツールまたはWrite/Updateツールを使用して進捗ドキュメントを更新
 - セクション単位での部分更新を推奨（ファイル全体の書き換えは避ける）
-- 更新後は`issync push`で自動的にGitHub Issueに同期される（watch mode実行中）
+- 更新後は`issync push`を実行してGitHub Issueに同期する
 
 **進捗ドキュメントはSingle Source of Truth**: GitHub Issueコメントと同期される進捗ドキュメントは、プロジェクトの現在の状態を表す唯一の真実の情報源です。継続的な更新により、他のセッションや将来の作業でコンテキストを正確に把握できます。
 

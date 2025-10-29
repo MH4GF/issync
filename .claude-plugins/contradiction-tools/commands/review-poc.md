@@ -490,18 +490,9 @@ gh pr close <PR URL> --comment "POC完了。レビュー結果を進捗ドキュ
 
 ---
 
-### ステップ10: issync pushで同期
+### ステップ10: GitHub Issueへの同期
 
-**注意**: issyncのwatchモードが起動している場合は、ファイルの変更が自動的にGitHub Issueに同期されます。明示的なpushコマンドは不要です。
-
-#### watchモードの確認
-
-```bash
-# watchが起動しているか確認
-ps aux | grep "issync watch" | grep -v grep
-```
-
-#### watchが起動していない場合
+進捗ドキュメントの変更をGitHub Issueに同期します。
 
 ```bash
 issync push
@@ -533,7 +524,7 @@ issync push
 - ✅ ステップ6: Decision Log推奨案記入（[U]個の推奨案を記録）
 - ✅ ステップ7: Specification / 仕様記入（オプショナル）
 - ✅ ステップ8: POC PRクローズ（PR #123）
-- ✅ ステップ9: issync push完了（watchモードで自動同期）
+- ✅ ステップ9: GitHub Issueへの同期完了（issync push）
 
 ### Acceptance Criteria検証結果
 - ✅ 達成: [達成した項目のリスト]

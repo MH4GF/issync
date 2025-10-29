@@ -122,10 +122,14 @@ Read: package.json (テストスクリプトとフレームワーク確認)
   - **⚠️ PoC必須**: [検証項目]
 ```
 
-### ステップ6: issync pushで同期 & Stage更新
+### ステップ6: GitHub Issueへの同期 & Stage更新
 
 **同期**:
-watchモード起動中は自動同期。起動していない場合は `issync push` を実行。
+進捗ドキュメントの変更をGitHub Issueに同期します。
+
+```bash
+issync push
+```
 
 **Stage更新（レビュー待ち）**: `gh project item-edit`でStage→`To Review`に設定。
 
