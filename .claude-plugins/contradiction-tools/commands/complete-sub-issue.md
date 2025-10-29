@@ -12,7 +12,8 @@ description: サブissue完了時に親issueの進捗ドキュメントを自動
 5. 親issueの進捗ドキュメントを更新（Outcomes & Retrospectives、Open Questions）
 6. Follow-up事項の適切な処理提案（Open Questions追加または/create-sub-issue実行提案）
 7. サブissueのclose（closeコメントに関連PR URLを含める）
-8. 完了通知
+8. GitHub Projects Status変更（done）
+9. 完了通知
 
 ## 使用方法
 
@@ -38,44 +39,32 @@ description: サブissue完了時に親issueの進捗ドキュメントを自動
 - `issync watch`が実行中
 - `GITHUB_TOKEN`環境変数が設定済み（`export GITHUB_TOKEN=$(gh auth token)`）
 - `gh` CLIがインストール済み
-
-未初期化のissueは自動的に `issync init` で初期化します。
+- 未初期化issueの自動初期化については「エラーハンドリング」参照
 
 ## 実行ステップ
 
 ### ステップ1: サブissue情報をフェッチと親issue番号の取得
 
 **親issue番号の取得**:
-
-GitHub Sub-issues APIが利用可能です:
-```bash
-gh api /repos/{owner}/{repo}/issues/{issue_number}/parent
-```
-
-このエンドポイントから親issueの `number`, `title`, `url`, `state` などが取得できます。
-
-APIで取得できない場合は、issueのbodyや関連情報から親issue番号を柔軟に探してください。
-
-**確認事項**:
-- issue状態（open/closed）
-- 無効なURL、親issue番号不在時はエラー表示
+- GitHub Sub-issues API (`gh api /repos/{owner}/{repo}/issues/{issue_number}/parent`) を使用
+- API失敗時はissue bodyから抽出
+- issue状態確認、無効URL/親issue不在時はエラー表示
 
 ### ステップ2: サブissueの進捗ドキュメントを読み込み
 
-`issync list`で登録状況を確認。未登録の場合は自動初期化（詳細は「issync管理外のissue処理」参照）。
+`issync list`で登録状況を確認。未登録の場合は自動初期化（エラーハンドリング参照）。
 
-抽出する情報：
+抽出情報:
 - **Outcomes & Retrospectives**: 実装内容サマリー、発見や学び
-- **Follow-up Issues**: 将来対応すべき事項（存在する場合）
+- **Follow-up Issues**: 将来対応すべき事項
 
-初期化失敗時は「（記載なし）」として続行可。
+初期化失敗時は「（記載なし）」で続行。
 
-### ステップ3: PRの内容確認と振り返り処理
+### ステップ3: PRの内容確認と振り返り処理（常に実行）
 
-**このステップは振り返りの記入状態に関わらず、常に実行します。**
-理由: PRレビューで新たなFollow-up Issuesが発生している可能性があるため。
+PRレビューで新たなFollow-up Issuesが発生している可能性があるため、振り返りの記入状態に関わらず常に実行。
 
-1. **ユーザーに関連PR URLを確認**
+1. **ユーザーに関連PR URLを確認**（以降の手順で使用）
    ```
    このサブissueに関連するPRのURLを教えてください
    ```
@@ -86,20 +75,14 @@ APIで取得できない場合は、issueのbodyや関連情報から親issue番
    gh pr diff <PR URL>
    ```
 
-   抽出情報: title, description, commits, diff, reviews, comments（PRレビューで指摘された事項含む）
+3. **振り返り本文の処理**（Outcomes & Retrospectivesが空または「（記載なし）」の場合のみ）
+   - 実装内容（事実ベース）と技術的な発見や学びを生成
+   - ユーザー確認後、サブissueの進捗ドキュメントに追記
+   - 既に記入済みの場合はスキップ
 
-3. **振り返り本文の処理（Outcomes & Retrospectives が空または「（記載なし）」の場合のみ）**
-   - **実装内容**: 何を実装したか（事実ベース）
-   - **技術的な発見や学び**: どのような課題があり、どう解決したか
-
-   生成した内容をユーザーに確認し、承認を得てからサブissueの進捗ドキュメントに追記
-
-4. **Follow-up Issuesの抽出（常に実行）**
-   PR description、レビューコメント、コミットメッセージから未対応事項を抽出し、サブissueの進捗ドキュメントの Follow-up Issues セクションに追記（既存の内容とマージ）。ユーザー確認後に反映。
-
-**Note**:
-- 振り返り本文が既に記入されている場合、実装内容や学びの生成/追記はスキップ
-- Follow-up Issuesは常にPRから抽出して、既存の内容と統合
+4. **Follow-up Issuesの抽出**（常に実行）
+   - PR description、レビューコメント、コミットメッセージから未対応事項を抽出
+   - 既存内容とマージし、ユーザー確認後にサブissueの進捗ドキュメントに追記
 
 ### ステップ4: 親issueの進捗ドキュメントを特定
 
@@ -135,14 +118,23 @@ issync list
 
 ### ステップ7: サブissueをclose
 
-openの場合のみ実行:
+openの場合のみ実行（closedの場合はスキップ）:
 ```bash
 gh issue close <サブissue URL> --comment "Completed. Summary recorded in parent issue #<親issue番号>. Related PR: <PR URL>"
 ```
 
-**Note**: PR URLはステップ3で取得。常に含めること。すでにclosedの場合はスキップ。
+### ステップ8: GitHub Projects Status変更
 
-### ステップ8: 完了通知
+サブissueのStatus→`done`に変更。GraphQL APIでProject ID取得後、`gh project item-edit`で更新。
+
+```bash
+gh api graphql -f query='...'  # Project情報取得
+gh project item-edit --id <item-id> --project-id <project-id> --field-id <status-field-id> --option-id <done-option-id>
+```
+
+**エラー時**: 認証エラーは`gh auth refresh -s project`、その他失敗時は警告のみで作業継続（手動変更案内）
+
+### ステップ9: 完了通知
 
 編集内容のサマリーを出力（watchが自動同期）。
 
@@ -162,6 +154,7 @@ gh issue close <サブissue URL> --comment "Completed. Summary recorded in paren
 - ✅ 親issueのOutcomes & Retrospectives: サブタスク完了サマリー追加 (進捗ドキュメント:[line_number])
 - ✅ 親issueのOpen Questions: [X]件追加
 - ✅ サブissue #[サブissue番号]: [closeした（Related PR: [PR URL]） / すでにclosed]
+- ✅ GitHub Projects Status: `done`に変更 [✅ 成功 / ⚠️ 失敗（手動変更推奨）]
 - ✅ 自動同期完了（watchモードで親issueに反映）
 
 ### 推奨アクション: 新規サブissue作成 (該当する場合のみ表示)
@@ -199,18 +192,13 @@ gh issue close <サブissue URL> --comment "Completed. Summary recorded in paren
 /complete-sub-issue https://github.com/MH4GF/issync/issues/124
 ```
 
-実行フローは冒頭のワークフロー（ステップ1-8）を参照。
+実行フローは冒頭のワークフロー（ステップ1-9）を参照。
 
 ---
 
 ## 運用フロー
 
 1. `/create-sub-issue`でサブissue作成
-2. サブissueで開発（plan → retrospective）
-   - 進捗ドキュメントに成果を記入（任意）
-   - 振り返り未記入でもPRからの自動生成が可能
-3. `/complete-sub-issue`で親issueに自動反映＆サブissueclose
-   - 常に関連PR URLを確認
-   - 振り返り未記入の場合: PRから振り返りを自動生成
-   - Follow-up Issues: PRから常に抽出して最新化
-4. 必要に応じて`/create-sub-issue`で次のサブissueを作成
+2. サブissueで開発（plan → retrospective）、進捗ドキュメントに成果を記入（任意）
+3. `/complete-sub-issue`で親issueに自動反映＆サブissueclose（PR URL確認、振り返り/Follow-up Issues自動生成）
+4. 必要に応じて`/create-sub-issue`で次のサブissue作成
