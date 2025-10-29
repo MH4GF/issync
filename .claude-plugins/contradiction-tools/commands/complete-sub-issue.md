@@ -1,5 +1,5 @@
 ---
-description: サブissue完了時に親issueの進捗ドキュメントを自動更新。振り返り未記入時はPRから自動生成し、Follow-up事項を適切に処理（Open Questions追加、/create-sub-issue提案）
+description: サブissue完了時に親issueの進捗ドキュメントを自動更新。振り返り未記入時はPRから自動生成し、Follow-up事項を適切に処理（Open Questions追加、/create-sub-issue提案）。完了後はissync removeで同期設定を自動削除
 ---
 
 # /complete-sub-issue: サブissue完了オペレーション
@@ -12,8 +12,9 @@ description: サブissue完了時に親issueの進捗ドキュメントを自動
 5. 親issueの進捗ドキュメントを更新（Outcomes & Retrospectives、Open Questions）
 6. Follow-up事項の適切な処理提案（Open Questions追加または/create-sub-issue実行提案）
 7. サブissueのclose（closeコメントに関連PR URLを含める）
-8. GitHub Projects Status変更（done）
-9. 完了通知
+8. issync remove実行（完了したサブissueの同期設定を削除）
+9. GitHub Projects Status変更（done）
+10. 完了通知
 
 ## 使用方法
 
@@ -123,7 +124,21 @@ openの場合のみ実行（closedの場合はスキップ）:
 gh issue close <サブissue URL> --comment "Completed. Summary recorded in parent issue #<親issue番号>. Related PR: <PR URL>"
 ```
 
-### ステップ8: GitHub Projects Status変更
+### ステップ8: issync remove実行
+
+サブissueclose後、issync管理から同期設定を削除:
+```bash
+issync remove --issue <サブissue URL>
+```
+
+**エラーハンドリング**:
+- `issync remove`が失敗した場合でも処理を継続
+- 失敗時は警告メッセージを表示し、完了サマリーに失敗を記録
+- サブissueが未登録（issync管理外）の場合もエラーとせず、スキップして続行
+
+**実行タイミング**: サブissueをclose後に実行することで、完了したサブissueの進捗ドキュメントがissync管理下に残り続けることを防ぐ
+
+### ステップ9: GitHub Projects Status変更
 
 サブissueのStatus→`done`に変更。GraphQL APIでProject ID取得後、`gh project item-edit`で更新。
 
@@ -134,7 +149,7 @@ gh project item-edit --id <item-id> --project-id <project-id> --field-id <status
 
 **エラー時**: 認証エラーは`gh auth refresh -s project`、その他失敗時は警告のみで作業継続（手動変更案内）
 
-### ステップ9: 完了通知
+### ステップ10: 完了通知
 
 編集内容のサマリーを出力（watchが自動同期）。
 
@@ -154,6 +169,7 @@ gh project item-edit --id <item-id> --project-id <project-id> --field-id <status
 - ✅ 親issueのOutcomes & Retrospectives: サブタスク完了サマリー追加 (進捗ドキュメント:[line_number])
 - ✅ 親issueのOpen Questions: [X]件追加
 - ✅ サブissue #[サブissue番号]: [closeした（Related PR: [PR URL]） / すでにclosed]
+- ✅ issync remove実行: [✅ 成功 / ⚠️ スキップ（未登録） / ⚠️ 失敗]
 - ✅ GitHub Projects Status: `done`に変更 [✅ 成功 / ⚠️ 失敗（手動変更推奨）]
 - ✅ 自動同期完了（watchモードで親issueに反映）
 
