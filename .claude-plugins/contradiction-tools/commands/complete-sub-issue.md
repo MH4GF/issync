@@ -74,6 +74,7 @@ PRレビューで新たなFollow-up Issuesが発生している可能性があ�
    ```bash
    gh pr view <PR URL> --json title,body,commits,reviews,comments
    gh pr diff <PR URL>
+   gh api repos/{owner}/{repo}/pulls/{pr_number}/comments  # インラインコメント＋リプライスレッド取得
    ```
 
 3. **振り返り本文の処理**（Outcomes & Retrospectivesが空または「（記載なし）」の場合のみ）
@@ -82,7 +83,8 @@ PRレビューで新たなFollow-up Issuesが発生している可能性があ�
    - 既に記入済みの場合はスキップ
 
 4. **Follow-up Issuesの抽出**（常に実行）
-   - PR description、レビューコメント、コミットメッセージから未対応事項を抽出
+   - PR description、レビューコメント、コミットメッセージ、**インラインコメントスレッド**から未対応事項を抽出
+   - インラインスレッド分析: 親コメント（改善候補）とリプライ（対応方針: 別PR/即対応/却下）から分類
    - 既存内容とマージし、ユーザー確認後にサブissueの進捗ドキュメントに追記
 
 ### ステップ4: 親issueの進捗ドキュメントを特定
