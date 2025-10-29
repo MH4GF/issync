@@ -109,6 +109,19 @@ program
   })
 
 program
+  .command('remove')
+  .description('Remove sync configuration from state.yml')
+  .option('-f, --file <path>', 'Select sync target by local file path')
+  .option('--issue <url>', 'Select sync target by issue URL')
+  .option('--delete-file', 'Also delete the local file')
+  .action(async (options: { file?: string; issue?: string; deleteFile?: boolean }) => {
+    const { remove } = await import('./commands/remove.js')
+    await _handleCommand(() =>
+      remove({ file: options.file, issue: options.issue, deleteFile: options.deleteFile }),
+    )
+  })
+
+program
   .command('watch')
   .description('Watch for changes and sync automatically (foreground process)')
   .option('-i, --interval <seconds>', 'Polling interval in seconds', '30')
