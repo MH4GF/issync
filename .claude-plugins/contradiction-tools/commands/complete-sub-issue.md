@@ -8,7 +8,7 @@ description: サブissue完了時に親issueの進捗ドキュメントを自動
 1. サブissue情報のフェッチと親issue番号の抽出
 2. 未初期化のissueがあれば `issync init` で自動初期化
 3. サブissueの進捗ドキュメントから完了情報を抽出
-4. **PRの内容を常に確認し、振り返り未記入時は自動生成、Follow-up Issuesは常に抽出**（ユーザーに関連PR URLを確認）
+4. **関連PRを自動取得し内容を常に確認、振り返り未記入時は自動生成、Follow-up Issuesは常に抽出**（Timeline Events API使用、取得失敗時のみユーザーに確認）
 5. 親issueの進捗ドキュメントを更新（Outcomes & Retrospectives、Open Questions）
 6. Follow-up事項の適切な処理提案（Open Questions追加または/create-sub-issue実行提案）
 7. サブissueのclose（closeコメントに関連PR URLを含める）
@@ -38,37 +38,41 @@ description: サブissue完了時に親issueの進捗ドキュメントを自動
 ## 前提条件
 
 - `issync watch`が実行中
-- `GITHUB_TOKEN`環境変数が設定済み（`export GITHUB_TOKEN=$(gh auth token)`）
+- `GITHUB_TOKEN`環境変数: `export GITHUB_TOKEN=$(gh auth token)`
 - `gh` CLIがインストール済み
-- 未初期化issueの自動初期化については「エラーハンドリング」参照
+- 未初期化issueは自動初期化（詳細は「エラーハンドリング」参照）
 
 ## 実行ステップ
 
 ### ステップ1: サブissue情報をフェッチと親issue番号の取得
 
-**親issue番号の取得**:
-- GitHub Sub-issues API (`gh api /repos/{owner}/{repo}/issues/{issue_number}/parent`) を使用
-- API失敗時はissue bodyから抽出
-- issue状態確認、無効URL/親issue不在時はエラー表示
+GitHub Sub-issues API (`gh api /repos/{owner}/{repo}/issues/{issue_number}/parent`) で親issue番号を取得。API失敗時はissue bodyから抽出。無効URL/親issue不在時はエラー表示。
 
 ### ステップ2: サブissueの進捗ドキュメントを読み込み
 
 `issync list`で登録状況を確認。未登録の場合は自動初期化（エラーハンドリング参照）。
 
-抽出情報:
-- **Outcomes & Retrospectives**: 実装内容サマリー、発見や学び
-- **Follow-up Issues**: 将来対応すべき事項
+以下を抽出:
+- **Outcomes & Retrospectives**: 実装内容、発見や学び
+- **Follow-up Issues**: 将来対応事項
 
 初期化失敗時は「（記載なし）」で続行。
 
-### ステップ3: PRの内容確認と振り返り処理（常に実行）
+### ステップ3: PRの自動取得と内容確認（常に実行）
 
-PRレビューで新たなFollow-up Issuesが発生している可能性があるため、振り返りの記入状態に関わらず常に実行。
-
-1. **ユーザーに関連PR URLを確認**（以降の手順で使用）
+1. **関連PRを自動取得**
+   ```bash
+   gh api repos/{owner}/{repo}/issues/{issue_number}/timeline \
+     --jq '.[] | select(.event == "cross-referenced" and .source.issue.pull_request != null) |
+          {pr_url: .source.issue.html_url, pr_number: .source.issue.number,
+           pr_state: .source.issue.state, merged_at: .source.issue.pull_request.merged_at}'
    ```
-   このサブissueに関連するPRのURLを教えてください
-   ```
+   - Timeline Events APIの`cross-referenced`イベントから`pull_request`を持つものを抽出
+   - 複数ある場合は最新のマージ済みPRを優先（`merged_at`でソート）
+   - 取得できない場合のみユーザーに確認:
+     ```
+     このサブissueに関連するPRのURLを教えてください
+     ```
 
 2. **PRの内容を分析**
    ```bash
@@ -128,17 +132,12 @@ gh issue close <サブissue URL> --comment "Completed. Summary recorded in paren
 
 ### ステップ8: issync remove実行
 
-サブissueclose後、issync管理から同期設定を削除:
+サブissueをclose後、issync管理から同期設定を削除:
 ```bash
 issync remove --issue <サブissue URL>
 ```
 
-**エラーハンドリング**:
-- `issync remove`が失敗した場合でも処理を継続
-- 失敗時は警告メッセージを表示し、完了サマリーに失敗を記録
-- サブissueが未登録（issync管理外）の場合もエラーとせず、スキップして続行
-
-**実行タイミング**: サブissueをclose後に実行することで、完了したサブissueの進捗ドキュメントがissync管理下に残り続けることを防ぐ
+失敗時も処理を継続し、警告メッセージを表示。未登録の場合はスキップ。
 
 ### ステップ9: GitHub Projects Status変更
 
@@ -153,7 +152,7 @@ gh project item-edit --id <item-id> --project-id <project-id> --field-id <status
 
 ### ステップ10: 完了通知
 
-編集内容のサマリーを出力（watchが自動同期）。
+編集内容のサマリーを出力（watchが自動同期）。出力フォーマットは次セクション参照。
 
 ## 出力フォーマット
 
@@ -218,5 +217,5 @@ gh project item-edit --id <item-id> --project-id <project-id> --field-id <status
 
 1. `/create-sub-issue`でサブissue作成
 2. サブissueで開発（plan → retrospective）、進捗ドキュメントに成果を記入（任意）
-3. `/complete-sub-issue`で親issueに自動反映＆サブissueclose（PR URL確認、振り返り/Follow-up Issues自動生成）
+3. `/complete-sub-issue`で親issueに自動反映＆サブissueclose（PR自動取得、振り返り/Follow-up Issues自動生成）
 4. 必要に応じて`/create-sub-issue`で次のサブissue作成
