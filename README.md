@@ -192,6 +192,31 @@ issync watch --issue https://github.com/owner/repo/issues/123
 - Safety check on startup: detects conflicts and auto-syncs if only one side changed
 - Supports multiple sync targets: Watches all configured syncs in the selected config
 
+### `issync remove`
+
+Remove a sync configuration from state.yml.
+
+```bash
+# Remove sync by issue URL
+issync remove --issue https://github.com/owner/repo/issues/123
+
+# Remove sync by local file path
+issync remove --file docs/plan.md
+
+# Remove sync and delete the local file
+issync remove --file docs/plan.md --delete-file
+```
+
+**Options:**
+- `-f, --file <path>`: Select sync target by local file path
+- `--issue <url>`: Select sync target by issue URL
+- `--delete-file`: Also delete the local file
+
+**Important notes:**
+- Removal is immediate with no confirmation prompt (recoverable with `issync init`)
+- When watch daemon is running, a warning is displayed but removal proceeds
+- Uses atomic updates to preserve other sync configurations
+
 ## Configuration
 
 ### Config File Locations
