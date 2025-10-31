@@ -44,7 +44,7 @@ description: POC実装の結果をレビューし、人間の意思決定のた�
 
 ### ステップ1: Stage設定（AI作業開始）
 
-`gh project item-edit`でStage→`In Progress`に設定。失敗時も作業継続（警告のみ）。
+`!env CONTRADICTION_TOOLS_ENABLE_GITHUB_PROJECTS`が`true`の場合のみ、`gh project item-edit`でStage→`In Progress`に設定。失敗時も作業継続（警告のみ）。
 
 ---
 
@@ -502,7 +502,7 @@ issync push
 
 ### ステップ11: Stage更新（レビュー待ち）
 
-`gh project item-edit`でStage→`To Review`に設定。
+`!env CONTRADICTION_TOOLS_ENABLE_GITHUB_PROJECTS`が`true`の場合のみ、`gh project item-edit`でStage→`To Review`に設定。失敗時も作業継続（警告のみ）。
 
 **重要**: 人間承認後、Status→`implement`、Stage→`To Start`を手動で変更。
 

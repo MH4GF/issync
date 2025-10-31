@@ -27,6 +27,16 @@ GitHub Issue を単一の真実の情報源として、進捗ドキュメント�
    issync watch
    ```
 
+5. **GitHub Projects統合の設定**（オプション）:
+
+   GitHub Projectsを使用するプロジェクトでは、環境変数を設定してください：
+
+   ```bash
+   export CONTRADICTION_TOOLS_ENABLE_GITHUB_PROJECTS=true
+   ```
+
+   未設定の場合、GitHub Projects操作（Status/Stage変更）はスキップされます。
+
 ### インストール
 
 **Claude Code 上で**以下のコマンドを実行します：
