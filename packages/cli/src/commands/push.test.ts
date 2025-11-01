@@ -6,9 +6,10 @@ import { Readable, Writable } from 'node:stream'
 import { loadConfig, saveConfig } from '../lib/config.js'
 import * as githubModule from '../lib/github.js'
 import { calculateHash } from '../lib/hash.js'
+import { confirmAction } from '../lib/prompt.js'
 import { expectNthCallContent } from '../lib/test-helpers.js'
 import type { IssyncState } from '../types/index.js'
-import { confirmAction, push } from './push.js'
+import { push } from './push.js'
 
 type GitHubClientInstance = ReturnType<typeof githubModule.createGitHubClient>
 

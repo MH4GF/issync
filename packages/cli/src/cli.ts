@@ -122,6 +122,16 @@ program
   })
 
 program
+  .command('clean')
+  .description('Remove stale sync configurations (where local file does not exist)')
+  .option('--dry-run', 'Show what would be removed without actually removing')
+  .option('--force', 'Remove without confirmation prompt')
+  .action(async (options: { dryRun?: boolean; force?: boolean }) => {
+    const { clean } = await import('./commands/clean.js')
+    await _handleCommand(() => clean({ dryRun: options.dryRun, force: options.force }))
+  })
+
+program
   .command('watch')
   .description('Watch for changes and sync automatically (foreground process)')
   .option('-i, --interval <seconds>', 'Polling interval in seconds', '30')
