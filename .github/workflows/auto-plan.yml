@@ -20,11 +20,15 @@ jobs:
         with:
           fetch-depth: 1
 
-      - name: Run Claude Code with /plan
+      - name: Run Claude Code with /contradiction-tools:plan
         id: claude
         uses: anthropics/claude-code-action@v1
         with:
           claude_code_oauth_token: ${{ secrets.CLAUDE_CODE_OAUTH_TOKEN }}
-          prompt: '/plan'
+          plugin_marketplaces: |
+            https://github.com/MH4GF/issync
+          plugins: |
+            contradiction-tools@issync-plugins
+          prompt: '/contradiction-tools:plan ${{ github.event.issue.html_url }}'
           additional_permissions: |
             actions: read

@@ -248,9 +248,10 @@ This project uses GitHub Actions to automate AI-driven development workflows.
 - **Usage**: Comment `@claude [your instructions]` on any Issue or PR
 - **Example**: `@claude fix the bug in auth.ts`
 
-**`.github/workflows/auto-plan.yml`** (Automatic /plan execution)
+**`.github/workflows/auto-plan.yml`** (Automatic /contradiction-tools:plan execution)
 - **Trigger**: Issue creation or labeling with `issync` label
-- **Purpose**: Automatically execute `/plan` command to create progress documents
+- **Purpose**: Automatically execute `/contradiction-tools:plan` plugin command to create progress documents
+- **Plugin**: Installs `contradiction-tools@issync-plugins` from https://github.com/MH4GF/issync marketplace
 - **Usage**:
   - Create new Issue with `issync` label → auto-plan runs
   - Add `issync` label to existing Issue → auto-plan runs
@@ -266,6 +267,8 @@ Both workflows require the `CLAUDE_CODE_OAUTH_TOKEN` secret:
 
 The two workflows operate independently:
 - `claude.yml`: General-purpose Claude Code execution (Issue/PR agnostic)
-- `auto-plan.yml`: Specialized for `issync` labeled Issues, executes `/plan` automatically
+- `auto-plan.yml`: Specialized for `issync` labeled Issues, executes `/contradiction-tools:plan` plugin command automatically
 
-**Important**: GitHub Actions cannot trigger other workflows via comments. Therefore, `auto-plan.yml` directly executes `claude-code-action` rather than posting a comment to trigger `claude.yml`.
+**Important**:
+- GitHub Actions cannot trigger other workflows via comments. Therefore, `auto-plan.yml` directly executes `claude-code-action` rather than posting a comment to trigger `claude.yml`.
+- `auto-plan.yml` uses `plugin_marketplaces` and `plugins` parameters to install the contradiction-tools plugin before execution, enabling seamless `/contradiction-tools:plan` command usage in GitHub Actions environment.
