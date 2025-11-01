@@ -192,7 +192,7 @@ The MVP's `pull` performs unconditional overwrites. Editing files before startin
 ### Required Workflow
 
 ```bash
-export GITHUB_TOKEN=$(gh auth token)  # Get token from gh CLI
+# Ensure GITHUB_TOKEN environment variable is set
 bun run dev watch                     # Start watch FIRST
 # Now safe to edit files
 ```
