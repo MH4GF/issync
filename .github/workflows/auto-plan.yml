@@ -2,7 +2,7 @@ name: Auto Plan
 
 on:
   issues:
-    types: [opened, labeled]
+    types: [labeled]
 
 jobs:
   auto-plan:
