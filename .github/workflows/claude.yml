@@ -30,11 +30,21 @@ jobs:
         with:
           fetch-depth: 1
 
+      - name: Install issync CLI
+        run: npm install -g @mh4gf/issync
+
+      - name: Setup GITHUB_TOKEN for issync
+        run: echo "GITHUB_TOKEN=${{ secrets.GITHUB_TOKEN }}" >> $GITHUB_ENV
+
       - name: Run Claude Code
         id: claude
         uses: anthropics/claude-code-action@v1
         with:
           claude_code_oauth_token: ${{ secrets.CLAUDE_CODE_OAUTH_TOKEN }}
+          plugin_marketplaces: |
+            https://github.com/MH4GF/issync.git
+          plugins: |
+            contradiction-tools@issync-plugins
 
           # This is an optional setting that allows Claude to read CI results on PRs
           additional_permissions: |

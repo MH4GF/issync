@@ -5,6 +5,7 @@ import path from 'node:path'
 import { Readable, Writable } from 'node:stream'
 import { loadConfig, saveConfig } from '../lib/config.js'
 import * as githubModule from '../lib/github.js'
+import { addMarker } from '../lib/github.js'
 import { calculateHash } from '../lib/hash.js'
 import { confirmAction } from '../lib/prompt.js'
 import { expectNthCallContent } from '../lib/test-helpers.js'
@@ -500,7 +501,7 @@ describe('push command - file not found guidance', () => {
     saveConfig(state, tempDir)
 
     const mockGitHubClient: Pick<GitHubClientInstance, 'getComment' | 'updateComment'> = {
-      getComment: (owner: string, repo: string, commentId: number) => {
+      getComment: (_owner: string, _repo: string, commentId: number) => {
         if (commentId === 123) {
           return Promise.resolve({
             id: 123,
