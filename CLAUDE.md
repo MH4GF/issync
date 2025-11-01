@@ -235,3 +235,37 @@ issyncで管理されるドキュメントの総称。GitHub Issueコメント�
 **関連用語:**
 - Living documentation: 継続的に更新される文書
 - Single Source of Truth (SSOT): GitHub Issueを唯一の真実の情報源とする
+
+## GitHub Actions Integration
+
+This project uses GitHub Actions to automate AI-driven development workflows.
+
+### Available Workflows
+
+**`.github/workflows/claude.yml`** (Manual Claude Code invocation)
+- **Trigger**: `@claude` mention in Issue comments, PR comments, or Issue/PR body
+- **Purpose**: Run Claude Code on-demand for any task
+- **Usage**: Comment `@claude [your instructions]` on any Issue or PR
+- **Example**: `@claude fix the bug in auth.ts`
+
+**`.github/workflows/auto-plan.yml`** (Automatic /plan execution)
+- **Trigger**: Issue creation or labeling with `issync` label
+- **Purpose**: Automatically execute `/plan` command to create progress documents
+- **Usage**:
+  - Create new Issue with `issync` label → auto-plan runs
+  - Add `issync` label to existing Issue → auto-plan runs
+- **Output**: Creates `.issync/docs/plan-{number}-{slug}.md` and syncs to Issue comment
+
+### Setup Requirements
+
+Both workflows require the `CLAUDE_CODE_OAUTH_TOKEN` secret:
+1. Visit https://claude.ai/settings/oauth to generate a token
+2. Add it to repository secrets as `CLAUDE_CODE_OAUTH_TOKEN`
+
+### Workflow Architecture
+
+The two workflows operate independently:
+- `claude.yml`: General-purpose Claude Code execution (Issue/PR agnostic)
+- `auto-plan.yml`: Specialized for `issync` labeled Issues, executes `/plan` automatically
+
+**Important**: GitHub Actions cannot trigger other workflows via comments. Therefore, `auto-plan.yml` directly executes `claude-code-action` rather than posting a comment to trigger `claude.yml`.
