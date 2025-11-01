@@ -458,3 +458,89 @@ describe('confirmAction - force push confirmation prompt', () => {
     expect(result).toBe(true)
   })
 })
+
+describe('push command - file not found guidance', () => {
+  let tempDir: string
+  let consoleErrorSpy: ReturnType<typeof spyOn>
+
+  beforeEach(async () => {
+    tempDir = await mkdtemp(path.join(import.meta.dir, '../../.test-tmp/push-guidance-'))
+    await mkdir(path.join(tempDir, '.issync'), { recursive: true })
+    consoleErrorSpy = spyOn(console, 'error').mockImplementation(() => {})
+  })
+
+  afterEach(async () => {
+    await rm(tempDir, { recursive: true, force: true })
+    consoleErrorSpy.mockRestore()
+  })
+
+  test('suggests clean command when file not found in multi-sync push', async () => {
+    // Arrange - Create state with one existing file and one missing file
+    const existingFile = path.join(tempDir, '.issync/docs/existing.md')
+    const existingContent = '# Existing'
+    await mkdir(path.dirname(existingFile), { recursive: true })
+    await writeFile(existingFile, existingContent, 'utf-8')
+
+    const state: IssyncState = {
+      syncs: [
+        {
+          issue_url: 'https://github.com/owner/repo/issues/1',
+          local_file: existingFile,
+          comment_id: 123,
+          last_synced_hash: calculateHash(existingContent), // Match with local content
+        },
+        {
+          issue_url: 'https://github.com/owner/repo/issues/2',
+          local_file: path.join(tempDir, '.issync/docs/missing.md'), // File does not exist
+          comment_id: 456,
+          last_synced_hash: 'hash2',
+        },
+      ],
+    }
+    saveConfig(state, tempDir)
+
+    const mockGitHubClient: Pick<GitHubClientInstance, 'getComment' | 'updateComment'> = {
+      getComment: (owner: string, repo: string, commentId: number) => {
+        if (commentId === 123) {
+          return Promise.resolve({
+            id: 123,
+            body: addMarker(existingContent), // Match with local and last_synced_hash
+            updated_at: '2025-01-01T00:00:00Z',
+          })
+        }
+        throw new Error('Comment not found')
+      },
+      updateComment: () =>
+        Promise.resolve({
+          id: 123,
+          body: '',
+          updated_at: '2025-01-01T00:00:00Z',
+        }),
+    }
+
+    spyOn(githubModule, 'createGitHubClient').mockReturnValue(
+      mockGitHubClient as unknown as GitHubClientInstance,
+    )
+
+    // Act & Assert
+    try {
+      await push({ cwd: tempDir })
+      throw new Error('Expected push to fail')
+    } catch (error) {
+      // Expect failure due to missing file
+      expect(error).toBeInstanceOf(Error)
+      if (error instanceof Error) {
+        expect(error.message).toContain('push operation(s) failed')
+      }
+    }
+
+    // Verify clean command guidance is displayed
+    expect(consoleErrorSpy).toHaveBeenCalledWith('\n💡 Tip: Remove stale sync configurations with:')
+    expect(consoleErrorSpy).toHaveBeenCalledWith(
+      '  issync clean --dry-run  # Preview what will be removed',
+    )
+    expect(consoleErrorSpy).toHaveBeenCalledWith(
+      '  issync clean            # Remove with confirmation',
+    )
+  })
+})

@@ -38,5 +38,18 @@ export function reportSyncResults(
     console.log(`\n✓ ${successCount} sync(s) ${pastTense} successfully`)
   }
 
+  // Check if any failures are due to missing files and suggest clean command
+  const hasFileNotFoundError = failures.some((failure) => {
+    const errorMsg =
+      failure.reason instanceof Error ? failure.reason.message : String(failure.reason)
+    return errorMsg.includes('does not exist') || errorMsg.includes('File not found')
+  })
+
+  if (hasFileNotFoundError) {
+    console.error('\n💡 Tip: Remove stale sync configurations with:')
+    console.error('  issync clean --dry-run  # Preview what will be removed')
+    console.error('  issync clean            # Remove with confirmation')
+  }
+
   throw new Error(message)
 }
