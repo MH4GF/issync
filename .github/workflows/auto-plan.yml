@@ -26,7 +26,7 @@ jobs:
         with:
           claude_code_oauth_token: ${{ secrets.CLAUDE_CODE_OAUTH_TOKEN }}
           plugin_marketplaces: |
-            https://github.com/MH4GF/issync
+            https://github.com/MH4GF/issync.git
           plugins: |
             contradiction-tools@issync-plugins
           prompt: '/contradiction-tools:plan ${{ github.event.issue.html_url }}'
