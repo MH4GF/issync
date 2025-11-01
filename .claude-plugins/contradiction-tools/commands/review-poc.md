@@ -35,7 +35,7 @@ description: POC実装の結果をレビューし、人間の意思決定のた�
 実行前に必要なものは以下です：
 - [ ] **現在のGitHub Issue Statusが `architecture-decision` であることを確認**（手動確認）
 - [ ] POC実装が完了し、PRが作成されている
-- [ ] `GITHUB_TOKEN` 環境変数が設定されている（`export GITHUB_TOKEN=$(gh auth token)`）
+- [ ] `GITHUB_TOKEN` 環境変数が設定されている
 - [ ] 進捗ドキュメントファイルがローカルに存在する
 
 **重要**: このコマンドは`architecture-decision`ステートで実行されることを前提としています。適切なタイミングで実行する責任はユーザーにあります。

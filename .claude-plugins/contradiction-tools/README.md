@@ -18,9 +18,8 @@ GitHub Issue を単一の真実の情報源として、進捗ドキュメント�
 
 3. **GITHUB_TOKEN 環境変数**の設定:
 
-   ```bash
-   export GITHUB_TOKEN=$(gh auth token)
-   ```
+   - ローカル開発: `export GITHUB_TOKEN=$(gh auth token)`
+   - GitHub Actions: ワークフローで自動設定済み（設定不要）
 
 4. **issync watch**の起動（推奨）:
    ```bash
@@ -157,7 +156,7 @@ POC 完了後、POC で得た知見を分析し、人間の意思決定のため
 
    - 現在の GitHub Issue Status が `architecture-decision` である
    - POC 実装が完了し、PR が作成されている
-   - `GITHUB_TOKEN` 環境変数が設定されている（`export GITHUB_TOKEN=$(gh auth token)`）
+   - `GITHUB_TOKEN` 環境変数が設定されている
 
 2. コマンドを実行:
 

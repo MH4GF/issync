@@ -27,7 +27,7 @@ description: planフェーズのプロセスを標準化し、コードベース
 ## 前提条件
 
 - GitHub Issueが作成されている
-- `GITHUB_TOKEN` 環境変数が設定されている（`export GITHUB_TOKEN=$(gh auth token)`）
+- `GITHUB_TOKEN` 環境変数が設定されている
 
 ## 実行ステップ
 

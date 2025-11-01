@@ -38,7 +38,7 @@ description: サブissue完了時に親issueの進捗ドキュメントを自動
 
 ## 前提条件
 
-- `GITHUB_TOKEN`環境変数: `export GITHUB_TOKEN=$(gh auth token)`
+- `GITHUB_TOKEN`環境変数が設定されている
 - `gh` CLIがインストール済み
 - 未初期化issueは自動初期化（詳細は「エラーハンドリング」参照）
 
