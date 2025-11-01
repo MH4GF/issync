@@ -4,7 +4,6 @@
 - Core CLI lives in `src/`; entry `src/cli.ts`, commands in `src/commands/`, shared logic in `src/lib/`, and reusable types in `src/types/`.
 - Tests are colocated as `*.test.ts` beside the module under test for quick discovery.
 - Build artifacts land in `dist/`; treat them as generated output only.
-- Runtime sync state is written to `.issync/state.yml` and must stay untracked (`.issync/` is ignored).
 - Consult `docs/plan.md` before altering flows to stay aligned.
 
 ## Build, Test, and Development Commands

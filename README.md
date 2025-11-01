@@ -37,12 +37,8 @@ export GITHUB_TOKEN=ghp_your_token_here
 ### 2. Initialize sync
 
 ```bash
-# Link a GitHub Issue to a local file (auto-detects config location)
+# Link a GitHub Issue to a local file
 issync init https://github.com/owner/repo/issues/123 --file docs/plan.md
-
-issync init https://github.com/owner/repo/issues/123 --file ~/documents/plan.md --global
-
-issync init https://github.com/owner/repo/issues/123 --file docs/plan.md --local
 
 # Create from template
 issync init https://github.com/owner/repo/issues/123 --file docs/plan.md --template template.md
@@ -78,33 +74,18 @@ issync init https://github.com/owner/repo/issues/123 --file docs/plan.md
   - Example: For issue #123, the default will be `.issync/docs/plan-123.md`
   - This allows tracking multiple issues without file name conflicts
 - `--template <path>`: Create file from template if it doesn't exist
-  - File paths are stored as absolute paths
-  - Config is shared across all projects
-  - Useful for tracking issues across multiple repositories
-  - File paths are stored as relative paths
-  - Config is project-specific (should be git-ignored)
-  - Default behavior for most use cases
-
-**Auto-detection (when neither --global nor --local is specified):**
-- Checks if `~/.issync/state.yml` exists → uses global
-- Otherwise → uses local (creates `./.issync/state.yml`)
 
 **Behavior:**
 - Detects existing issync-managed comments on the Issue and pulls the content
 - Creates a new file from template if no existing comment is found
-- Prevents duplicate: Cannot add same issue to both global and local configs
+- Config is stored in `~/.issync/state.yml` (global configuration)
 
 ### `issync pull`
 
 Pull remote changes from GitHub Issue comment to local file.
 
 ```bash
-# Auto-detect config location
 issync pull
-
-issync pull --global
-
-issync pull --local
 
 # Select specific sync target
 issync pull --file docs/plan.md
@@ -120,12 +101,7 @@ issync pull --issue https://github.com/owner/repo/issues/123
 Push local changes to GitHub Issue comment.
 
 ```bash
-# Auto-detect config location
 issync push
-
-issync push --global
-
-issync push --local
 
 # Force push (skip optimistic lock check)
 issync push --force
@@ -164,12 +140,7 @@ issync push --force
 Start watch mode (foreground process, press Ctrl+C to stop).
 
 ```bash
-# Auto-detect config location
 issync watch
-
-issync watch --global
-
-issync watch --local
 
 # Custom polling interval (default: 30s)
 issync watch --interval 10
@@ -219,13 +190,9 @@ issync remove --file docs/plan.md --delete-file
 
 ## Configuration
 
-### Config File Locations
+### Config File Location
 
-issync supports two config file locations:
-
-- Recommended for most use cases
-
-- Useful for tracking issues across multiple repositories
+issync stores its configuration in `~/.issync/state.yml` (global configuration in your home directory). This allows tracking issues across multiple repositories from a single location.
 
 ### Config File Format
 
@@ -245,9 +212,16 @@ syncs:
 
 ### .gitignore
 
+Add `.issync/` to your project's `.gitignore` to exclude progress documents:
+
+```gitignore
+# issync progress documents (synced via GitHub Issues)
+.issync/
 ```
 
-**Note**: Global config (`~/.issync/state.yml`) is in your home directory and doesn't need to be git-ignored.
+**Note**:
+- Progress documents (`.issync/docs/`) are synced via GitHub Issues and should not be tracked by git
+- The global config file (`~/.issync/state.yml`) is in your home directory and doesn't need to be git-ignored
 
 ## Workflow for AI Agents
 
