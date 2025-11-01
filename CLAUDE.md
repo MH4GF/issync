@@ -29,10 +29,6 @@ bun install
 # Install git hooks (once per clone)
 npx lefthook install
 
-# Run CLI in development
-bun run dev --help
-bun run dev init <issue-url>
-
 # Testing (Bun Test - zero config, Jest-compatible)
 bun test                  # Run all tests
 bun test --watch          # Watch mode
@@ -50,6 +46,9 @@ bun run knip:fix            # Auto-fix knip issues where possible
 # Build for distribution
 bun run build
 ```
+
+**CLI Development:**
+For CLI-specific development commands (e.g., `bun run dev init`), see `packages/cli/CLAUDE.md`.
 
 **Development Workflow:**
 At the start of each session, run `bun test --watch` in the background. This provides continuous feedback as you write code and ensures tests are always passing. The watch mode is fast (~150ms) and won't slow down development.
