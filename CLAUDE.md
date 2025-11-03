@@ -48,7 +48,7 @@ bun run build
 ```
 
 **CLI Development:**
-For CLI-specific development commands (e.g., `bun run dev init`), see `packages/cli/CLAUDE.md`.
+For CLI-specific development commands, see `packages/cli/CLAUDE.md`.
 
 **Development Workflow:**
 At the start of each session, run `bun test --watch` in the background. This provides continuous feedback as you write code and ensures tests are always passing. The watch mode is fast (~150ms) and won't slow down development.
@@ -192,7 +192,7 @@ The MVP's `pull` performs unconditional overwrites. Editing files before startin
 
 ```bash
 # Ensure GITHUB_TOKEN environment variable is set
-bun run dev watch                     # Start watch FIRST
+issync watch                          # Start watch FIRST
 # Now safe to edit files
 ```
 
