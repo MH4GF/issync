@@ -9,16 +9,10 @@ description: 進捗ドキュメントに基づいた実装を進め、作業中�
 ## 使用方法
 
 ```bash
-/implement                                          # 引数なし: state.ymlから選択
+/implement                                          # state.ymlから選択
 /implement https://github.com/owner/repo/issues/123 # Issue URL指定
 /implement 123                                       # Issue番号指定
 ```
-
-**引数**:
-- `issue_url_or_number` (オプション): GitHub Issue URLまたはIssue番号
-  - 省略時: state.ymlから同期中のファイルを選択
-  - Issue URL指定: `/implement https://github.com/owner/repo/issues/123`
-  - Issue番号指定: `/implement 123`
 
 ## コンテキスト
 
@@ -30,8 +24,7 @@ description: 進捗ドキュメントに基づいた実装を進め、作業中�
 
 ## 前提条件
 
-- `GITHUB_TOKEN`環境変数が設定されている
-- `issync watch`が起動している（推奨）
+プロジェクト全体の前提条件は`README.md`を参照。このコマンド固有の前提条件:
 - 進捗ドキュメントが既に作成されている（`/contradiction-tools:plan`実行済み）
 - アーキテクチャ決定が完了している（`Specification / 仕様`セクションが記入済み）
 
@@ -70,48 +63,21 @@ description: 進捗ドキュメントに基づいた実装を進め、作業中�
 
 ### ステップ4: 進捗ドキュメントの継続的更新（**最重要**）
 
-実装を進める中で、**必ず進捗ドキュメントを継続的に更新してください**。これは最も重要なステップです。
+実装を進める中で、**必ず進捗ドキュメントを継続的に更新してください**。
 
 **更新タイミング:**
-- **主要な決定時**: 実装方針やアーキテクチャ決定が変更された場合は、`Decision Log`セクションを更新
-- **実装進捗時**: 機能実装が完了した際は、`Discoveries & Insights`セクションに実装中の発見を記録
-- **Open Questions解消時**: 未解決の質問が解消されたら、該当項目を取り消し線（~テキスト~）でマークし、「✅ 解決済み (YYYY-MM-DD)」を追加、採用した選択肢と理由を記載
-- **新しい疑問発生時**: 実装中に新たな問題や疑問が発生したら、`Open Questions`に追加
-- **Follow-up事項発生時**: 今回のスコープでは対応しないが将来対応すべき事項は、`Follow-up Issues`に追加
-- **仕様の明確化時**: 実装中に仕様が明確化された場合は、`Specification / 仕様`セクションを更新
+- 主要な決定時 → `Decision Log`を更新
+- 機能実装完了時 → `Discoveries & Insights`に発見を記録
+- Open Questions解消時 → 取り消し線（~テキスト~）でマーク、「✅ 解決済み (YYYY-MM-DD)」を追加
+- 新しい疑問発生時 → `Open Questions`に追加
+- Follow-up事項発生時 → `Follow-up Issues`に追加
+- 仕様明確化時 → `Specification / 仕様`を更新
 
-**更新方法:**
-- EditツールまたはWriteツールを使用して進捗ドキュメントを更新
-- セクション単位での部分更新を推奨（ファイル全体の書き換えは避ける）
-- 更新後は`issync push`を実行してGitHub Issueに同期する
-
-**進捗ドキュメントはSingle Source of Truth**: GitHub Issueコメントと同期される進捗ドキュメントは、プロジェクトの現在の状態を表す唯一の真実の情報源です。継続的な更新により、他のセッションや将来の作業でコンテキストを正確に把握できます。
+**更新方法:** Editツールでセクション単位で更新し、`issync push`で同期。進捗ドキュメントはSingle Source of Truthであり、他のセッションや将来の作業でコンテキストを正確に把握するための唯一の情報源です。
 
 ### ステップ5: テストの実行
 
-実装が完了したら、以下のテストを実行してください：
-
-1. **単体テスト**: 追加・変更した機能のテストを実行
-   ```bash
-   bun test
-   ```
-
-2. **型チェック**: TypeScriptの型エラーがないか確認
-   ```bash
-   bun run type-check
-   ```
-
-3. **コード品質チェック**: Biome linterとformatterを実行
-   ```bash
-   bun run check
-   ```
-
-4. **統合チェック**: すべてのチェックを一括実行（pre-commit hookと同じ）
-   ```bash
-   bun run check:ci
-   ```
-
-テストが失敗した場合は、エラーを修正してから再度テストを実行してください。
+実装が完了したら、`bun run check:ci`ですべてのチェックを実行（単体テスト、型チェック、コード品質チェックを含む）。個別実行: `bun test`、`bun run type-check`、`bun run check`。テスト失敗時はエラーを修正して再実行。
 
 ### ステップ6: 進捗ドキュメントの最終同期
 
@@ -146,47 +112,35 @@ issync push
 
 ## 出力フォーマット
 
-実装完了後、以下のサマリーを出力してください：
+実装完了後、以下のサマリーを出力:
 
 ```markdown
 ## /implement 実行結果
 
 ✅ 実装が完了しました
-
-**Issue**: <issue_url>
-**ファイル**: <progress_document_path>
+**Issue**: <issue_url> | **ファイル**: <progress_document_path>
 
 ### 実装内容
-- [実装した機能1]
-- [実装した機能2]
-- [実装した機能3]
+- [実装した機能1-3]
 
 ### テスト結果
-- ✅ 単体テスト: 成功
-- ✅ 型チェック: 成功
-- ✅ コード品質チェック: 成功
+✅ 単体テスト | 型チェック | コード品質チェック
 
 ### 進捗ドキュメント更新
-- ✅ Decision Log: [X]件の決定を記録
-- ✅ Discoveries & Insights: [Y]件の発見を記録
-- ✅ Open Questions: [Z]件を解消
-- ✅ GitHub Issueへの同期: 完了（issync push）
+✅ Decision Log: [X]件 | Discoveries & Insights: [Y]件 | Open Questions: [Z]件解消 | GitHub Issueへの同期完了
 
 ### 次のアクション
 - [ ] PRの作成とレビュー依頼
-- [ ] 必要に応じてOpen Questionsの解消
 - [ ] 完了後は`/complete-sub-issue`で親issueに反映（サブissueの場合）
 ```
 
 ## 重要な注意事項
 
-1. **進捗ドキュメント駆動**: `Specification / 仕様`セクションに基づいて実装を進める
-2. **継続的更新**: 実装中は常に進捗ドキュメントを更新する（最重要）
-3. **Single Source of Truth**: 進捗ドキュメントはプロジェクトの唯一の真実の情報源
-4. **テスト駆動**: `Validation & Acceptance Criteria`に基づいてテストを追加・実行
-5. **issync連携**: 作業後は`issync push`でGitHub Issueに同期
-6. **エラーハンドリング**: テスト失敗時は修正してから再テスト
-7. **Status変更なし**: GitHub Projects Statusの変更は行わない（PRマージ時に自動変更される）
+1. **進捗ドキュメント駆動**: `Specification / 仕様`に基づいて実装
+2. **継続的更新**: 実装中は常に進捗ドキュメントを更新（最重要）
+3. **テスト駆動**: `Validation & Acceptance Criteria`に基づいてテスト追加・実行
+4. **issync連携**: 作業後は`issync push`で同期
+5. **Status変更なし**: GitHub Projects Statusの変更は行わない（PRマージ時に自動変更）
 
 ## 実行を開始
 
