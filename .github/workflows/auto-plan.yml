@@ -25,7 +25,10 @@ jobs:
         run: npm install -g @mh4gf/issync
 
       - name: Setup GITHUB_TOKEN for issync
-        run: echo "GITHUB_TOKEN=${{ secrets.GITHUB_TOKEN }}" >> $GITHUB_ENV
+        run: |
+          echo "GITHUB_TOKEN=${{ secrets.GITHUB_TOKEN }}" >> $GITHUB_ENV
+          echo "GITHUB_PROJECTS_NUMBER=4" >> $GITHUB_ENV
+          echo "GITHUB_PROJECTS_OWNER_TYPE=user" >> $GITHUB_ENV
 
       - name: Run Claude Code with /issync:plan
         id: claude
