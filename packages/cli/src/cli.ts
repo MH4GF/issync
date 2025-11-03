@@ -92,6 +92,19 @@ program
   })
 
 program
+  .command('open')
+  .description('Open the GitHub Issue in browser')
+  .option('-f, --file <path>', 'Select sync target by local file path')
+  .option('--issue <url>', 'Select sync target by issue URL')
+  .action(async (options: { file?: string; issue?: string }) => {
+    const { open } = await import('./commands/open.js')
+    await _handleCommand(
+      async () => open({ file: options.file, issue: options.issue }),
+      '✓ Opened GitHub Issue in browser',
+    )
+  })
+
+program
   .command('push')
   .description('Push local changes to GitHub Issue comment')
   .option('-f, --file <path>', 'Select sync target by local file path')
