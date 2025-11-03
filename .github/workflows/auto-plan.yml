@@ -37,7 +37,7 @@ jobs:
           plugins: |
             contradiction-tools@issync-plugins
           prompt: '/contradiction-tools:plan ${{ github.event.issue.html_url }}'
-          claude_args: '--allowedTools Edit Read Write SlashCommand "Bash(issync:*)" "Bash(gh issue view:*)" "Bash(gh project item-edit:*)" "Bash(echo:*)"'
+          claude_args: '--allowedTools Edit Read Write SlashCommand "Bash(issync:*)" "Bash(gh issue view:*)" "Bash(gh project item-edit:*)" "Bash(echo:*)" "Bash(bun test:*)" "Bash(bun run:*)"'
           additional_permissions: |
             actions: read
           show_full_output: true
