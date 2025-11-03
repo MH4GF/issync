@@ -1,0 +1,46 @@
+name: Auto Complete Sub-issue
+
+on:
+  issues:
+    types: [closed, labeled]
+
+jobs:
+  auto-complete-sub-issue:
+    # Trigger when issue is closed OR when issync:complete label is added
+    if: |
+      github.event.action == 'closed' ||
+      (github.event.action == 'labeled' && github.event.label.name == 'issync:complete')
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    permissions:
+      contents: read
+      pull-requests: read
+      issues: read
+      id-token: write
+      actions: read
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 1
+
+      - name: Install issync CLI
+        run: npm install -g @mh4gf/issync
+
+      - name: Setup GITHUB_TOKEN for issync
+        run: echo "GITHUB_TOKEN=${{ secrets.GITHUB_TOKEN }}" >> $GITHUB_ENV
+
+      - name: Run Claude Code with /issync:complete-sub-issue
+        id: claude
+        uses: anthropics/claude-code-action@v1
+        with:
+          claude_code_oauth_token: ${{ secrets.CLAUDE_CODE_OAUTH_TOKEN }}
+          plugin_marketplaces: |
+            https://github.com/MH4GF/issync.git
+          plugins: |
+            issync@issync-plugins
+          prompt: '/issync:complete-sub-issue ${{ github.event.issue.html_url }}'
+          claude_args: '--allowedTools Edit Read Write SlashCommand "Bash(issync:*)" "Bash(gh issue view:*)" "Bash(gh issue create:*)" "Bash(gh issue close:*)" "Bash(gh api:*)" "Bash(gh project item-edit:*)" "Bash(echo:*)" "Bash(bun test:*)" "Bash(bun run:*)"'
+          additional_permissions: |
+            actions: read
+          show_full_output: true
