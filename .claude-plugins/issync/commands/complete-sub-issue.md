@@ -141,14 +141,18 @@ issync remove --issue <サブissue URL>
 
 ### ステップ9: GitHub Projects Status変更
 
-`!env CONTRADICTION_TOOLS_ENABLE_GITHUB_PROJECTS`が`true`の場合のみ、サブissueのStatus→`done`に変更。GraphQL APIでProject ID取得後、`gh project item-edit`で更新。
+`!env GITHUB_PROJECTS_NUMBER`が設定されている場合のみ、サブissueのStatus→`done`に変更。GraphQL APIでProject ID取得後、`gh project item-edit`で更新。
+
+環境変数:
+- `GITHUB_PROJECTS_NUMBER`: プロジェクト番号（例: `1`）
+- `GITHUB_PROJECTS_OWNER_TYPE`: `user` または `org`（デフォルト: `user`）
 
 ```bash
 gh api graphql -f query='...'  # Project情報取得
 gh project item-edit --id <item-id> --project-id <project-id> --field-id <status-field-id> --option-id <done-option-id>
 ```
 
-**エラー時**: 認証エラーは`gh auth refresh -s project`、その他失敗時は警告のみで作業継続（手動変更案内）
+**エラー時**: 認証エラーは`gh auth refresh -s project`、その他失敗時は警告のみで作業継続（手動変更案内）。環境変数の形式が不正、プロジェクトが見つからない、権限不足の場合は警告を表示して処理を継続。
 
 ### ステップ10: GitHub Issueへの同期
 

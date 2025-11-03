@@ -10,7 +10,11 @@ GitHub Issue を単一の真実の情報源として、進捗ドキュメント�
 2. **GitHub CLI (`gh`)**: https://cli.github.com/
 3. **GITHUB_TOKEN**: `export GITHUB_TOKEN=$(gh auth token)` (GitHub Actionsでは自動設定)
 4. **issync watch**: `issync watch` (推奨)
-5. **GitHub Projects統合** (オプション): `export CONTRADICTION_TOOLS_ENABLE_GITHUB_PROJECTS=true`
+5. **GitHub Projects統合** (オプション):
+   ```bash
+   export GITHUB_PROJECTS_NUMBER=1  # プロジェクト番号
+   export GITHUB_PROJECTS_OWNER_TYPE=user  # 'user' または 'org' (デフォルト: user)
+   ```
 
 ### インストール
 
