@@ -135,6 +135,32 @@ cat docs/plan.md
 issync push --force
 ```
 
+### `issync open`
+
+Open the GitHub Issue in your browser for a synced file.
+
+```bash
+# Open issue (auto-select if only one sync)
+issync open
+
+# Select specific sync target
+issync open --file docs/plan.md
+issync open --issue https://github.com/owner/repo/issues/123
+```
+
+**Options:**
+- `-f, --file <path>`: Select sync target by local file path
+- `--issue <url>`: Select sync target by issue URL
+
+**Behavior:**
+- Opens the GitHub Issue URL in your default browser
+- Platform-specific browser commands:
+  - macOS: `open`
+  - Linux: `xdg-open`
+  - Windows: `start`
+- When only one sync exists: Opens immediately
+- When multiple syncs exist: Requires `--file` or `--issue` option
+
 ### `issync watch`
 
 Start watch mode (foreground process, press Ctrl+C to stop).

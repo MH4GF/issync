@@ -73,11 +73,12 @@ This project uses **Lefthook** to automatically enforce code quality before comm
 2. **pull**: Fetch remote comment → Calculate hash → Write to local file → Update config
 3. **push**: Read local file → Verify remote hash (optimistic lock) → Update comment → Update config
 4. **list**: Display all sync configurations from state.yml in table format
-5. **remove**: Remove sync configuration from state.yml → Optional local file deletion
-6. **clean**: Scan state.yml → Remove stale configurations (where local file does not exist) → Optional dry-run/force modes
-7. **watch**: Background daemon that polls remote + watches local file changes → Auto pull/push
-8. **stop**: Stop watch daemon by PID
-9. **status**: Show sync state from state.yml
+5. **open**: Open GitHub Issue in browser for synced file → Platform-specific browser command
+6. **remove**: Remove sync configuration from state.yml → Optional local file deletion
+7. **clean**: Scan state.yml → Remove stale configurations (where local file does not exist) → Optional dry-run/force modes
+8. **watch**: Background daemon that polls remote + watches local file changes → Auto pull/push
+9. **stop**: Stop watch daemon by PID
+10. **status**: Show sync state from state.yml
 
 ### Core Components
 
