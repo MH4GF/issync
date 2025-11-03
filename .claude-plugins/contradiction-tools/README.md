@@ -28,13 +28,17 @@ GitHub Issue を単一の真実の情報源として、進捗ドキュメント�
 
 5. **GitHub Projects統合の設定**（オプション）:
 
-   GitHub Projectsを使用するプロジェクトでは、環境変数を設定してください：
+   GitHub Projectsを使用するプロジェクトでは、以下の環境変数を設定してください：
 
    ```bash
-   export CONTRADICTION_TOOLS_ENABLE_GITHUB_PROJECTS=true
+   export GITHUB_PROJECTS_NUMBER=1                    # プロジェクト番号（例: 1）
+   export GITHUB_PROJECTS_OWNER_TYPE=user             # プロジェクト所有者タイプ（user または org、デフォルト: user）
    ```
 
-   未設定の場合、GitHub Projects操作（Status/Stage変更）はスキップされます。
+   - `GITHUB_PROJECTS_NUMBER`: GitHub Projects の番号（プロジェクトURLの末尾の番号、例: `https://github.com/users/username/projects/1` → `1`）
+   - `GITHUB_PROJECTS_OWNER_TYPE`: プロジェクト所有者タイプ（`user` または `org`）。未設定の場合はデフォルトで `user` を使用します。
+
+   これらの環境変数が未設定の場合、GitHub Projects操作（Status/Stage変更）はスキップされます。
 
 ### インストール
 

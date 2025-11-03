@@ -141,7 +141,9 @@ issync remove --issue <サブissue URL>
 
 ### ステップ9: GitHub Projects Status変更
 
-`!env CONTRADICTION_TOOLS_ENABLE_GITHUB_PROJECTS`が`true`の場合のみ、サブissueのStatus→`done`に変更。GraphQL APIでProject ID取得後、`gh project item-edit`で更新。
+`!env GITHUB_PROJECTS_NUMBER`が設定されている場合のみ、サブissueのStatus→`done`に変更。GraphQL APIでProject ID取得後、`gh project item-edit`で更新。
+
+プロジェクト所有者タイプは`!env GITHUB_PROJECTS_OWNER_TYPE`（デフォルト: `user`）を使用。
 
 ```bash
 gh api graphql -f query='...'  # Project情報取得

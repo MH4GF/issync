@@ -44,7 +44,7 @@ description: planフェーズのプロセスを標準化し、コードベース
 
 **Stage設定（AI作業開始）**:
 
-`!env CONTRADICTION_TOOLS_ENABLE_GITHUB_PROJECTS`が`true`の場合のみ、`gh project item-edit`でStage→`In Progress`に設定。失敗時も作業継続（警告のみ）。
+`!env GITHUB_PROJECTS_NUMBER`が設定されている場合のみ、`gh project item-edit`でStage→`In Progress`に設定。失敗時も作業継続（警告のみ）。
 
 ### ステップ2: GitHub Issue内容の確認
 
@@ -133,11 +133,13 @@ issync push
 
 **Stage更新（レビュー待ち）**:
 
-`!env CONTRADICTION_TOOLS_ENABLE_GITHUB_PROJECTS`が`true`の場合のみ、`gh project item-edit`でStage→`To Review`に設定。失敗時も作業継続（警告のみ）。
+`!env GITHUB_PROJECTS_NUMBER`が設定されている場合のみ、`gh project item-edit`でStage→`To Review`に設定。失敗時も作業継続（警告のみ）。
 
 ### ステップ7: GitHub Projects Status & Stage自動変更
 
-`!env CONTRADICTION_TOOLS_ENABLE_GITHUB_PROJECTS`が`true`の場合のみ、Status→`poc`、Stage→`To Start`に変更。GraphQL APIでProject ID取得後、`gh project item-edit`で両フィールドを更新。
+`!env GITHUB_PROJECTS_NUMBER`が設定されている場合のみ、Status→`poc`、Stage→`To Start`に変更。GraphQL APIでProject ID取得後、`gh project item-edit`で両フィールドを更新。
+
+プロジェクト所有者タイプは`!env GITHUB_PROJECTS_OWNER_TYPE`（デフォルト: `user`）を使用。
 
 **エラー時**: 認証スコープ不足の場合は`gh auth refresh -s project`実行。失敗時はGitHub Projects UIで手動変更。
 
