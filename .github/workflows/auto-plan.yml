@@ -27,7 +27,7 @@ jobs:
       - name: Setup GITHUB_TOKEN for issync
         run: echo "GITHUB_TOKEN=${{ secrets.GITHUB_TOKEN }}" >> $GITHUB_ENV
 
-      - name: Run Claude Code with /contradiction-tools:plan
+      - name: Run Claude Code with /issync:plan
         id: claude
         uses: anthropics/claude-code-action@v1
         with:
@@ -35,8 +35,8 @@ jobs:
           plugin_marketplaces: |
             https://github.com/MH4GF/issync.git
           plugins: |
-            contradiction-tools@issync-plugins
-          prompt: '/contradiction-tools:plan ${{ github.event.issue.html_url }}'
+            issync@issync-plugins
+          prompt: '/issync:plan ${{ github.event.issue.html_url }}'
           claude_args: '--allowedTools Edit Read Write SlashCommand "Bash(issync:*)" "Bash(gh issue view:*)" "Bash(gh project item-edit:*)" "Bash(echo:*)" "Bash(bun test:*)" "Bash(bun run:*)"'
           additional_permissions: |
             actions: read

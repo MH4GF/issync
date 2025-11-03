@@ -45,7 +45,7 @@ jobs:
           plugin_marketplaces: |
             https://github.com/MH4GF/issync.git
           plugins: |
-            contradiction-tools@issync-plugins
+            issync@issync-plugins
 
           # This is an optional setting that allows Claude to read CI results on PRs
           additional_permissions: |

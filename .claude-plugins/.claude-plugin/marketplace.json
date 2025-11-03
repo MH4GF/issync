@@ -5,8 +5,8 @@
   },
   "plugins": [
     {
-      "name": "contradiction-tools",
-      "source": "./contradiction-tools",
+      "name": "issync",
+      "source": "./issync",
       "description": "矛盾解消駆動開発のためのツール群: plan実行(/plan)、アーキテクチャ決定(/architecture-decision)、進捗ドキュメント圧縮(/compact-plan)、タスクのサブissue化と順序管理(/create-sub-issue)、サブissue完了(/complete-sub-issue)、進捗ドキュメント読み込み(/understand-progress)"
     }
   ]
