@@ -37,7 +37,7 @@ jobs:
           plugins: |
             issync@issync-plugins
           prompt: '/issync:plan ${{ github.event.issue.html_url }}'
-          claude_args: '--allowedTools Edit Read Write SlashCommand "Bash(issync:*)" "Bash(gh issue view:*)" "Bash(gh issue create:*)" "Bash(gh issue close:*)" "Bash(gh project item-edit:*)" "Bash(echo:*)" "Bash(bun test:*)" "Bash(bun run:*)"'
+          claude_args: '--allowedTools Edit Read Write SlashCommand "Bash(issync:*)" "Bash(gh issue view:*)" "Bash(gh issue create:*)" "Bash(gh issue close:*)" "Bash(gh api:*)" "Bash(gh project item-edit:*)" "Bash(echo:*)" "Bash(bun test:*)" "Bash(bun run:*)"'
           additional_permissions: |
             actions: read
           show_full_output: true
