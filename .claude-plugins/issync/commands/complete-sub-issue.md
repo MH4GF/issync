@@ -63,7 +63,7 @@ GitHub Sub-issues API (`gh api /repos/{owner}/{repo}/issues/{issue_number}/paren
 1. **関連PRを自動取得**
    ```bash
    gh api repos/{owner}/{repo}/issues/{issue_number}/timeline \
-     --jq '.[] | select(.event == "cross-referenced" and .source.issue.pull_request != null) |
+     --jq '.[] | select(.event == "cross-referenced" and .source.issue.pull_request) |
           {pr_url: .source.issue.html_url, pr_number: .source.issue.number,
            pr_state: .source.issue.state, merged_at: .source.issue.pull_request.merged_at}'
    ```
