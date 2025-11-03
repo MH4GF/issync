@@ -347,4 +347,33 @@ describe('init command', () => {
     expect(sync?.comment_id).toBeUndefined() // No comment_id since pull failed
     expect(sync?.last_synced_hash).toBeUndefined()
   })
+
+  describe('gitignore recommendation', () => {
+    test('returns path for use in success message', async () => {
+      const issueUrl = 'https://github.com/owner/repo/issues/123'
+      const localFile = 'docs/plan.md'
+
+      const actualPath = await init(issueUrl, { file: localFile, cwd: TEST_DIR })
+
+      // init should return the actual file path for use in CLI success message
+      expect(actualPath).toBe(path.join(TEST_DIR, localFile))
+    })
+
+    test('init function behavior is not affected by gitignore presence', async () => {
+      // This test ensures that the init function itself doesn't change behavior
+      // based on .gitignore. The gitignore check is only used in cli.ts for the message.
+      const issueUrl = 'https://github.com/owner/repo/issues/123'
+      const localFile = 'docs/plan.md'
+
+      // Create .gitignore with .issync entry
+      const gitignorePath = path.join(TEST_DIR, '.gitignore')
+      writeFileSync(gitignorePath, '.issync/\n')
+
+      const actualPath = await init(issueUrl, { file: localFile, cwd: TEST_DIR })
+
+      // init should still work normally and return the path
+      expect(actualPath).toBe(path.join(TEST_DIR, localFile))
+      expect(existsSync(path.join(TEST_DIR, localFile))).toBe(true)
+    })
+  })
 })

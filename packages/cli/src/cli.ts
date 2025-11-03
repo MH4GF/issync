@@ -55,6 +55,7 @@ program
   )
   .action(async (issueUrl: string, options: { file?: string; template?: string }) => {
     const { init } = await import('./commands/init.js')
+    const { hasIssyncInGitignore } = await import('./lib/gitignore.js')
     const templateLine = options.template ? `\n  Template: ${options.template}` : ''
     let actualFilePath = ''
 
@@ -65,8 +66,14 @@ program
           template: options.template,
         })
       },
-      () =>
-        `✓ Initialized issync\n  Issue: ${issueUrl}\n  File:  ${actualFilePath}${templateLine}\n\nRecommended: Add .issync/ to your .gitignore`,
+      () => {
+        const baseMessage = `✓ Initialized issync\n  Issue: ${issueUrl}\n  File:  ${actualFilePath}${templateLine}`
+        const shouldShowGitignoreRecommendation = !hasIssyncInGitignore()
+        const gitignoreRecommendation = shouldShowGitignoreRecommendation
+          ? '\n\nRecommended: Add .issync/ to your .gitignore'
+          : ''
+        return `${baseMessage}${gitignoreRecommendation}`
+      },
     )
   })
 
