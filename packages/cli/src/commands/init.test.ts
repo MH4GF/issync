@@ -11,6 +11,9 @@ import type { CommentData } from '../types/index'
 import { init } from './init'
 
 const TEST_DIR = path.join(import.meta.dir, '../../.test-tmp/init-test')
+const TEMPLATE_URL =
+  'https://raw.githubusercontent.com/MH4GF/issync/refs/heads/main/docs/progress-document-template.md'
+const TEMPLATE_CONTENT = '# Default Template\n\n- item'
 
 describe('init command', () => {
   beforeEach(async () => {
@@ -20,6 +23,27 @@ describe('init command', () => {
 
     // Default: no existing comment
     spyOn(githubModule, 'createGitHubClient').mockReturnValue(createMockGitHubClient())
+
+    // Mock fetch for template URL requests
+    const fetchMock = ((input: string | URL | Request): Promise<Response> => {
+      const url = typeof input === 'string' ? input : input.toString()
+
+      if (url.includes('invalid-domain-123456')) {
+        return Promise.resolve(new Response('Not Found', { status: 404, statusText: 'Not Found' }))
+      }
+
+      const content =
+        url === TEMPLATE_URL ? TEMPLATE_CONTENT : '# Remote Template\n\nContent fetched in tests'
+
+      return Promise.resolve(
+        new Response(content, {
+          status: 200,
+          headers: { 'content-type': 'text/markdown; charset=utf-8' },
+        }),
+      )
+    }) as typeof fetch
+
+    spyOn(globalThis, 'fetch').mockImplementation(fetchMock)
   })
 
   afterEach(async () => {
@@ -151,14 +175,12 @@ describe('init command', () => {
   test('creates file from URL template when provided', async () => {
     const issueUrl = 'https://github.com/owner/repo/issues/123'
     const localFile = 'docs/custom.md'
-    // Use the actual default template URL to test real HTTP fetch
-    const templateUrl =
-      'https://raw.githubusercontent.com/MH4GF/issync/refs/heads/main/docs/progress-document-template.md'
+    // Use the actual default template URL to simulate HTTP fetch
 
     await init(issueUrl, {
       file: localFile,
       cwd: TEST_DIR,
-      template: templateUrl,
+      template: TEMPLATE_URL,
     })
 
     const createdFile = path.join(TEST_DIR, localFile)
