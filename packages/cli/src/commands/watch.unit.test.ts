@@ -125,8 +125,31 @@ describe('watch command - unit tests', () => {
         mockGitHubClient as unknown as GitHubClientInstance,
       )
 
-      // Act & Assert: Should throw conflict error
-      return expect(_performSafetyCheck(mockConfig)).rejects.toThrow('CONFLICT DETECTED')
+      // Act & Assert: Should throw conflict error with diagnostic information
+      try {
+        await _performSafetyCheck(mockConfig)
+        throw new Error('Expected ConflictError to be thrown')
+      } catch (error) {
+        expect(error).toBeInstanceOf(Error)
+        const errorMessage = (error as Error).message
+
+        // Verify error message includes diagnostic information
+        expect(errorMessage).toContain('CONFLICT DETECTED')
+        expect(errorMessage).toContain(`File: ${relativeFile}`)
+        expect(errorMessage).toContain('Issue: https://github.com/owner/repo/issues/1')
+        expect(errorMessage).toContain('Hash details:')
+        expect(errorMessage).toContain('Last synced:')
+        expect(errorMessage).toContain('Current local:')
+        expect(errorMessage).toContain('Current remote:')
+
+        // Verify hash values are 8 characters
+        const localHashFull = calculateHash(localContent)
+        const remoteHashFull = calculateHash(remoteContent)
+        const lastSyncedHashFull = calculateHash(lastSyncedContent)
+        expect(errorMessage).toContain(localHashFull.substring(0, 8))
+        expect(errorMessage).toContain(remoteHashFull.substring(0, 8))
+        expect(errorMessage).toContain(lastSyncedHashFull.substring(0, 8))
+      }
     })
 
     test('should auto-push when only local changed', async () => {
