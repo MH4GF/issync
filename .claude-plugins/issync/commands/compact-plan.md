@@ -5,47 +5,22 @@
 ## 使用方法
 
 ```bash
-/compact-plan                    # 引数なし: .issync/state.ymlから選択
-/compact-plan <file_path>        # 明示的パス指定（後方互換性）
+/compact-plan                                          # state.ymlから選択
+/compact-plan https://github.com/owner/repo/issues/123 # Issue URL指定
+/compact-plan 123                                       # Issue番号指定
 ```
-
-**引数**:
-- `file_path` (オプション): 圧縮する進捗ドキュメントファイルのパス
-  - 省略時: `.issync/state.yml`から同期中のファイルを選択
-  - 明示的指定: `/compact-plan docs/進捗ドキュメント`
 
 ## 実行フロー
 
-### 1. 同期中のファイル一覧の確認と選択
+### 1. 進捗ドキュメントの理解
 
-**引数が指定されている場合**: そのパスを使用し、このステップをスキップして次へ進んでください。
-
-**引数が指定されていない場合**: `issync list` コマンドを実行して、同期中のファイル一覧を取得してください。
+まず、`/understand-progress`コマンドを内部で呼び出して、進捗ドキュメントを読み込みます。
 
 ```bash
-issync list
+/understand-progress <issue_url_or_number>
 ```
 
-このコマンドは state.yml から全同期設定を読み込み、人間が読みやすいテーブル形式で表示します。
-出力から issue_url と local_file の情報を取得できます。
-
-**複数ファイルがある場合**: 選択を促してください
-```
-圧縮対象の進捗ドキュメントを選択してください:
-1. .issync/docs/task-dashboard.md (最終同期: 2h ago, Issue: route06/liam-internal/issues/5829)
-2. docs/進捗ドキュメント (最終同期: 3d ago, Issue: MH4GF/issync/issues/1)
-
-番号を入力してください (1-2):
-```
-
-**1つのみの場合**: 確認を表示して自動選択
-```
-圧縮対象: .issync/docs/task-dashboard.md
-  最終同期: 2h ago
-  Issue: route06/liam-internal/issues/5829
-
-このファイルを圧縮しますか? (y/n)
-```
+引数が指定されている場合はそのまま渡し、指定されていない場合は引数なしで実行します。
 
 ### 2. 進捗ドキュメントの読み込みと分析
 
