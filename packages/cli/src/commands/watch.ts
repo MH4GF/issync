@@ -24,14 +24,24 @@ import { StateFileWatcher } from './watch/StateFileWatcher.js'
  * Error thrown when both local and remote have changes since last sync
  */
 class ConflictError extends Error {
-  constructor() {
+  constructor(sync: IssyncSync, localHash: string, remoteHash: string) {
+    const lastSyncedHashShort = sync.last_synced_hash?.substring(0, 8) ?? 'unknown'
+    const localHashShort = localHash.substring(0, 8)
+    const remoteHashShort = remoteHash.substring(0, 8)
+
     super(
       '❌ Cannot start watch: CONFLICT DETECTED\n' +
+        `File: ${sync.local_file}\n` +
+        `Issue: ${sync.issue_url}\n` +
+        'Hash details:\n' +
+        `  - Last synced: ${lastSyncedHashShort}\n` +
+        `  - Current local: ${localHashShort}\n` +
+        `  - Current remote: ${remoteHashShort}\n` +
         'Both local and remote have changes since last sync.\n' +
         'Please manually resolve the conflict:\n' +
         '  1. Review differences: Compare local file with remote\n' +
-        '  2. Force pull: issync pull (discards local changes)\n' +
-        '  3. Force push: issync push (overwrites remote)\n',
+        `  2. Force pull: issync pull --file "${sync.local_file}" (discards local changes)\n` +
+        `  3. Force push: issync push --file "${sync.local_file}" (overwrites remote)\n`,
     )
     this.name = 'ConflictError'
   }
@@ -146,7 +156,7 @@ export async function _performSafetyCheck(
 
   if (localChanged && remoteChanged) {
     // Both sides changed → Conflict
-    throw new ConflictError()
+    throw new ConflictError(sync, localHash, remoteHash)
   }
 
   if (localChanged) {
