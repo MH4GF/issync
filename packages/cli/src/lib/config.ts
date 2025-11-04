@@ -107,12 +107,34 @@ export function saveConfig(state: IssyncState, cwd?: string): void {
   // For testing, if cwd is provided, use getStatePath
   const { stateDir, stateFile } = cwd !== undefined ? getStatePath(cwd) : resolveConfigPath()
 
+  // Normalize paths to absolute when saving to global config (cwd === undefined)
+  // This prevents relative paths from causing issues when issync is run from different directories
+  let normalizedState = state
+  if (cwd === undefined) {
+    const normalizedSyncs = state.syncs.map((sync) => {
+      const localFile = sync.local_file
+
+      // Check if path is relative
+      if (!path.isAbsolute(localFile)) {
+        const absolutePath = toAbsolutePath(localFile)
+        console.warn(
+          `[issync] Auto-converting relative path to absolute: ${localFile} → ${absolutePath}`,
+        )
+        return { ...sync, local_file: absolutePath }
+      }
+
+      return sync
+    })
+
+    normalizedState = { syncs: normalizedSyncs }
+  }
+
   // Create directory if it doesn't exist
   if (!existsSync(stateDir)) {
     mkdirSync(stateDir, { recursive: true })
   }
 
-  const content = yaml.dump(state, { noRefs: true })
+  const content = yaml.dump(normalizedState, { noRefs: true })
   writeFileSync(stateFile, content, 'utf-8')
 }
 
