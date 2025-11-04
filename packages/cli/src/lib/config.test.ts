@@ -139,6 +139,143 @@ describe('config', () => {
       expect(loadedState.syncs[0]?.local_file).toBe('docs/updated.md')
       expect(loadedState.syncs[0]?.poll_interval).toBe(20)
     })
+
+    test('converts relative paths to absolute when saving to global config', () => {
+      // Arrange: Create temp directory for global config simulation
+      const globalConfigDir = mkdtempSync(join(tmpdir(), 'issync-global-'))
+      const state: IssyncState = {
+        syncs: [
+          {
+            issue_url: 'https://github.com/owner/repo/issues/1',
+            local_file: '.issync/docs/plan-123.md', // relative path
+            poll_interval: 10,
+            merge_strategy: 'simple',
+          },
+        ],
+      }
+
+      // Act: Save without cwd parameter (global config mode)
+      // Set HOME to our test directory to control where global config is saved
+      const originalHome = process.env.HOME
+      process.env.HOME = globalConfigDir
+      try {
+        saveConfig(state) // No cwd parameter = global config
+
+        // Assert: Load the config and check path is absolute
+        const loadedState = loadConfig()
+        expect(loadedState.syncs).toHaveLength(1)
+        const loadedSync = loadedState.syncs[0]
+        expect(loadedSync?.local_file).not.toBe('.issync/docs/plan-123.md') // Should be converted
+        expect(loadedSync?.local_file).toContain('issync/docs/plan-123.md') // Should contain the path
+        expect(loadedSync?.local_file.startsWith('/')).toBe(true) // Should be absolute
+      } finally {
+        // Cleanup
+        process.env.HOME = originalHome
+        rmSync(globalConfigDir, { recursive: true, force: true })
+      }
+    })
+
+    test('preserves relative paths when saving to local config (test mode)', () => {
+      // Arrange
+      const state: IssyncState = {
+        syncs: [
+          {
+            issue_url: 'https://github.com/owner/repo/issues/1',
+            local_file: '.issync/docs/plan-123.md', // relative path
+            poll_interval: 10,
+            merge_strategy: 'simple',
+          },
+        ],
+      }
+
+      // Act: Save with cwd parameter (local config / test mode)
+      saveConfig(state, testDir)
+
+      // Assert: Load and check path is still relative
+      const loadedState = loadConfig(testDir)
+      expect(loadedState.syncs).toHaveLength(1)
+      expect(loadedState.syncs[0]?.local_file).toBe('.issync/docs/plan-123.md') // Should be unchanged
+    })
+
+    test('handles multiple syncs with mixed absolute and relative paths', () => {
+      // Arrange: Create temp directory for global config simulation
+      const globalConfigDir = mkdtempSync(join(tmpdir(), 'issync-global-'))
+      const state: IssyncState = {
+        syncs: [
+          {
+            issue_url: 'https://github.com/owner/repo/issues/1',
+            local_file: '.issync/docs/plan-1.md', // relative
+          },
+          {
+            issue_url: 'https://github.com/owner/repo/issues/2',
+            local_file: '/absolute/path/plan-2.md', // already absolute
+          },
+          {
+            issue_url: 'https://github.com/owner/repo/issues/3',
+            local_file: 'docs/plan-3.md', // relative
+          },
+        ],
+      }
+
+      // Act: Save to global config
+      const originalHome = process.env.HOME
+      process.env.HOME = globalConfigDir
+      try {
+        saveConfig(state)
+
+        // Assert: Load and verify conversions
+        const loadedState = loadConfig()
+        expect(loadedState.syncs).toHaveLength(3)
+
+        // First sync: should be converted to absolute
+        expect(loadedState.syncs[0]?.local_file.startsWith('/')).toBe(true)
+        expect(loadedState.syncs[0]?.local_file).toContain('.issync/docs/plan-1.md')
+
+        // Second sync: should remain absolute (no change)
+        expect(loadedState.syncs[1]?.local_file).toBe('/absolute/path/plan-2.md')
+
+        // Third sync: should be converted to absolute
+        expect(loadedState.syncs[2]?.local_file.startsWith('/')).toBe(true)
+        expect(loadedState.syncs[2]?.local_file).toContain('docs/plan-3.md')
+      } finally {
+        // Cleanup
+        process.env.HOME = originalHome
+        rmSync(globalConfigDir, { recursive: true, force: true })
+      }
+    })
+
+    test('fixes manually edited relative paths on next save', () => {
+      // Arrange: Create temp directory for global config simulation
+      const globalConfigDir = mkdtempSync(join(tmpdir(), 'issync-global-'))
+      const originalHome = process.env.HOME
+      process.env.HOME = globalConfigDir
+
+      try {
+        // Simulate manual editing: write config with relative path directly
+        const stateDir = join(globalConfigDir, '.issync')
+        mkdirSync(stateDir, { recursive: true })
+        const manualContent = `syncs:
+  - issue_url: https://github.com/owner/repo/issues/1
+    local_file: .issync/docs/plan-123.md
+    poll_interval: 10
+`
+        writeFileSync(join(stateDir, 'state.yml'), manualContent, 'utf-8')
+
+        // Act: Load the config (with relative path) and save it back
+        const loadedState = loadConfig()
+        saveConfig(loadedState) // This should auto-convert
+
+        // Assert: Path should now be absolute
+        const fixedState = loadConfig()
+        expect(fixedState.syncs).toHaveLength(1)
+        expect(fixedState.syncs[0]?.local_file.startsWith('/')).toBe(true)
+        expect(fixedState.syncs[0]?.local_file).toContain('.issync/docs/plan-123.md')
+      } finally {
+        // Cleanup
+        process.env.HOME = originalHome
+        rmSync(globalConfigDir, { recursive: true, force: true })
+      }
+    })
   })
 
   describe('loadConfig', () => {
