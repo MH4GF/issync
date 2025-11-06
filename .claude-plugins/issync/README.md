@@ -51,7 +51,7 @@ GitHub Issue を単一の真実の情報源として、進捗ドキュメント�
 
 ## Workflow Overview
 
-この plugin は、矛盾解消駆動開発のワークフローをサポートする 7 つのコマンドを提供します：
+この plugin は、矛盾解消駆動開発のワークフローをサポートする 8 つのコマンドを提供します：
 
 **メインフロー:**
 
@@ -72,6 +72,7 @@ retrospective
 **横断的オペレーション（どのフェーズでも使用可能）:**
 
 - `/issync:understand-progress`: セッション開始時に進捗ドキュメントを選択・読み込み
+- `/issync:resolve-questions`: Open Questions を解消し Decision Log と Specification を更新
 - `/issync:create-sub-issue`: タスクをサブ issue 化
 - `/issync:complete-sub-issue`: サブ issue 完了を親 issue に反映
 - `/issync:compact-progress-document`: 進捗ドキュメント圧縮（500 行以上で推奨）
@@ -121,6 +122,24 @@ retrospective
 **自動実行内容:** 進捗ドキュメント分析 → 圧縮処理適用 → 矛盾検出とレポート → watchモードで自動同期
 
 詳細は`commands/compact-progress-document.md`を参照。
+
+---
+
+### `/issync:resolve-questions` - Open Questions 解消
+
+**何ができる:** 進捗ドキュメント内のOpen Questionsを解消し、Decision LogやSpecificationセクションを自動更新。ユーザーがARGUMENTS形式で各質問への意思決定を入力し、LLMがそれを進捗ドキュメントに反映。取り消し線マーク、Decision Log記録、Specification更新、issync push同期を一括実行。
+
+**いつ使う:** どのフェーズでも使用可能（Open Questionsへの回答が明確になった時）、architecture-decision（意思決定を記録したい時）、implement（仕様を確定したい時）
+
+**使い方:** `/issync:resolve-questions Q1-2: 推奨案 Q3: <意思決定内容> Q4: 推奨案`
+
+**自動実行内容:** `/understand-progress`で読み込み → Open Questions確認 → ユーザー入力解析 → Open Questionsセクション更新（取り消し線 + 解決済みマーク + 決定内容追記） → Decision Log記録 → Specification更新 → issync push
+
+**完了後:** Decision Log確認、Specification確認、残りのOpen Questions解消
+
+**重要ポイント:** ユーザー主導の意思決定（ARGUMENTSで明示的に入力）、推奨案の自動抽出、一貫したフォーマット維持、Decision LogとSpecificationへの構造化記録
+
+詳細は`commands/resolve-questions.md`を参照。
 
 ---
 
@@ -217,6 +236,7 @@ issync/
 │   ├── plan.md                     # plan実行コマンド
 │   ├── review-poc.md               # POCレビューコマンド
 │   ├── compact-progress-document.md # 進捗ドキュメント圧縮コマンド
+│   ├── resolve-questions.md        # Open Questions解消コマンド
 │   ├── implement.md                # 実装フェーズ自動化コマンド
 │   ├── understand-progress.md      # 進捗ドキュメント読み込みコマンド
 │   ├── create-sub-issue.md         # タスクのサブissue化コマンド
@@ -232,6 +252,7 @@ issync/
    - `/issync:plan`: `commands/plan.md`
    - `/issync:review-poc`: `commands/review-poc.md`
    - `/issync:compact-progress-document`: `commands/compact-progress-document.md`
+   - `/issync:resolve-questions`: `commands/resolve-questions.md`
    - `/issync:implement`: `commands/implement.md`
    - `/issync:understand-progress`: `commands/understand-progress.md`
    - `/issync:create-sub-issue`: `commands/create-sub-issue.md`
