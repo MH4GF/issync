@@ -1,13 +1,13 @@
-# /compact-plan: 進捗ドキュメント圧縮コマンド
+# /compact-progress-document: 進捗ドキュメント圧縮コマンド
 
 あなたは矛盾解消駆動開発を実践するAIエージェントです。このコマンドは、進捗ドキュメントファイルが大きくなりすぎた際に、情報量を保持したまま文量を削減する圧縮を行います。
 
 ## 使用方法
 
 ```bash
-/compact-plan                                          # state.ymlから選択
-/compact-plan https://github.com/owner/repo/issues/123 # Issue URL指定
-/compact-plan 123                                       # Issue番号指定
+/compact-progress-document                                          # state.ymlから選択
+/compact-progress-document https://github.com/owner/repo/issues/123 # Issue URL指定
+/compact-progress-document 123                                       # Issue番号指定
 ```
 
 ## 実行フロー
@@ -153,7 +153,7 @@ issync push
 圧縮完了後、以下の形式でレポートを出力してください：
 
 ```markdown
-## /compact-plan 実行結果
+## /compact-progress-document 実行結果
 
 ### バージョン情報
 - 進捗ドキュメント: Version [X] ([YYYY-MM-DD])

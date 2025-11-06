@@ -7,7 +7,7 @@
     {
       "name": "issync",
       "source": "./.claude-plugins/issync",
-      "description": "矛盾解消駆動開発のためのツール群(/plan, /architecture-decision, /compact-plan, /create-sub-issue, /complete-sub-issue, /understand-progress)"
+      "description": "矛盾解消駆動開発のためのツール群(/plan, /architecture-decision, /compact-progress-document, /create-sub-issue, /complete-sub-issue, /understand-progress)"
     }
   ]
 }
