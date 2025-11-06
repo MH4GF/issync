@@ -222,7 +222,7 @@ export async function init(issueUrl: string, options: InitOptions = {}): Promise
   const issueInfo = parseIssueUrl(issueUrl)
 
   // Use dynamic default based on issue number if no file is provided
-  let targetFile = file ?? `.issync/docs/plan-${issueInfo.issue_number}.md`
+  let targetFile = file ?? `.issync/docs/progress-${issueInfo.issue_number}.md`
 
   // Convert to absolute path
   targetFile = toAbsolutePath(targetFile, workingDir)
