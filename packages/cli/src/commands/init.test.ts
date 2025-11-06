@@ -93,10 +93,10 @@ describe('init command', () => {
     expect(state.syncs).toHaveLength(1)
     const config = state.syncs[0]
 
-    expect(config?.local_file).toBe(path.join(TEST_DIR, '.issync/docs/plan-123.md'))
+    expect(config?.local_file).toBe(path.join(TEST_DIR, '.issync/docs/progress-123.md'))
 
     // Verify file was actually created at the expected path
-    const expectedFilePath = path.join(TEST_DIR, '.issync/docs/plan-123.md')
+    const expectedFilePath = path.join(TEST_DIR, '.issync/docs/progress-123.md')
     expect(existsSync(expectedFilePath)).toBe(true)
   })
 
@@ -123,12 +123,12 @@ describe('init command', () => {
 
     const state = loadConfig(TEST_DIR)
     expect(state.syncs).toHaveLength(2)
-    expect(state.syncs[0]?.local_file).toBe(path.join(TEST_DIR, '.issync/docs/plan-1.md'))
-    expect(state.syncs[1]?.local_file).toBe(path.join(TEST_DIR, '.issync/docs/plan-999.md'))
+    expect(state.syncs[0]?.local_file).toBe(path.join(TEST_DIR, '.issync/docs/progress-1.md'))
+    expect(state.syncs[1]?.local_file).toBe(path.join(TEST_DIR, '.issync/docs/progress-999.md'))
 
     // Verify both files were created
-    expect(existsSync(path.join(TEST_DIR, '.issync/docs/plan-1.md'))).toBe(true)
-    expect(existsSync(path.join(TEST_DIR, '.issync/docs/plan-999.md'))).toBe(true)
+    expect(existsSync(path.join(TEST_DIR, '.issync/docs/progress-1.md'))).toBe(true)
+    expect(existsSync(path.join(TEST_DIR, '.issync/docs/progress-999.md'))).toBe(true)
   })
 
   test('dynamic default path works with template option', async () => {
@@ -142,7 +142,7 @@ describe('init command', () => {
 
     const state = loadConfig(TEST_DIR)
     const targetFile = state.syncs[0]?.local_file
-    expect(targetFile).toBe(path.join(TEST_DIR, '.issync/docs/plan-456.md'))
+    expect(targetFile).toBe(path.join(TEST_DIR, '.issync/docs/progress-456.md'))
 
     // Verify template content was used
     if (!targetFile) {

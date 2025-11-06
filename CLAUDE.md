@@ -18,7 +18,7 @@ This is a bun workspaces monorepo with the following structure:
 - **Conflict Detection via Edit() Failures**: When issync pulls remote changes, Claude Code's Edit() tool naturally fails (old_string not found), triggering a re-read and retry.
 - **Optimistic Locking**: Hash-based conflict detection on the push side prevents overwriting remote changes.
 
-See the progress document (`docs/plan-*.md`) for detailed architecture decisions, progress tracking, and development phases.
+See the progress document (`docs/progress-*.md`) for detailed architecture decisions, progress tracking, and development phases.
 
 ## Development Commands
 
@@ -130,7 +130,7 @@ issync uses a global configuration file:
 syncs:
   - issue_url: https://github.com/owner/repo/issues/123
     comment_id: 123456789               # Set after first sync
-    local_file: /Users/user/project/.issync/docs/plan-123.md
+    local_file: /Users/user/project/.issync/docs/progress-123.md
     last_synced_hash: abc123def         # Remote content hash for optimistic locking
     last_synced_at: 2025-10-12T10:30:00Z
     poll_interval: 10                   # Seconds between remote polls (optional)
@@ -217,7 +217,7 @@ issync watch                          # Start watch FIRST
 
 ## Important Files
 
-- `docs/plan-*.md`: Progress documents - living development plans (progress, decisions, architecture)
+- `docs/progress-*.md`: Progress documents - living development plans (progress, decisions, architecture)
 - `src/types/index.ts`: Core data structures
 - `~/.issync/state.yml`: Global configuration (shared across all projects)
 
@@ -228,7 +228,7 @@ issync watch                          # Start watch FIRST
 issyncで管理されるドキュメントの総称。GitHub Issueコメントとローカルファイル間で双方向同期される、プロジェクトの進捗や意思決定を記録する生きたドキュメント。
 
 **特徴:**
-- ファイル名パターン: `plan-{番号}-{slug}.md` (例: `plan-123-watch-daemon.md`)
+- ファイル名パターン: `progress-{番号}-{slug}.md` (例: `progress-123-watch-daemon.md`)
 - テンプレート: `docs/progress-document-template.md`から生成
 - 用途: 開発進捗の記録、アーキテクチャ決定、タスク管理、振り返り
 - 同期先: GitHub Issueコメント（HTML comment markersで識別）
@@ -256,7 +256,7 @@ This project uses GitHub Actions to automate AI-driven development workflows.
 - **Usage**:
   - Create new Issue with `issync` label → auto-plan runs
   - Add `issync` label to existing Issue → auto-plan runs
-- **Output**: Creates `.issync/docs/plan-{number}-{slug}.md` and syncs to Issue comment
+- **Output**: Creates `.issync/docs/progress-{number}-{slug}.md` and syncs to Issue comment
 
 ### Setup Requirements
 
