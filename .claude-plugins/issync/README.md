@@ -74,7 +74,7 @@ retrospective
 - `/issync:understand-progress`: セッション開始時に進捗ドキュメントを選択・読み込み
 - `/issync:create-sub-issue`: タスクをサブ issue 化
 - `/issync:complete-sub-issue`: サブ issue 完了を親 issue に反映
-- `/issync:compact-plan`: 進捗ドキュメント圧縮（500 行以上で推奨）
+- `/issync:compact-progress-document`: 進捗ドキュメント圧縮（500 行以上で推奨）
 
 ## Commands
 
@@ -110,17 +110,17 @@ retrospective
 
 ---
 
-### `/issync:compact-plan` - 進捗ドキュメント圧縮
+### `/issync:compact-progress-document` - 進捗ドキュメント圧縮
 
 **何ができる:** 進捗ドキュメントが大きくなりすぎた際に、情報量を保持したまま文量を削減。重複情報削減、解決済みOpen Questions整理、完了Phase簡潔化、矛盾検出と報告を一括実行。
 
 **いつ使う:** 500行以上に膨らんだ時、Phase完了時、Open Questions大量解決時、retrospective前、矛盾の疑いがある時
 
-**使い方:** `/issync:compact-plan .issync/docs/plan-123-example.md`
+**使い方:** `/issync:compact-progress-document .issync/docs/plan-123-example.md`
 
 **自動実行内容:** 進捗ドキュメント分析 → 圧縮処理適用 → 矛盾検出とレポート → watchモードで自動同期
 
-詳細は`commands/compact-plan.md`を参照。
+詳細は`commands/compact-progress-document.md`を参照。
 
 ---
 
@@ -216,7 +216,7 @@ issync/
 ├── commands/
 │   ├── plan.md                     # plan実行コマンド
 │   ├── review-poc.md               # POCレビューコマンド
-│   ├── compact-plan.md             # 進捗ドキュメント圧縮コマンド
+│   ├── compact-progress-document.md # 進捗ドキュメント圧縮コマンド
 │   ├── implement.md                # 実装フェーズ自動化コマンド
 │   ├── understand-progress.md      # 進捗ドキュメント読み込みコマンド
 │   ├── create-sub-issue.md         # タスクのサブissue化コマンド
@@ -231,7 +231,7 @@ issync/
 1. コマンドプロンプトを編集:
    - `/issync:plan`: `commands/plan.md`
    - `/issync:review-poc`: `commands/review-poc.md`
-   - `/issync:compact-plan`: `commands/compact-plan.md`
+   - `/issync:compact-progress-document`: `commands/compact-progress-document.md`
    - `/issync:implement`: `commands/implement.md`
    - `/issync:understand-progress`: `commands/understand-progress.md`
    - `/issync:create-sub-issue`: `commands/create-sub-issue.md`
