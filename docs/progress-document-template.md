@@ -1,5 +1,5 @@
 <!-- issync:v1:start -->
-<!-- Template Version: 15 (2025-11-06) -->
+<!-- Template Version: 16 (2025-11-06) -->
 
 # [Project Name] Progress Document
 
@@ -247,16 +247,4 @@
 -->
 
 **自信度**: [High 🟢 / Medium 🟡 / Low 🔴] - [プロジェクト全体の確信度の理由を1行で説明]
-
----
-
-## Inbox
-
-<!--
-📝 Guidance for AI
-記入タイミング: **人間が記入** - AIは記入しない
-記入内容: 整理前のメモ、リンク、一時的な情報など。人間が後で適切なセクションに整理する
--->
-
-[人間が記入する整理前の情報やメモ]
 <!-- issync:v1:end -->
