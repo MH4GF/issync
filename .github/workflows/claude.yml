@@ -47,8 +47,10 @@ jobs:
           claude_code_oauth_token: ${{ secrets.CLAUDE_CODE_OAUTH_TOKEN }}
           plugin_marketplaces: |
             https://github.com/MH4GF/issync.git
+            https://github.com/MH4GF/shared-config.git
           plugins: |
             issync@issync-plugins
+            mh4gf@mh4gf-marketplace
 
           # This is an optional setting that allows Claude to read CI results on PRs
           additional_permissions: |

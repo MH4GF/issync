@@ -37,8 +37,10 @@ jobs:
           claude_code_oauth_token: ${{ secrets.CLAUDE_CODE_OAUTH_TOKEN }}
           plugin_marketplaces: |
             https://github.com/MH4GF/issync.git
+            https://github.com/MH4GF/shared-config.git
           plugins: |
             issync@issync-plugins
+            mh4gf@mh4gf-marketplace
           prompt: '/issync:plan ${{ github.event.issue.html_url }}'
           claude_args: '--allowedTools Edit Read Write SlashCommand "Bash(issync:*)" "Bash(gh issue view:*)" "Bash(gh issue create:*)" "Bash(gh issue comment:*)" "Bash(gh issue close:*)" "Bash(gh api:*)" "Bash(gh project item-edit:*)" "Bash(gh pr view:*)" "Bash(gh pr diff:*)" "Bash(echo:*)" "Bash(bun test:*)" "Bash(bun run:*)"'
           additional_permissions: |
