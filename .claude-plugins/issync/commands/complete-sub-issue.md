@@ -16,6 +16,7 @@ description: サブissue完了時に親issueの進捗ドキュメントを自動
 9. GitHub Projects Status変更（done）
 10. GitHub Issueへの同期（issync push）
 11. 完了通知
+12. 親issueへのコメント投稿（完了サマリーを親issueのコメント欄に投稿）
 
 ## 使用方法
 
@@ -166,6 +167,37 @@ issync push
 
 編集内容のサマリーを出力。出力フォーマットは次セクション参照。
 
+### ステップ12: 親issueへのコメント投稿
+
+ステップ11の完了通知と同じ内容を、親issueのコメント欄に投稿してください。これにより、GitHub UI上で完了したサブissueの概要を素早く把握できます。
+
+```bash
+gh issue comment <親issue URL> --body "$(cat <<'EOF'
+## ✅ Sub-issue #<サブissue番号> completed
+
+**Sub-issue**: #<サブissue番号> - [サブissueタイトル]
+**PR**: #<PR番号> - [PRタイトル]
+
+**主要な実装内容:**
+- [実装内容1]
+- [実装内容2]
+
+**Follow-up Issues:**
+- [課題1]（該当する場合のみ）
+
+**次のアクション:**
+- [ ] 親issueの更新内容を確認してください
+- [ ] 追加されたOpen Questionsを確認してください
+- [ ] 推奨されている場合は `/create-sub-issue` で新規サブissueを作成してください
+EOF
+)"
+```
+
+**重要**:
+- コメント本文はステップ11の出力フォーマットと同じ構造を使用（情報の一貫性を保つため）
+- コメント投稿失敗時は警告メッセージを表示して処理を継続（補助的な機能のため）
+- 親issue進捗ドキュメント更新（ステップ10）は既に完了しているため、コメント投稿失敗でもワークフロー全体は成功扱い
+
 ## 出力フォーマット
 
 ```markdown
@@ -221,7 +253,7 @@ issync push
 /complete-sub-issue https://github.com/MH4GF/issync/issues/124
 ```
 
-実行フローは冒頭のワークフロー（ステップ1-9）を参照。
+実行フローは冒頭のワークフロー（ステップ1-12）を参照。
 
 ---
 

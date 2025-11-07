@@ -151,7 +151,7 @@ Open Questionsを解消し、Decision LogとSpecificationを自動更新。ユ�
 
 ### `/issync:complete-sub-issue` - サブ issue 完了
 
-サブissue完了時に親issueの進捗ドキュメントを自動更新し、完了サマリーとFollow-up事項を反映。
+サブissue完了時に親issueの進捗ドキュメントを自動更新し、完了サマリーとFollow-up事項を反映。親issueのコメント欄に完了サマリーを投稿。
 
 **使い方:** `/issync:complete-sub-issue https://github.com/owner/repo/issues/124`
 
