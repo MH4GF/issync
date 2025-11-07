@@ -235,3 +235,35 @@
 1. `## Inbox`セクション（Confidence Assessmentの直後、`<!-- issync:v1:end -->`の直前）を削除
 2. 既存のplan-*.mdファイルは変更不要（新規作成時のみVersion 16テンプレートを使用）
 
+---
+
+## Version 17 (2025-11-06)
+
+**Follow-up Issuesセクションの位置を最適化**
+
+**変更内容:**
+- Follow-up Issues / フォローアップ課題セクションをOutcomes & Retrospectivesの直後、Confidence Assessmentの直前に移動
+- セクション順序: Open Questions → Discoveries & Insights → Decision Log → Outcomes & Retrospectives → **Follow-up Issues** → Confidence Assessment
+- セクションの内容やHTMLコメント（Guidance for AI）は変更なし
+
+**理由:**
+- 認知的流れの最適化: 振り返り（Outcomes & Retrospectives）を完了した後に、そこから派生した今後の課題（Follow-up Issues）を確認する方が自然な流れとなる
+- セクション間の論理的関係: 振り返り（過去）→ 今後の課題（未来）という時系列的な流れを実現
+- ドキュメントの可読性向上
+
+**マイグレーション手順:**
+
+#### 手動マイグレーション
+
+既存のplan.mdをバージョン17に移行する手順:
+
+1. `## Follow-up Issues / フォローアップ課題`セクション全体（HTMLコメント含む）を現在の位置から切り取る
+2. `## Outcomes & Retrospectives`セクションの直後、`## Confidence Assessment`セクションの直前に貼り付ける
+3. セクション区切り（`---`）が正しく配置されていることを確認
+4. バージョンヘッダー（2行目）を`<!-- Template Version: 17 (2025-11-06) -->`に更新
+
+**注意事項:**
+- Follow-up Issuesセクションの内容は変更しない（順序変更のみ）
+- HTMLコメント（`<!-- 📝 Guidance for AI ... -->`）も一緒に移動すること
+- 既存のplan-*.mdファイルは任意でマイグレーション可能（新規作成時はVersion 17テンプレートを使用）
+
