@@ -1,10 +1,10 @@
 ---
-description: サブissue完了時に親issueの進捗ドキュメントを自動更新。PRから学びを抽出し振り返りを生成・加筆、Follow-up Issuesセクションを4分類で処理（Critical自動作成、Improvement提案、Open Questions追加、Feature Enhancements提案）。完了サマリーを親issueにコメント投稿。完了後はissync removeで同期設定を自動削除
+description: サブissue完了時に親issueの進捗ドキュメントを自動更新。PRから学びを抽出し振り返りを生成・加筆、Open Questionsを解決（/resolve-questions実行）、Follow-up Issuesセクションを4分類で処理（Critical自動作成、Improvement提案、Open Questions追加、Feature Enhancements提案）。完了サマリーを親issueにコメント投稿。完了後はissync removeで同期設定を自動削除
 ---
 
 # /complete-sub-issue: サブissue完了オペレーション
 
-サブissue完了時に親issueの進捗ドキュメントを自動更新します。PRから学びを抽出し、振り返りを生成・加筆、Follow-up Issuesを優先度付きで4分類処理します。完了サマリーを親issueにコメント投稿します。詳細は「実行ステップ」参照。
+サブissue完了時に親issueの進捗ドキュメントを自動更新します。PRから学びを抽出し、振り返りを生成・加筆、**Open Questionsを解決**（既存情報から最大限解決）、Follow-up Issuesを優先度付きで4分類処理します。完了サマリーを親issueにコメント投稿します。詳細は「実行ステップ」参照。
 
 ## 使用方法
 
@@ -23,11 +23,9 @@ description: サブissue完了時に親issueの進捗ドキュメントを自動
 **運用フロー**:
 1. `/create-sub-issue`でサブissue作成
 2. サブissueで開発（plan → implementation → retrospective）
-3. `/complete-sub-issue`で親issueに自動反映＆close（PR分析、5 Whys分析、Follow-up Issues 4分類処理）
+3. `/complete-sub-issue`で親issueに自動反映＆close（PR分析、5 Whys分析、**Open Questions解決**、Follow-up Issues 4分類処理）
 4. Critical Improvements（品質向上）に即座着手
 5. 必要に応じてProject Improvements/Feature Enhancementsで次のサブissue作成
-
-**Note**: Template v7では進捗ドキュメントのTasksセクションが削除されているため、このコマンドはTasksセクションを操作しません。
 
 ## 前提条件
 
@@ -43,13 +41,10 @@ GitHub Sub-issues API (`gh api /repos/{owner}/{repo}/issues/{issue_number}/paren
 
 ### ステップ2: サブissueの進捗ドキュメントを読み込み
 
-`issync list`で登録状況を確認。未登録の場合は自動初期化（エラーハンドリング参照）。
-
-以下を抽出:
+`issync list`で登録状況を確認。以下を抽出（エラーハンドリングは「エラーハンドリング」セクション参照）:
 - **Outcomes & Retrospectives**: 実装内容、発見や学び
+- **Open Questions**: 未解決の論点
 - **Follow-up Issues**: 将来対応事項
-
-初期化失敗時は「（記載なし）」で続行。
 
 ### ステップ3: PRの自動取得と深い分析（常に実行）
 
@@ -102,14 +97,43 @@ GitHub Sub-issues API (`gh api /repos/{owner}/{repo}/issues/{issue_number}/paren
    - **より良い開発のための改善策**（Lint/型チェック/テスト/ドキュメント更新の具体的アクション）
    - **技術的な発見や学び**（プロジェクト全体への適用可能性を含む）
 
-   既存の記載がある場合も、新たに得られた情報（PR分析結果）を基に、不足している視点や誤りがあれば加筆修正する。
-   ユーザー確認後、サブissueの進捗ドキュメントに反映。
-
 5. **Follow-up Issuesの抽出**
 
-   PR description、レビューコメント、インラインコメントスレッドから未対応事項を抽出。ステップ4の改善策を基にタスク生成し、優先度を自動分類（詳細はステップ6参照）。既存内容とマージ後、ユーザー確認を経てサブissueの進捗ドキュメントに追記。
+   PR description、レビューコメント、インラインコメントスレッドから未対応事項を抽出。ステップ3.4の改善策を基にタスク生成し、優先度を自動分類（詳細はステップ7参照）。既存内容とマージ後、ユーザー確認を経てサブissueの進捗ドキュメントに追記。
 
-### ステップ4: 親issueの進捗ドキュメントを特定
+### ステップ4: サブissueのOpen Questions処理（最後の砦）
+
+サブissue完了時点で**既にある情報を使って可能な限り解決する**。これがOpen Questionsを解消する最後の砦。
+
+1. **Open Questionsの抽出**
+
+   サブissueの進捗ドキュメントからOpen Questionsセクションを抽出。
+
+2. **既存情報からの解決試行**
+
+   以下の情報源から回答を推論（例: 「どのライブラリを使うか？」→ Decision Log/PR実装から抽出）:
+   - **Decision Log**: 既に記録された意思決定
+   - **PRの実装内容**: 実装で採用した技術・アプローチ（ステップ3で取得済み）
+   - **振り返り内容**: 開発中に得られた知見（ステップ3.4で生成済み）
+   - **Follow-up Issues**: 論点への言及（ステップ3.5で抽出済み）
+
+3. **`/resolve-questions`で自動解決**
+
+   推論できた回答について、`/resolve-questions`コマンドを実行:
+   ```bash
+   /resolve-questions
+   Q1: <Decision Logから抽出した決定内容>
+   Q2: <PRから推論した実装方針>
+   Q3: <振り返りから得られた知見>
+   ```
+
+   **処理内容**: Open Questions更新（取り消し線 + "✅ 解決済み"）、Decision Log記録、Specification更新
+
+4. **未解決のものはFollow-up Issuesへ**: Follow-up Issuesセクションに移行（優先度Medium、理由を記録）
+
+**処理原則**: 最後の砦として既存情報を使い切る。保守的に推論（False positive回避）。部分的な解決も記録。
+
+### ステップ5: 親issueの進捗ドキュメントを特定
 
 ```bash
 issync list
@@ -117,7 +141,7 @@ issync list
 
 親issue番号に一致する `issue_url` と `local_file` を取得。未登録の場合は自動初期化（`issync init`）。初期化失敗時は処理を中断（親issueは必須）。
 
-### ステップ5: 親issueのOutcomes & Retrospectivesセクションを更新
+### ステップ6: 親issueのOutcomes & Retrospectivesセクションを更新
 
 追加フォーマット:
 ```markdown
@@ -128,63 +152,69 @@ issync list
 
 情報が空の場合は `- （記載なし）` と記載。
 
-### ステップ6: Follow-up Issuesの適切な処理
+### ステップ6.5: 親issueのOpen Questions解決チェック
+
+サブissueの実装により、親issueの一部のOpen Questionsが解決されている可能性がある。保守的に推論し、解決可能なものを検出する。
+
+1. **親issueのOpen Questionsを抽出**
+
+   親issueの進捗ドキュメントからOpen Questionsセクションを取得。
+
+2. **解決可能性の推論**
+
+   サブissueの情報（実装内容、振り返り、Decision Log）から解決可能なOpen Questionsを推論。
+
+3. **`/resolve-questions`で自動解決**
+
+   推論できた回答について、親issueに対して`/resolve-questions`コマンドを実行:
+   ```bash
+   /resolve-questions
+   Q1: <サブissueのDecision Logや実装から抽出した決定内容>
+   Q2: <PRから推論した実装方針>
+   Q3: <振り返りから得られた知見>
+   ```
+
+   **処理内容**: ステップ4と同様。回答形式は `**A[番号]: [回答内容]** (サブissue #[番号]で解決)` と出典を明記。
+
+**処理原則**: 保守的に推論（False positive回避）。部分的な解決も記録。
+
+### ステップ7: Follow-up Issuesの適切な処理
 
 サブissueの進捗ドキュメントの**Follow-up Issuesセクション**に記載された内容を**優先度とタイプで4分類**し、適切に処理：
 
 **Follow-up Issuesとは**: 進捗ドキュメントのセクション名。すべての未対応事項（改善施策、論点、将来タスクなど）の総称。
 
-1. **Critical Improvements (品質向上のための重要な仕組み化)** → **即座に`/create-sub-issue`実行**
-   - 優先度: **Critical**
-   - キーワード: "lint追加"、"lintルール"、"型定義強化"、"型チェック"、"テスト追加"、"自動化"、"hook追加"、"CI改善"、"品質向上"、"セキュリティ"、"脆弱性"
-   - フォーマット: タイトルに `[Critical]` プレフィックス付与
-   - 処理: **ユーザー確認後、自動的に `/create-sub-issue` 実行**（複数可）
-   - 理由: より良い開発環境の構築、同様の改善機会の早期発見のため、最優先で対応が必要
+1. **Critical Improvements** (品質向上のための重要な仕組み化) → **即座に`/create-sub-issue`実行**
+   - キーワード: "lint追加"、"型定義強化"、"CI改善"、"セキュリティ"など
+   - タイトルに `[Critical]` プレフィックス付与
+   - 自動作成（複数可）
 
-2. **Project Improvements (プロジェクト全体の改善)** → **`/create-sub-issue`実行を提案**
-   - 優先度: **High/Medium**
-   - キーワード: "CLAUDE.md"、"テンプレート"、"template"、"ガイドライン"、"全体適用"、"開発フロー"、"標準化"、"ベストプラクティス"、"ドキュメント整備"、"共有"
-   - フォーマット: タイトルに `[Improvement]` プレフィックス付与
-   - 処理: 完了サマリーで提示、ユーザー確認後に `/create-sub-issue` 実行を提案
-   - 理由: プロジェクト全体の生産性向上のため、計画的に対応
+2. **Project Improvements** (プロジェクト全体の改善) → **`/create-sub-issue`実行を提案**
+   - キーワード: "CLAUDE.md"、"テンプレート"、"標準化"など
+   - タイトルに `[Improvement]` プレフィックス付与
+   - 完了サマリーで提示
 
-3. **Open Questions (論点・調査事項)** → 親issueの**Open Questionsに自動追加**
-   - 優先度: **Medium**
-   - キーワード: "検討"、"調査"、"方法"、"どのように"、"理由"、"判断"、"選択"、"課題"、"トレードオフ"、"比較"
+3. **Open Questions** (論点・調査事項) → 親issueの**Open Questionsに自動追加**
+   - キーワード: "検討"、"調査"、"トレードオフ"など
    - フォーマット: `**Q[次の番号]: [質問タイトル]**\n- [詳細]`
-   - 理由: 意思決定が必要な論点を明確化
 
-4. **Feature Enhancements (機能拡張・将来タスク)** → **`/create-sub-issue`実行を提案**
-   - 優先度: **Low/Medium**
-   - キーワード: "実装"、"機能追加"、"対応"、"作成"、"構築"、"別issue"、"今回のスコープ外"、"将来的に"、"拡張"、"エンハンス"、"機能強化"
-   - 処理: 完了サマリーで提示、自動作成はしない
-   - 理由: スコープ外の機能追加、将来的な拡張
-
-**優先度判定の詳細ルール:**
-- **Critical**:
-  - 品質向上のための重要な仕組み化（同様の改善機会を早期発見できる仕組み）
-  - セキュリティ強化、重要なバグ対応
-  - pre-commit hook、型チェック、Lintルール追加
-- **High**:
-  - プロジェクト全体の生産性向上（CLAUDE.md、テンプレート更新）
-  - 開発フロー改善、標準化
-- **Medium**:
-  - 通常の機能追加、調査事項、論点
-- **Low**:
-  - Nice-to-have な改善、将来的な拡張
+4. **Feature Enhancements** (機能拡張・将来タスク) → **`/create-sub-issue`実行を提案**
+   - キーワード: "機能追加"、"スコープ外"、"将来的に"など
+   - 完了サマリーで提示、自動作成はしない
 
 **重要**:
 - Critical Improvements は**自動作成**することで、より良い開発環境の構築を確実に促す
 - 親issueのFollow-up Issuesセクションへの転記は禁止（v7以降、Tasksセクション削除のため）
+- サブissueのOpen Questionsで未解決のものは、Follow-up Issuesのこのカテゴリに自動分類される
 
-### ステップ7: サブissueをclose
+### ステップ8: サブissueをclose
 
 openの場合のみ実行（closedの場合はスキップ）:
 ```bash
 gh issue close <サブissue URL> --comment "Completed. Summary recorded in parent issue #<親issue番号>. Related PR: <PR URL>"
 ```
 
-### ステップ8: issync remove実行
+### ステップ9: issync remove実行
 
 サブissueをclose後、issync管理から同期設定を削除:
 ```bash
@@ -193,7 +223,7 @@ issync remove --issue <サブissue URL>
 
 失敗時も処理を継続し、警告メッセージを表示。未登録の場合はスキップ。
 
-### ステップ9: GitHub Projects Status変更
+### ステップ10: GitHub Projects Status変更
 
 `!env GITHUB_PROJECTS_NUMBER`が設定されている場合のみ、サブissueのStatus→`done`に変更。GraphQL APIでProject ID取得後、`gh project item-edit`で更新。
 
@@ -208,7 +238,7 @@ gh project item-edit --id <item-id> --project-id <project-id> --field-id <status
 
 **エラー時**: 認証エラーは`gh auth refresh -s project`、その他失敗時は警告のみで作業継続（手動変更案内）。環境変数の形式が不正、プロジェクトが見つからない、権限不足の場合は警告を表示して処理を継続。
 
-### ステップ10: GitHub Issueへの同期
+### ステップ11: GitHub Issueへの同期
 
 親issueの進捗ドキュメントの変更をGitHub Issueに同期してください。
 
@@ -216,13 +246,13 @@ gh project item-edit --id <item-id> --project-id <project-id> --field-id <status
 issync push
 ```
 
-### ステップ11: 完了通知
+### ステップ12: 完了通知
 
 編集内容のサマリーを出力。出力フォーマットは次セクション参照。
 
-### ステップ12: 親issueへのコメント投稿
+### ステップ13: 親issueへのコメント投稿
 
-ステップ11の完了通知と同じ内容を、親issueのコメント欄に投稿します。フォーマットは「出力フォーマット」セクションを参照。
+ステップ12の完了通知と同じ内容を、親issueのコメント欄に投稿します。フォーマットは「出力フォーマット」セクションを参照。
 
 ```bash
 gh issue comment <親issue URL> --body "$(cat <<'EOF'
@@ -250,8 +280,9 @@ EOF
 - ✅ **5 Whys分析**: 完了（より良い開発への気づきを整理）
 - ✅ 振り返り本文: [生成して追記 / 既存内容を確認し加筆修正]
 - ✅ Follow-up Issues: PRから[Y]件抽出、**改善策から[Z]件生成**
+- ✅ **サブissueのOpen Questions**: [X]件解決（/resolve-questions実行）、[Y]件Follow-up Issuesへ移行
 - ✅ 親issueのOutcomes & Retrospectives: サブタスク完了サマリー追加 (進捗ドキュメント:[line_number])
-- ✅ 親issueのOpen Questions: [X]件追加
+- ✅ **親issueのOpen Questions**: [Z]件解決（/resolve-questions実行）、[W]件新規追加
 - ✅ サブissue #[サブissue番号]: [closeした（Related PR: [PR URL]） / すでにclosed]
 - ✅ issync remove実行: [✅ 成功 / ⚠️ スキップ（未登録） / ⚠️ 失敗]
 - ✅ GitHub Projects Status: `done`に変更 [✅ 成功 / ⚠️ 失敗（手動変更推奨）]
@@ -292,8 +323,8 @@ EOF
 
 1. [ ] **🎯 最優先**: 品質向上タスク (#[番号], #[番号]) に即座に着手
 2. [ ] **💡 推奨**: プロジェクト改善提案を確認し、必要に応じて `/create-sub-issue` 実行
-3. [ ] 親issueの更新内容（Outcomes & Retrospectives）を確認
-4. [ ] 追加されたOpen Questionsを確認
+3. [ ] 親issueの更新内容（Outcomes & Retrospectives、Open Questions解決状況）を確認
+4. [ ] 追加された新規Open Questionsを確認
 5. [ ] 必要に応じてFeature Enhancementsのサブissue作成を検討
 ```
 
@@ -301,7 +332,6 @@ EOF
 
 ## エラーハンドリング
 
-<<<<<<< HEAD
 **issync管理外のissue**:
 - 未登録のissue検出時 → `issync init <issue_url>` で自動初期化
 - 親issue初期化失敗 → 処理を中断（必須）
@@ -320,19 +350,14 @@ EOF
 /complete-sub-issue https://github.com/MH4GF/issync/issues/124
 ```
 
-実行フローは冒頭のワークフロー（ステップ1-12）を参照。
+実行フローは冒頭のワークフロー（ステップ1-13）を参照。
 
 ---
 
 ## 運用フロー
 
 1. `/create-sub-issue`でサブissue作成
-2. サブissueで開発（plan → retrospective）、進捗ドキュメントに成果を記入（任意）
-3. `/complete-sub-issue`で親issueに自動反映＆サブissueclose（PR自動取得、振り返り/Follow-up Issues自動生成）
-4. 必要に応じて`/create-sub-issue`で次のサブissue作成
-=======
-- 未登録issue → `issync init`で自動初期化（親issue失敗時は中断、サブissue失敗時は「（記載なし）」で続行）
-- 無効URL/親issue不在 → エラー表示
-- すでにclosed → close処理スキップ
-- close失敗 → 警告表示
->>>>>>> 4bf8209 (refactor: enhance /complete-sub-issue with deeper retrospectives)
+2. サブissueで開発（plan → implementation → retrospective）、進捗ドキュメントに成果を記入（任意）
+3. `/complete-sub-issue`で親issueに自動反映＆サブissueclose（PR自動取得、振り返り/Follow-up Issues自動生成、Open Questions解決）
+4. Critical Improvements（品質向上）に即座着手
+5. 必要に応じてProject Improvements/Feature Enhancementsで次のサブissue作成
