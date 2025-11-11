@@ -13,10 +13,7 @@ description: 進捗ドキュメントを選択してコンテキストを理解
 /understand-progress https://github.com/owner/repo/issues/123 # Issue URL指定
 ```
 
-**引数**:
-- `issue_url` (オプション): GitHub Issue URL
-  - 省略時: state.ymlから同期中のファイルを選択
-  - Issue URL指定: `/understand-progress https://github.com/owner/repo/issues/123`
+**引数**: `issue_url` (オプション) - GitHub Issue URL。省略時はstate.ymlから選択
 
 ## 実行フロー
 
@@ -55,73 +52,72 @@ issync list
 
 選択されたファイルをReadツールで読み込む。
 
-### 4. コンテキスト理解のサポート（オプション）
+### 3.5. Sub-issuesの取得と分析（AIエージェントのコンテキスト理解）
 
-ファイル読み込み後、以下の情報を簡潔に表示すると便利です：
+**目的**: AIエージェントがプロジェクトの全体像を把握するため、親issueに紐づくsub-issuesを取得・分析します。
 
-```markdown
-## 進捗ドキュメントの概要
+#### Sub-issuesの取得
 
-**Issue**: [issue_url]
-**最終同期**: [last_synced_at]
+GitHub REST APIの専用エンドポイントを使用:
 
-**重要なセクション**:
-- Purpose/Overview: [プロジェクトの目的を1-2文で要約]
-- Open Questions: [未解決の質問数]件
-- Status: [推測されるステート - plan/poc/architecture-decision/implement等]
-
-必要に応じて、特定のセクションを再度Readツールで詳細確認できます。
+```bash
+gh api "/repos/{owner}/{repo}/issues/{issue_number}/sub_issues" \
+  --jq '.[] | {number, title, state, url}'
 ```
 
-**注**: 概要表示は任意（ファイルが大きい場合やユーザー要求時のみ）。
+**注**: `{owner}`, `{repo}`, `{issue_number}`は進捗ドキュメントに紐づくissue URLから抽出してください。
 
-### 5. 作業中の進捗ドキュメント更新（重要）
+#### AIエージェントによる内部分析
 
-進捗ドキュメントを読み込んだ後、ユーザーの指示を受けて作業を開始する場合は、**必ず進捗ドキュメントを継続的に更新しながら作業を進めてください**。
+sub-issuesを分析してプロジェクトコンテキストを把握:
+- CLOSED issues: 実装済み機能、解決済み問題（`Outcomes & Retrospectives`と照合）
+- OPEN issues: 残タスク、優先度、次のアクション候補
+- 完了度: 進捗状況とフェーズ（plan/poc/implement等）
+
+**重要**: 詳細はAI内部で保持し、ユーザーには簡潔なサマリーのみを返す
+
+### 4. 作業中の進捗ドキュメント更新（重要）
+
+作業開始時は**進捗ドキュメントを継続的に更新**してください。
 
 **更新タイミング:**
-- **主要な決定時**: アーキテクチャ決定や設計方針が決まった際は、`Architecture Decisions`セクションを更新
-- **実装進捗時**: コード変更や機能実装が完了した際は、`Implementation Progress`セクションを更新
-- **Open Questions解消時**: 未解決の質問が解消されたら、該当項目を削除または回答を記録
-- **新しい疑問発生時**: 作業中に新たな問題や疑問が発生したら、`Open Questions`に追加
-- **フェーズ移行時**: POC完了、実装開始などのフェーズ移行時は、`Status`セクションを更新
+- 主要な決定時/実装進捗時: `Architecture Decisions`/`Implementation Progress`を更新
+- Open Questions解消/新規疑問時: 該当項目を更新/追加
+- フェーズ移行時: `Status`セクションを更新
 
 **更新方法:**
-- EditツールまたはWrite/Updateツールを使用して進捗ドキュメントを更新
-- セクション単位での部分更新を推奨（ファイル全体の書き換えは避ける）
-- 更新後は`issync push`を実行してGitHub Issueに同期する
+- Edit/Write/Updateツールでセクション単位更新（ファイル全体の書き換えは避ける）
+- 更新後は`issync push`で同期
 
-**進捗ドキュメントはSingle Source of Truth**: GitHub Issueコメントと同期される進捗ドキュメントは、プロジェクトの現在の状態を表す唯一の真実の情報源です。継続的な更新により、他のセッションや将来の作業でコンテキストを正確に把握できます。
+**Single Source of Truth**: 進捗ドキュメントはプロジェクトの現在の状態を表す唯一の真実の情報源
 
 ## 出力フォーマット
-
-ファイル選択と読み込み完了後、簡潔なサマリーを提供してください：
 
 ```markdown
 ## /understand-progress 実行結果
 
-✅ 進捗ドキュメントを読み込みました
+✅ コンテキストを理解しました
 
 **ファイル**: <file_path>
 **Issue**: <issue_url>
 **最終同期**: <last_synced_at>
+**Sub-issues**: <total_count>件（OPEN: <open_count>, CLOSED: <closed_count>）
+**プロジェクト状態**: <phase_and_progress_summary>
 
 次のアクション:
-- 進捗ドキュメントの内容を確認
 - Open Questionsを確認し、必要に応じて解消
-- **作業を進める際は、進捗ドキュメントを継続的に更新**（詳細はステップ5参照）
+- **作業を進める際は、進捗ドキュメントを継続的に更新**（詳細はステップ4参照）
 - 次のステップ（POC/実装等）を開始
 ```
 
+**注**: 詳細なsub-issuesリストはAI内部で保持。必要時にユーザーの質問に回答可
+
 ## 重要な注意事項
 
-1. **Issue URL指定**: GitHub Issue URL形式で指定
-2. **自動初期化**: 未同期の場合は`issync init`で同期を開始
-3. **state.yml優先**: 引数なしの場合はstate.ymlから選択
-4. **Readツール使用**: セクション抽出や整形はReadツールに任せる
-5. **シンプルな責務**: ファイル選択と読み込みを担当
-6. **進捗ドキュメント更新**: 作業中は継続的に更新（EditツールまたはWrite/Updateツール）
-7. **エラーハンドリング**: state.yml不在時やissync init失敗時は明確なエラーメッセージを表示
+1. **自動初期化**: 未同期issueは`issync init`で同期開始
+2. **シンプルな責務**: ファイル選択、読み込み、sub-issues分析に特化
+3. **Readツール使用**: セクション抽出や整形はReadツールに任せる
+4. **エラーハンドリング**: state.yml不在時やissync init失敗時は明確なエラーメッセージを表示
 
 ## 実行を開始
 
