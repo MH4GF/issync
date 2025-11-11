@@ -69,20 +69,20 @@ description: 新規タスクをGitHub Issueとして作成し、親issueとの�
 ```markdown
 Part of #{親issue番号}
 
-## Goal
+## 目的
 {タスクの具体的な目的（1-2文）}
 
-## Background
+## 背景
 {親issueから関連情報を抽出・要約}
 
-## Acceptance Criteria
+## 完了条件
 - [ ] {完了条件（3-5項目）}
-- [ ] Code review completed
-- [ ] Documentation updated
+- [ ] コードレビュー完了
+- [ ] ドキュメント更新完了
 
-## Related
-- Parent issue: #{親issue番号}
-- Full context: [View in parent issue]({親issueのURL})
+## 関連
+- 親issue: #{親issue番号}
+- 詳細: [親issueを見る]({親issueのURL})
 ```
 
 ### ステップ5: ユーザー確認
