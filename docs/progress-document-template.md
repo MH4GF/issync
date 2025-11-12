@@ -265,6 +265,6 @@
 
 **Status**: [plan / poc / architecture-decision / implement / retrospective / done]
 **Stage**: [To Start / In Progress / To Review / (empty)]
-**Last Updated**: YYYY-MM-DD
-**Next Action**: [次に人間またはAIが取るべき具体的なアクション]
+**最終更新**: YYYY-MM-DD HH:MM:SS
+**ネクストアクション**: [次に人間またはAIが取るべき具体的なアクション]
 <!-- issync:v1:end -->
