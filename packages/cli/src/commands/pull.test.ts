@@ -462,6 +462,7 @@ describe('pull command - local diff detection', () => {
     )
 
     // Should throw LocalChangeError
+    // eslint-disable-next-line @typescript-eslint/await-thenable
     await expect(pull({ cwd: tempDir, file: 'docs/test.md' })).rejects.toThrow(
       'Local file has unsaved changes',
     )
@@ -644,6 +645,7 @@ describe('pull command - local diff detection', () => {
     )
 
     // Should throw for partial failures
+    // eslint-disable-next-line @typescript-eslint/await-thenable
     await expect(pull({ cwd: tempDir })).rejects.toThrow('1 of 2 pull operation(s) failed')
 
     // Verify first sync succeeded
