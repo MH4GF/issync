@@ -416,3 +416,248 @@ describe('pull command - multi-sync support', () => {
     expect(hasChanges).toBe(false)
   })
 })
+
+describe('pull command - local diff detection', () => {
+  let tempDir: string
+
+  beforeEach(async () => {
+    tempDir = await mkdtemp(path.join(tmpdir(), 'issync-pull-local-diff-'))
+  })
+
+  afterEach(async () => {
+    mock.restore()
+    if (tempDir) {
+      await rm(tempDir, { recursive: true, force: true })
+    }
+  })
+
+  test('throws LocalChangeError when local file has unsaved changes', async () => {
+    const { writeFile, mkdir } = await import('node:fs/promises')
+    const localContent = '# Local Changes'
+    const remoteContent = '# Remote Changes'
+    const lastSyncedContent = '# Last Synced Content'
+
+    const state: IssyncState = {
+      syncs: [
+        {
+          issue_url: 'https://github.com/owner/repo/issues/1',
+          local_file: 'docs/test.md',
+          comment_id: 111,
+          last_synced_hash: calculateHash(lastSyncedContent),
+          last_synced_at: '2025-01-01T00:00:00Z',
+        },
+      ],
+    }
+    saveConfig(state, tempDir)
+
+    // Create docs directory and write local file with different content
+    await mkdir(path.join(tempDir, 'docs'), { recursive: true })
+    await writeFile(path.join(tempDir, 'docs/test.md'), localContent, 'utf-8')
+
+    const mockGitHubClient: Pick<GitHubClientInstance, 'getComment'> = {
+      getComment: () =>
+        Promise.resolve({ id: 111, body: remoteContent, updated_at: '2025-01-02T00:00:00Z' }),
+    }
+    spyOn(githubModule, 'createGitHubClient').mockReturnValue(
+      mockGitHubClient as unknown as GitHubClientInstance,
+    )
+
+    // Should throw LocalChangeError
+    // eslint-disable-next-line @typescript-eslint/await-thenable
+    await expect(pull({ cwd: tempDir, file: 'docs/test.md' })).rejects.toThrow(
+      'Local file has unsaved changes',
+    )
+
+    // Verify local file was NOT overwritten
+    const localContentAfter = readFileSync(path.join(tempDir, 'docs/test.md'), 'utf-8')
+    expect(localContentAfter).toBe(localContent)
+  })
+
+  test('force pull overwrites local changes', async () => {
+    const { writeFile, mkdir } = await import('node:fs/promises')
+    const localContent = '# Local Changes'
+    const remoteContent = '# Remote Changes'
+    const lastSyncedContent = '# Last Synced Content'
+
+    const state: IssyncState = {
+      syncs: [
+        {
+          issue_url: 'https://github.com/owner/repo/issues/1',
+          local_file: 'docs/test.md',
+          comment_id: 111,
+          last_synced_hash: calculateHash(lastSyncedContent),
+          last_synced_at: '2025-01-01T00:00:00Z',
+        },
+      ],
+    }
+    saveConfig(state, tempDir)
+
+    // Create docs directory and write local file with different content
+    await mkdir(path.join(tempDir, 'docs'), { recursive: true })
+    await writeFile(path.join(tempDir, 'docs/test.md'), localContent, 'utf-8')
+
+    const mockGitHubClient: Pick<GitHubClientInstance, 'getComment'> = {
+      getComment: () =>
+        Promise.resolve({ id: 111, body: remoteContent, updated_at: '2025-01-02T00:00:00Z' }),
+    }
+    spyOn(githubModule, 'createGitHubClient').mockReturnValue(
+      mockGitHubClient as unknown as GitHubClientInstance,
+    )
+
+    // Should succeed with force option
+    const hasChanges = await pull({ cwd: tempDir, file: 'docs/test.md', force: true })
+
+    expect(hasChanges).toBe(true)
+
+    // Verify local file was overwritten with remote content
+    const localContentAfter = readFileSync(path.join(tempDir, 'docs/test.md'), 'utf-8')
+    expect(localContentAfter).toBe(remoteContent)
+
+    // Verify hash was updated
+    const updatedState = loadConfig(tempDir)
+    const sync = updatedState.syncs[0]
+    expect(sync.last_synced_hash).toBe(calculateHash(remoteContent))
+  })
+
+  test('succeeds when local file does not exist', async () => {
+    const remoteContent = '# Remote Content'
+    const lastSyncedContent = '# Last Synced Content'
+
+    const state: IssyncState = {
+      syncs: [
+        {
+          issue_url: 'https://github.com/owner/repo/issues/1',
+          local_file: 'docs/test.md',
+          comment_id: 111,
+          last_synced_hash: calculateHash(lastSyncedContent),
+          last_synced_at: '2025-01-01T00:00:00Z',
+        },
+      ],
+    }
+    saveConfig(state, tempDir)
+
+    // Do NOT create local file
+
+    const mockGitHubClient: Pick<GitHubClientInstance, 'getComment'> = {
+      getComment: () =>
+        Promise.resolve({ id: 111, body: remoteContent, updated_at: '2025-01-02T00:00:00Z' }),
+    }
+    spyOn(githubModule, 'createGitHubClient').mockReturnValue(
+      mockGitHubClient as unknown as GitHubClientInstance,
+    )
+
+    // Should succeed (no local file to check)
+    const hasChanges = await pull({ cwd: tempDir, file: 'docs/test.md' })
+
+    expect(hasChanges).toBe(true)
+
+    // Verify file was created with remote content
+    const localContent = readFileSync(path.join(tempDir, 'docs/test.md'), 'utf-8')
+    expect(localContent).toBe(remoteContent)
+  })
+
+  test('succeeds when local file matches last_synced_hash', async () => {
+    const { writeFile, mkdir } = await import('node:fs/promises')
+    const lastSyncedContent = '# Last Synced Content'
+    const remoteContent = '# Remote Changes'
+
+    const state: IssyncState = {
+      syncs: [
+        {
+          issue_url: 'https://github.com/owner/repo/issues/1',
+          local_file: 'docs/test.md',
+          comment_id: 111,
+          last_synced_hash: calculateHash(lastSyncedContent),
+          last_synced_at: '2025-01-01T00:00:00Z',
+        },
+      ],
+    }
+    saveConfig(state, tempDir)
+
+    // Create docs directory and write local file with same content as last synced
+    await mkdir(path.join(tempDir, 'docs'), { recursive: true })
+    await writeFile(path.join(tempDir, 'docs/test.md'), lastSyncedContent, 'utf-8')
+
+    const mockGitHubClient: Pick<GitHubClientInstance, 'getComment'> = {
+      getComment: () =>
+        Promise.resolve({ id: 111, body: remoteContent, updated_at: '2025-01-02T00:00:00Z' }),
+    }
+    spyOn(githubModule, 'createGitHubClient').mockReturnValue(
+      mockGitHubClient as unknown as GitHubClientInstance,
+    )
+
+    // Should succeed (local matches last synced)
+    const hasChanges = await pull({ cwd: tempDir, file: 'docs/test.md' })
+
+    expect(hasChanges).toBe(true)
+
+    // Verify file was overwritten with remote content
+    const localContentAfter = readFileSync(path.join(tempDir, 'docs/test.md'), 'utf-8')
+    expect(localContentAfter).toBe(remoteContent)
+  })
+
+  test('reports partial failures with local changes in multi-sync pull', async () => {
+    const { writeFile, mkdir } = await import('node:fs/promises')
+    const remoteContentOne = '# Remote Content One'
+    const localContentTwo = '# Local Changes Two'
+    const remoteContentTwo = '# Remote Content Two'
+    const lastSyncedContentTwo = '# Last Synced Content Two'
+
+    const state: IssyncState = {
+      syncs: [
+        {
+          issue_url: 'https://github.com/owner/repo/issues/1',
+          local_file: 'docs/one.md',
+          comment_id: 111,
+        },
+        {
+          issue_url: 'https://github.com/owner/repo/issues/2',
+          local_file: 'docs/two.md',
+          comment_id: 222,
+          last_synced_hash: calculateHash(lastSyncedContentTwo),
+          last_synced_at: '2025-01-01T00:00:00Z',
+        },
+      ],
+    }
+    saveConfig(state, tempDir)
+
+    // Create docs directory and write local file with different content for second sync
+    await mkdir(path.join(tempDir, 'docs'), { recursive: true })
+    await writeFile(path.join(tempDir, 'docs/two.md'), localContentTwo, 'utf-8')
+
+    const mockGitHubClient: Pick<GitHubClientInstance, 'getComment'> = {
+      getComment: (_, __, commentId) => {
+        if (commentId === 111) {
+          return Promise.resolve({
+            id: 111,
+            body: remoteContentOne,
+            updated_at: '2025-01-02T00:00:00Z',
+          })
+        }
+        if (commentId === 222) {
+          return Promise.resolve({
+            id: 222,
+            body: remoteContentTwo,
+            updated_at: '2025-01-02T00:00:00Z',
+          })
+        }
+        throw new Error('Unexpected comment ID')
+      },
+    }
+    spyOn(githubModule, 'createGitHubClient').mockReturnValue(
+      mockGitHubClient as unknown as GitHubClientInstance,
+    )
+
+    // Should throw for partial failures
+    // eslint-disable-next-line @typescript-eslint/await-thenable
+    await expect(pull({ cwd: tempDir })).rejects.toThrow('1 of 2 pull operation(s) failed')
+
+    // Verify first sync succeeded
+    const contentOne = readFileSync(path.join(tempDir, 'docs/one.md'), 'utf-8')
+    expect(contentOne).toBe(remoteContentOne)
+
+    // Verify second sync did NOT overwrite local file
+    const contentTwo = readFileSync(path.join(tempDir, 'docs/two.md'), 'utf-8')
+    expect(contentTwo).toBe(localContentTwo)
+  })
+})
