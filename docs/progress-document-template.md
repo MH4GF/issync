@@ -1,5 +1,5 @@
 <!-- issync:v1:start -->
-<!-- Template Version: 18 (2025-11-08) -->
+<!-- Template Version: 19 (2025-11-12) -->
 
 # [Project Name] Progress Document
 
@@ -243,4 +243,28 @@
 -->
 
 **自信度**: [高🟢 / 中🟡 / 低🔴] - [プロジェクト全体の確信度の理由を1行で説明]
+
+---
+
+## Current Status
+
+<!--
+📝 Guidance for AI
+記入タイミング: 各フェーズ開始時、完了時、または進捗ドキュメント更新時に自動更新
+更新ルール:
+- Status: plan/poc/architecture-decision/implement/retrospective/done（GitHub Projects Statusフィールドと同期）
+- Stage: To Start/In Progress/To Review/(empty)（GitHub Projects Stageフィールドと同期）
+- Last Updated: YYYY-MM-DD形式で自動更新（issync pushまたはプラグインコマンド実行時）
+- Next Action: 各フェーズに応じた次のアクション（人間またはAIが取るべき具体的なアクション）
+
+自動更新:
+- /issync:plan実行時: Status → plan、Stage → To Review、Last Updated → 実行日
+- /issync:implement実行時: Status → implement、Stage → In Progress、Last Updated → 実行日
+- issync push実行時: Last Updated → 実行日（他フィールドは維持）
+-->
+
+**Status**: [plan / poc / architecture-decision / implement / retrospective / done]
+**Stage**: [To Start / In Progress / To Review / (empty)]
+**Last Updated**: YYYY-MM-DD
+**Next Action**: [次に人間またはAIが取るべき具体的なアクション]
 <!-- issync:v1:end -->

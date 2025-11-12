@@ -343,3 +343,82 @@
 - 既に記入済みのConfidence Assessment値（例: "High 🟢"）がある場合は、対応する日本語表記（"高🟢"）に置き換えることを推奨
 - HTMLコメント内の削除対象が存在しない場合は、ステップ1と2をスキップ
 
+---
+
+## Version 19 (2025-11-12)
+
+**Current Statusセクション追加（進捗状態の可視化）**
+
+### 変更内容
+
+**概要**: Confidence Assessmentセクションの直後に「Current Status」セクションを追加し、進捗ドキュメントの現在の状態（Status、Stage、最終更新日時、次のアクション）を一目で把握できるようにする。
+
+**追加されたセクション:**
+- **Current Status**: 進捗ドキュメントの現在の状態を示す新セクション（Confidence Assessmentの直後、テンプレートの最後に配置）
+  - **Status**: 現在のフェーズ（plan/poc/architecture-decision/implement/retrospective/done）
+  - **Stage**: 現在の進行状況（To Start/In Progress/To Review/(empty)）
+  - **Last Updated**: 最終更新日（YYYY-MM-DD形式）
+  - **Next Action**: 次に取るべき具体的なアクション
+
+**理由:**
+- 進捗ドキュメントの状態可視性向上（現在のフェーズと次のアクションを即座に把握）
+- GitHub Projectsとの情報整合性（Status/Stageフィールドの情報を進捗ドキュメントに反映）
+- AIエージェントと人間の意思決定支援（Single Source of Truthとしての役割強化）
+
+**設計決定:**
+- セクション名: "Current Status"（既存セクション名の命名規則に一致）
+- 配置: Confidence Assessmentの直後（ドキュメント構造の一貫性を維持）
+- 更新方式: issyncプラグインコマンドによる自動更新（`/issync:plan`、`/issync:implement`等）
+- 日時フォーマット: ISO 8601形式（YYYY-MM-DD）（既存のDecision LogやDiscoveries & Insightsと一貫性を保つ）
+
+### マイグレーション手順
+
+#### 手動マイグレーション
+
+既存のplan.mdをバージョン19に移行する手順:
+
+1. **Current Statusセクションを追加**
+   - Confidence Assessmentセクション（`**自信度**: ...`）の直後、`<!-- issync:v1:end -->`の直前に以下を挿入:
+
+```markdown
+---
+
+## Current Status
+
+<!--
+📝 Guidance for AI
+記入タイミング: 各フェーズ開始時、完了時、または進捗ドキュメント更新時に自動更新
+更新ルール:
+- Status: plan/poc/architecture-decision/implement/retrospective/done（GitHub Projects Statusフィールドと同期）
+- Stage: To Start/In Progress/To Review/(empty)（GitHub Projects Stageフィールドと同期）
+- Last Updated: YYYY-MM-DD形式で自動更新（issync pushまたはプラグインコマンド実行時）
+- Next Action: 各フェーズに応じた次のアクション（人間またはAIが取るべき具体的なアクション）
+
+自動更新:
+- /issync:plan実行時: Status → plan、Stage → To Review、Last Updated → 実行日
+- /issync:implement実行時: Status → implement、Stage → In Progress、Last Updated → 実行日
+- issync push実行時: Last Updated → 実行日（他フィールドは維持）
+-->
+
+**Status**: [plan / poc / architecture-decision / implement / retrospective / done]
+**Stage**: [To Start / In Progress / To Review / (empty)]
+**Last Updated**: YYYY-MM-DD
+**Next Action**: [次に人間またはAIが取るべき具体的なアクション]
+```
+
+2. **現在の状態を記入**（オプション）
+   - 既存の進捗ドキュメントの現在のフェーズに応じて、Status、Stage、Last Updated、Next Actionを記入
+   - 例:
+     - Status: plan
+     - Stage: To Review
+     - Last Updated: 2025-11-12
+     - Next Action: Open Questionsを解消し、architecture-decisionフェーズへ移行
+
+3. **バージョンヘッダー（2行目）を更新**
+   - `<!-- Template Version: 18 (2025-11-08) -->` を `<!-- Template Version: 19 (2025-11-12) -->` に変更
+
+**注意事項:**
+- 既存のplan-*.mdファイルは任意でマイグレーション可能（新規作成時はVersion 19テンプレートを使用）
+- Current Statusセクションは将来的にissyncプラグインコマンドで自動更新される予定（手動記入は暫定的な運用）
+- セクション構造（`---`区切り、HTMLコメント形式）は他のセクションと一貫性を保つこと
+
