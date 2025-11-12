@@ -432,7 +432,7 @@ describe('pull command - local diff detection', () => {
   })
 
   test('throws LocalChangeError when local file has unsaved changes', async () => {
-    const { writeFile } = await import('node:fs/promises')
+    const { writeFile, mkdir } = await import('node:fs/promises')
     const localContent = '# Local Changes'
     const remoteContent = '# Remote Changes'
     const lastSyncedContent = '# Last Synced Content'
@@ -450,7 +450,8 @@ describe('pull command - local diff detection', () => {
     }
     saveConfig(state, tempDir)
 
-    // Write local file with different content
+    // Create docs directory and write local file with different content
+    await mkdir(path.join(tempDir, 'docs'), { recursive: true })
     await writeFile(path.join(tempDir, 'docs/test.md'), localContent, 'utf-8')
 
     const mockGitHubClient: Pick<GitHubClientInstance, 'getComment'> = {
@@ -473,7 +474,7 @@ describe('pull command - local diff detection', () => {
   })
 
   test('force pull overwrites local changes', async () => {
-    const { writeFile } = await import('node:fs/promises')
+    const { writeFile, mkdir } = await import('node:fs/promises')
     const localContent = '# Local Changes'
     const remoteContent = '# Remote Changes'
     const lastSyncedContent = '# Last Synced Content'
@@ -491,7 +492,8 @@ describe('pull command - local diff detection', () => {
     }
     saveConfig(state, tempDir)
 
-    // Write local file with different content
+    // Create docs directory and write local file with different content
+    await mkdir(path.join(tempDir, 'docs'), { recursive: true })
     await writeFile(path.join(tempDir, 'docs/test.md'), localContent, 'utf-8')
 
     const mockGitHubClient: Pick<GitHubClientInstance, 'getComment'> = {
@@ -555,7 +557,7 @@ describe('pull command - local diff detection', () => {
   })
 
   test('succeeds when local file matches last_synced_hash', async () => {
-    const { writeFile } = await import('node:fs/promises')
+    const { writeFile, mkdir } = await import('node:fs/promises')
     const lastSyncedContent = '# Last Synced Content'
     const remoteContent = '# Remote Changes'
 
@@ -572,7 +574,8 @@ describe('pull command - local diff detection', () => {
     }
     saveConfig(state, tempDir)
 
-    // Write local file with same content as last synced
+    // Create docs directory and write local file with same content as last synced
+    await mkdir(path.join(tempDir, 'docs'), { recursive: true })
     await writeFile(path.join(tempDir, 'docs/test.md'), lastSyncedContent, 'utf-8')
 
     const mockGitHubClient: Pick<GitHubClientInstance, 'getComment'> = {
@@ -594,7 +597,7 @@ describe('pull command - local diff detection', () => {
   })
 
   test('reports partial failures with local changes in multi-sync pull', async () => {
-    const { writeFile } = await import('node:fs/promises')
+    const { writeFile, mkdir } = await import('node:fs/promises')
     const remoteContentOne = '# Remote Content One'
     const localContentTwo = '# Local Changes Two'
     const remoteContentTwo = '# Remote Content Two'
@@ -618,7 +621,8 @@ describe('pull command - local diff detection', () => {
     }
     saveConfig(state, tempDir)
 
-    // Write local file with different content for second sync
+    // Create docs directory and write local file with different content for second sync
+    await mkdir(path.join(tempDir, 'docs'), { recursive: true })
     await writeFile(path.join(tempDir, 'docs/two.md'), localContentTwo, 'utf-8')
 
     const mockGitHubClient: Pick<GitHubClientInstance, 'getComment'> = {
