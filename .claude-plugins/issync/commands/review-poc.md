@@ -50,6 +50,13 @@ description: POC実装の結果をレビューし、人間の意思決定のた�
 - `GITHUB_PROJECTS_NUMBER`: プロジェクト番号（例: `1`）
 - `GITHUB_PROJECTS_OWNER_TYPE`: `user` または `org`（デフォルト: `user`）
 
+**Stage 設定コマンド**:
+
+```bash
+# GitHub Projects ヘルパースクリプトを使用
+bash ${CLAUDE_PLUGIN_ROOT}/scripts/github-projects.sh set-stage $ISSUE_NUMBER "in progress"
+```
+
 ---
 
 ### ステップ2: POC PR URLの受け取りとPR情報取得
@@ -507,6 +514,13 @@ issync push
 ### ステップ11: Stage更新（レビュー待ち）
 
 `!env GITHUB_PROJECTS_NUMBER`が設定されている場合のみ、`gh project item-edit`でStage→`To Review`に設定。失敗時も作業継続（警告のみ）。
+
+**Stage 設定コマンド**:
+
+```bash
+# GitHub Projects ヘルパースクリプトを使用
+bash ${CLAUDE_PLUGIN_ROOT}/scripts/github-projects.sh set-stage $ISSUE_NUMBER "to review"
+```
 
 **重要**: 人間承認後、Status→`implement`、Stage→`To Start`を手動で変更。
 

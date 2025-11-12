@@ -231,12 +231,14 @@ issync remove --issue <サブissue URL>
 - `GITHUB_PROJECTS_NUMBER`: プロジェクト番号（例: `1`）
 - `GITHUB_PROJECTS_OWNER_TYPE`: `user` または `org`（デフォルト: `user`）
 
+**Status 変更コマンド**:
+
 ```bash
-gh api graphql -f query='...'  # Project情報取得
-gh project item-edit --id <item-id> --project-id <project-id> --field-id <status-field-id> --option-id <done-option-id>
+# GitHub Projects ヘルパースクリプトを使用
+bash ${CLAUDE_PLUGIN_ROOT}/scripts/github-projects.sh set-status $SUB_ISSUE_NUMBER "done"
 ```
 
-**エラー時**: 認証エラーは`gh auth refresh -s project`、その他失敗時は警告のみで作業継続（手動変更案内）。環境変数の形式が不正、プロジェクトが見つからない、権限不足の場合は警告を表示して処理を継続。
+**エラー時**: スクリプトが自動的にエラーハンドリングを行います。認証エラーは`gh auth refresh -s project`、その他失敗時は警告のみで作業継続（手動変更案内）。環境変数の形式が不正、プロジェクトが見つからない、権限不足の場合は警告を表示して処理を継続。
 
 ### ステップ11: GitHub Issueへの同期
 

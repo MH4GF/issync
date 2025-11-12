@@ -50,6 +50,19 @@ description: planフェーズのプロセスを標準化し、コードベース
 - `GITHUB_PROJECTS_NUMBER`: プロジェクト番号（例: `1`）
 - `GITHUB_PROJECTS_OWNER_TYPE`: `user` または `org`（デフォルト: `user`）
 
+**Stage 設定コマンド**（環境変数設定時のみ実行）:
+
+```bash
+# GitHub Projects ヘルパースクリプトを使用
+bash ${CLAUDE_PLUGIN_ROOT}/scripts/github-projects.sh set-stage $ISSUE_NUMBER "in progress"
+```
+
+**エラーハンドリング**:
+- スクリプトは自動的にエラーハンドリングを行います
+- 環境変数未設定: 警告を表示して処理を継続（GitHub Projects 連携をスキップ）
+- 認証スコープ不足: `gh auth refresh -s project` を実行して再試行
+- プロジェクトが見つからない: 警告を表示して処理を継続
+
 ### ステップ2: GitHub Issue内容の確認
 
 Issue内容を理解し、不明点があればユーザーに確認
@@ -139,6 +152,11 @@ issync push
 
 `!env GITHUB_PROJECTS_NUMBER`が設定されている場合のみ、`gh project item-edit`でStage→`To Review`に設定。失敗時も作業継続（警告のみ）。
 
+```bash
+# GitHub Projects ヘルパースクリプトを使用
+bash ${CLAUDE_PLUGIN_ROOT}/scripts/github-projects.sh set-stage $ISSUE_NUMBER "to review"
+```
+
 ### ステップ7: GitHub Projects Status & Stage自動変更
 
 `!env GITHUB_PROJECTS_NUMBER`が設定されている場合のみ、Status→`poc`、Stage→`To Start`に変更。GraphQL APIでProject ID取得後、`gh project item-edit`で両フィールドを更新。
@@ -147,7 +165,15 @@ issync push
 - `GITHUB_PROJECTS_NUMBER`: プロジェクト番号（例: `1`）
 - `GITHUB_PROJECTS_OWNER_TYPE`: `user` または `org`（デフォルト: `user`）
 
-**エラー時**: 認証スコープ不足の場合は`gh auth refresh -s project`実行。失敗時はGitHub Projects UIで手動変更。環境変数の形式が不正、プロジェクトが見つからない、権限不足の場合は警告を表示して処理を継続。
+**Status & Stage 変更コマンド**:
+
+```bash
+# GitHub Projects ヘルパースクリプトを使用
+bash ${CLAUDE_PLUGIN_ROOT}/scripts/github-projects.sh set-status $ISSUE_NUMBER "poc"
+bash ${CLAUDE_PLUGIN_ROOT}/scripts/github-projects.sh set-stage $ISSUE_NUMBER "to start"
+```
+
+**エラー時**: スクリプトが自動的にエラーハンドリングを行います。認証スコープ不足の場合は`gh auth refresh -s project`実行。失敗時はGitHub Projects UIで手動変更。環境変数の形式が不正、プロジェクトが見つからない、権限不足の場合は警告を表示して処理を継続。
 
 ## 出力フォーマット
 
