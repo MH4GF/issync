@@ -255,7 +255,7 @@
 - Status: plan/poc/architecture-decision/implement/retrospective/done（GitHub Projects Statusフィールドと同期）
 - Stage: To Start/In Progress/To Review/(empty)（GitHub Projects Stageフィールドと同期）
 - Last Updated: YYYY-MM-DD形式で自動更新（issync pushまたはプラグインコマンド実行時）
-- Next Action: 各フェーズに応じた次のアクション（人間またはAIが取るべき具体的なアクション）
+- Next Action: 各フェーズに応じた次のアクション（人間が取るべき具体的なアクション）
 
 自動更新:
 - /issync:plan実行時: Status → plan、Stage → To Review、Last Updated → 実行日
@@ -266,5 +266,5 @@
 **Status**: [plan / poc / architecture-decision / implement / retrospective / done]
 **Stage**: [To Start / In Progress / To Review / (empty)]
 **最終更新**: YYYY-MM-DD HH:MM:SS
-**ネクストアクション**: [次に人間またはAIが取るべき具体的なアクション]
+**ネクストアクション**: [次に人間が取るべき具体的なアクション]
 <!-- issync:v1:end -->
