@@ -14,6 +14,13 @@ export interface SelectorOptions extends CommandOptions {
   issue?: string
 }
 
+/**
+ * Options for pull command
+ */
+export interface PullOptions extends SelectorOptions {
+  force?: boolean
+}
+
 export interface IssyncSync {
   issue_url: string
   comment_id?: number

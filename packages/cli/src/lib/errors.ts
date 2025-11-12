@@ -87,3 +87,27 @@ export class GitHubAuthenticationError extends IssyncError {
     this.name = 'GitHubAuthenticationError'
   }
 }
+
+export class LocalChangeError extends IssyncError {
+  constructor(
+    filePath: string,
+    localHash: string,
+    remoteHash: string,
+    lastSyncedHash: string | undefined,
+  ) {
+    const lastSyncedHashShort = lastSyncedHash?.substring(0, 8) ?? 'unknown'
+    const localHashShort = localHash.substring(0, 8)
+    const remoteHashShort = remoteHash.substring(0, 8)
+
+    super(
+      'Local file has unsaved changes\n' +
+        `  File: ${filePath}\n` +
+        `  Local hash:       ${localHashShort}\n` +
+        `  Remote hash:      ${remoteHashShort}\n` +
+        `  Last synced hash: ${lastSyncedHashShort}\n\n` +
+        'To overwrite local changes, use: issync pull --force\n' +
+        'To keep local changes, commit them first or use: issync push',
+    )
+    this.name = 'LocalChangeError'
+  }
+}

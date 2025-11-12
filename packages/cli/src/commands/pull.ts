@@ -1,22 +1,25 @@
-import { existsSync } from 'node:fs'
+import { existsSync, readFileSync } from 'node:fs'
 import { mkdir, writeFile } from 'node:fs/promises'
 import path from 'node:path'
 import type { SyncSelector } from '../lib/config.js'
 import { loadConfig, saveConfig, selectSync } from '../lib/config.js'
-import { SyncNotFoundError } from '../lib/errors.js'
+import { LocalChangeError, SyncNotFoundError } from '../lib/errors.js'
 import { createGitHubClient, parseIssueUrl, removeMarker } from '../lib/github.js'
 import { calculateHash } from '../lib/hash.js'
 import { resolveFilePath } from '../lib/path.js'
 import { reportSyncResults } from '../lib/sync-reporter.js'
-import type { IssyncState, IssyncSync, SelectorOptions } from '../types/index.js'
-
-export type PullOptions = SelectorOptions
+import type { IssyncState, IssyncSync, PullOptions } from '../types/index.js'
 
 /**
  * Pull a single sync from remote
  * @returns true if content was updated, false if no changes
  */
-async function pullSingleSync(sync: IssyncSync, cwd: string, token?: string): Promise<boolean> {
+async function pullSingleSync(
+  sync: IssyncSync,
+  cwd: string,
+  token?: string,
+  force?: boolean,
+): Promise<boolean> {
   const baseDir = cwd ?? process.cwd()
 
   if (!sync.comment_id) {
@@ -48,11 +51,23 @@ async function pullSingleSync(sync: IssyncSync, cwd: string, token?: string): Pr
   // Calculate hash of remote content
   const remoteHash = calculateHash(remoteContent)
 
+  // Early return if remote unchanged
   if (remoteHash === sync.last_synced_hash) {
     if (process.env.ISSYNC_DEBUG) {
       console.log(`[DEBUG] Skipping pull for ${sync.local_file}: content unchanged`)
     }
     return false
+  }
+
+  // Check for local changes (if file exists and not forced)
+  if (existsSync(resolvedPath) && !force) {
+    const localContent = readFileSync(resolvedPath, 'utf-8')
+    const localHash = calculateHash(localContent)
+
+    // If local file differs from last synced state, abort pull
+    if (localHash !== sync.last_synced_hash) {
+      throw new LocalChangeError(resolvedPath, localHash, remoteHash, sync.last_synced_hash)
+    }
   }
 
   // Write to local file (without markers)
@@ -74,6 +89,7 @@ async function pullAllSyncs(
   baseDir: string,
   cwd: string | undefined,
   token?: string,
+  force?: boolean,
 ): Promise<boolean> {
   if (state.syncs.length === 0) {
     throw new SyncNotFoundError()
@@ -81,7 +97,7 @@ async function pullAllSyncs(
 
   // Pull all syncs in parallel
   const results = await Promise.allSettled(
-    state.syncs.map((sync) => pullSingleSync(sync, baseDir, token)),
+    state.syncs.map((sync) => pullSingleSync(sync, baseDir, token, force)),
   )
 
   // Collect failures and check if any sync was updated
@@ -111,7 +127,7 @@ async function pullAllSyncs(
  * @returns true if any content was updated, false if no changes
  */
 export async function pull(options: PullOptions = {}): Promise<boolean> {
-  const { cwd, token, file, issue } = options
+  const { cwd, token, file, issue, force } = options
   const baseDir = cwd ?? process.cwd()
 
   // Load config
@@ -119,7 +135,7 @@ export async function pull(options: PullOptions = {}): Promise<boolean> {
 
   // If no selector provided, pull all syncs
   if (!file && !issue) {
-    return pullAllSyncs(state, baseDir, cwd, token)
+    return pullAllSyncs(state, baseDir, cwd, token, force)
   }
 
   // Single sync pull
@@ -129,7 +145,7 @@ export async function pull(options: PullOptions = {}): Promise<boolean> {
   }
   const { sync } = selectSync(state, selector, baseDir)
 
-  const hasChanges = await pullSingleSync(sync, baseDir, token)
+  const hasChanges = await pullSingleSync(sync, baseDir, token, force)
   saveConfig(state, cwd)
 
   return hasChanges

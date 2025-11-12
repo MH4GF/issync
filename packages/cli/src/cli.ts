@@ -81,11 +81,15 @@ program
   .description('Pull remote changes from GitHub Issue to local file')
   .option('-f, --file <path>', 'Select sync target by local file path')
   .option('--issue <url>', 'Select sync target by issue URL')
-  .action(async (options: { file?: string; issue?: string }) => {
+  .option('--force', 'Force overwrite local changes')
+  .action(async (options: { file?: string; issue?: string; force?: boolean }) => {
     const { pull } = await import('./commands/pull.js')
+    const successMessage = options.force
+      ? '✓ Force pulled changes from remote'
+      : '✓ Pulled changes from remote'
     await _handleCommand(
-      async () => pull({ file: options.file, issue: options.issue }),
-      '✓ Pulled changes from remote',
+      async () => pull({ file: options.file, issue: options.issue, force: options.force }),
+      successMessage,
     )
   })
 
