@@ -43,9 +43,16 @@ get_project_info() {
   fi
 
   # プロジェクト ID を取得
+  local project_list
+  project_list=$(gh project list --owner "$owner_flag" --format json 2>/dev/null)
+
+  if [ -z "$project_list" ] || [ "$project_list" = "null" ]; then
+    echo "⚠️  プロジェクト一覧の取得に失敗しました" >&2
+    exit 1
+  fi
+
   local project_id
-  project_id=$(gh project list --owner "$owner_flag" --format json 2>/dev/null | \
-    jq -r ".projects[] | select(.number == ${GITHUB_PROJECTS_NUMBER}) | .id")
+  project_id=$(echo "$project_list" | jq -r ".projects[]? | select(.number == ${GITHUB_PROJECTS_NUMBER}) | .id")
 
   if [ -z "$project_id" ] || [ "$project_id" = "null" ]; then
     echo "⚠️  プロジェクト番号 ${GITHUB_PROJECTS_NUMBER} が見つかりません" >&2
@@ -96,8 +103,15 @@ get_item_id() {
   local owner_flag
   owner_flag=$(get_project_info | jq -r '.owner_flag')
 
-  gh project item-list "${GITHUB_PROJECTS_NUMBER}" --owner "$owner_flag" --format json --limit 100 2>/dev/null | \
-    jq -r ".items[] | select(.content.number == ${issue_number}) | .id"
+  local item_list
+  item_list=$(gh project item-list "${GITHUB_PROJECTS_NUMBER}" --owner "$owner_flag" --format json --limit 100 2>/dev/null)
+
+  if [ -z "$item_list" ] || [ "$item_list" = "null" ]; then
+    echo "" >&2
+    return 1
+  fi
+
+  echo "$item_list" | jq -r ".items[]? | select(.content.number == ${issue_number}) | .id"
 }
 
 # Stage を設定
@@ -112,10 +126,10 @@ set_stage() {
   project_id=$(echo "$project_info" | jq -r '.project_id')
 
   local stage_field_id
-  stage_field_id=$(echo "$project_info" | jq -r '.field_info.data.user.projectV2.fields.nodes[] // .field_info.data.organization.projectV2.fields.nodes[] | select(.name == "Stage") | .id')
+  stage_field_id=$(echo "$project_info" | jq -r '.field_info.data.user.projectV2.fields.nodes[]? // .field_info.data.organization.projectV2.fields.nodes[]? | select(.name == "Stage") | .id')
 
   local stage_option_id
-  stage_option_id=$(echo "$project_info" | jq -r --arg name "$stage_name" '.field_info.data.user.projectV2.fields.nodes[] // .field_info.data.organization.projectV2.fields.nodes[] | select(.name == "Stage") | .options[] | select(.name == $name) | .id')
+  stage_option_id=$(echo "$project_info" | jq -r --arg name "$stage_name" '.field_info.data.user.projectV2.fields.nodes[]? // .field_info.data.organization.projectV2.fields.nodes[]? | select(.name == "Stage") | .options[]? | select(.name == $name) | .id')
 
   if [ -z "$stage_field_id" ] || [ "$stage_field_id" = "null" ]; then
     echo "⚠️  Stage フィールドが見つかりません" >&2
@@ -156,10 +170,10 @@ set_status() {
   project_id=$(echo "$project_info" | jq -r '.project_id')
 
   local status_field_id
-  status_field_id=$(echo "$project_info" | jq -r '.field_info.data.user.projectV2.fields.nodes[] // .field_info.data.organization.projectV2.fields.nodes[] | select(.name == "Status") | .id')
+  status_field_id=$(echo "$project_info" | jq -r '.field_info.data.user.projectV2.fields.nodes[]? // .field_info.data.organization.projectV2.fields.nodes[]? | select(.name == "Status") | .id')
 
   local status_option_id
-  status_option_id=$(echo "$project_info" | jq -r --arg name "$status_name" '.field_info.data.user.projectV2.fields.nodes[] // .field_info.data.organization.projectV2.fields.nodes[] | select(.name == "Status") | .options[] | select(.name == $name) | .id')
+  status_option_id=$(echo "$project_info" | jq -r --arg name "$status_name" '.field_info.data.user.projectV2.fields.nodes[]? // .field_info.data.organization.projectV2.fields.nodes[]? | select(.name == "Status") | .options[]? | select(.name == $name) | .id')
 
   if [ -z "$status_field_id" ] || [ "$status_field_id" = "null" ]; then
     echo "⚠️  Status フィールドが見つかりません" >&2
@@ -199,7 +213,7 @@ clear_stage() {
   project_id=$(echo "$project_info" | jq -r '.project_id')
 
   local stage_field_id
-  stage_field_id=$(echo "$project_info" | jq -r '.field_info.data.user.projectV2.fields.nodes[] // .field_info.data.organization.projectV2.fields.nodes[] | select(.name == "Stage") | .id')
+  stage_field_id=$(echo "$project_info" | jq -r '.field_info.data.user.projectV2.fields.nodes[]? // .field_info.data.organization.projectV2.fields.nodes[]? | select(.name == "Stage") | .id')
 
   local item_id
   item_id=$(get_item_id "$issue_number")
