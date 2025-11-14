@@ -2,7 +2,7 @@
 description: 新規タスクをGitHub Issueとして作成し、親issueとのリンクを自動管理。進捗ドキュメントのTasksセクションは不使用
 ---
 
-# /create-sub-issue: サブissue作成オペレーション
+# /issync:create-sub-issue: サブissue作成オペレーション
 
 新規タスクをGitHub Issueとして作成し、以下を自動化：
 1. タスク概要入力（インタラクティブ: 1つ / 引数: 複数可）
@@ -23,14 +23,14 @@ description: 新規タスクをGitHub Issueとして作成し、親issueとの�
 ## 使用方法
 
 ```bash
-/create-sub-issue                             # インタラクティブモード（1つ）
-/create-sub-issue "概要1" "概要2"            # 引数モード（複数可）
+/issync:create-sub-issue                             # インタラクティブモード（1つ）
+/issync:create-sub-issue "概要1" "概要2"            # 引数モード（複数可）
 ```
 
 **入力例**: "Status変更時の自動アクション" "コマンド実装" など簡潔でOK
 
 **推奨ワークフロー**:
-- 基本: 1つずつ作成 → `/plan`で詳細化 → 必要に応じて孫issue作成
+- 基本: 1つずつ作成 → `/issync:plan`で詳細化 → 必要に応じて孫issue作成
 - 複数の独立タスクが明確な場合のみ引数モードで一括作成
 
 ## 前提条件
@@ -177,13 +177,13 @@ done
 
 ## 実行例
 
-**インタラクティブモード**: `/create-sub-issue`
+**インタラクティブモード**: `/issync:create-sub-issue`
 1. タスク概要入力: "Status変更時の自動アクション"
 2. LLMがタイトル生成（例: "Status変更時の自動アクション機能を設計"）
 3. ユーザー確認 → Issue作成（`issync`ラベル付き）→ Sub-issues紐づけ
 4. auto-planワークフロー自動実行 → 進捗ドキュメント作成
 
-**引数モード**: `/create-sub-issue "自動アクション設計" "/create-sub-issue実装"`
+**引数モード**: `/issync:create-sub-issue "自動アクション設計" "/issync:create-sub-issue実装"`
 1. 複数タスクを一括作成（各々`issync`ラベル付き）
 2. Sub-issues順序設定で作成順序維持
 3. 各サブissueに対しauto-planワークフロー順次実行

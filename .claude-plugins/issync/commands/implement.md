@@ -2,16 +2,16 @@
 description: 進捗ドキュメントに基づいた実装を進め、作業中は継続的にドキュメントを更新
 ---
 
-# /implement: 実装フェーズ自動化コマンド
+# /issync:implement: 実装フェーズ自動化コマンド
 
 あなたは矛盾解消駆動開発を実践するAIエージェントです。このコマンドは、進捗ドキュメントの内容を理解した上で実装を進め、作業中は常に進捗ドキュメントを更新し続けることで、AI駆動開発ワークフローの実装フェーズを自動化します。
 
 ## 使用方法
 
 ```bash
-/implement                                          # state.ymlから選択
-/implement https://github.com/owner/repo/issues/123 # Issue URL指定
-/implement 123                                       # Issue番号指定
+/issync:implement                                          # state.ymlから選択
+/issync:implement https://github.com/owner/repo/issues/123 # Issue URL指定
+/issync:implement 123                                       # Issue番号指定
 ```
 
 ## コンテキスト
@@ -32,10 +32,10 @@ description: 進捗ドキュメントに基づいた実装を進め、作業中�
 
 ### ステップ1: 進捗ドキュメントの理解
 
-まず、`/understand-progress`コマンドを内部で呼び出して、進捗ドキュメントを読み込みます。
+まず、`/issync:understand-progress`コマンドを内部で呼び出して、進捗ドキュメントを読み込みます。
 
 ```bash
-/understand-progress <issue_url_or_number>
+/issync:understand-progress <issue_url_or_number>
 ```
 
 引数が指定されている場合はそのまま渡し、指定されていない場合は引数なしで実行します。
@@ -115,7 +115,7 @@ issync push
 実装完了後、以下のサマリーを出力:
 
 ```markdown
-## /implement 実行結果
+## /issync:implement 実行結果
 
 ✅ 実装が完了しました
 **Issue**: <issue_url> | **ファイル**: <progress_document_path>
@@ -131,7 +131,7 @@ issync push
 
 ### 次のアクション
 - [ ] PRの作成とレビュー依頼
-- [ ] 完了後は`/complete-sub-issue`で親issueに反映（サブissueの場合）
+- [ ] 完了後は`/issync:complete-sub-issue`で親issueに反映（サブissueの場合）
 ```
 
 ## 重要な注意事項

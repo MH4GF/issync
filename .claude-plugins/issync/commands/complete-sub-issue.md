@@ -21,9 +21,9 @@ description: サブissue完了時に親issueの進捗ドキュメントを自動
 「矛盾解消駆動開発」ワークフローの横断的オペレーション。`retrospective`ステート（完了時）に実行し、PRから学びを抽出して親issueに反映、プロジェクト全体の継続的改善を促進します。
 
 **運用フロー**:
-1. `/create-sub-issue`でサブissue作成
+1. `/issync:create-sub-issue`でサブissue作成
 2. サブissueで開発（plan → implementation → retrospective）
-3. `/complete-sub-issue`で親issueに自動反映＆close（PR分析、5 Whys分析、**Open Questions解決**、Follow-up Issues 4分類処理）
+3. `/issync:complete-sub-issue`で親issueに自動反映＆close（PR分析、5 Whys分析、**Open Questions解決**、Follow-up Issues 4分類処理）
 4. Critical Improvements（品質向上）に即座着手
 5. 必要に応じてProject Improvements/Feature Enhancementsで次のサブissue作成
 
@@ -117,11 +117,11 @@ GitHub Sub-issues API (`gh api /repos/{owner}/{repo}/issues/{issue_number}/paren
    - **振り返り内容**: 開発中に得られた知見（ステップ3.4で生成済み）
    - **Follow-up Issues**: 論点への言及（ステップ3.5で抽出済み）
 
-3. **`/resolve-questions`で自動解決**
+3. **`/issync:resolve-questions`で自動解決**
 
-   推論できた回答について、`/resolve-questions`コマンドを実行:
+   推論できた回答について、`/issync:resolve-questions`コマンドを実行:
    ```bash
-   /resolve-questions
+   /issync:resolve-questions
    Q1: <Decision Logから抽出した決定内容>
    Q2: <PRから推論した実装方針>
    Q3: <振り返りから得られた知見>
@@ -164,11 +164,11 @@ issync list
 
    サブissueの情報（実装内容、振り返り、Decision Log）から解決可能なOpen Questionsを推論。
 
-3. **`/resolve-questions`で自動解決**
+3. **`/issync:resolve-questions`で自動解決**
 
-   推論できた回答について、親issueに対して`/resolve-questions`コマンドを実行:
+   推論できた回答について、親issueに対して`/issync:resolve-questions`コマンドを実行:
    ```bash
-   /resolve-questions
+   /issync:resolve-questions
    Q1: <サブissueのDecision Logや実装から抽出した決定内容>
    Q2: <PRから推論した実装方針>
    Q3: <振り返りから得られた知見>
@@ -184,13 +184,13 @@ issync list
 
 **Follow-up Issuesとは**: 進捗ドキュメントのセクション名。すべての未対応事項（改善施策、論点、将来タスクなど）の総称。
 
-1. **Critical Improvements** (品質向上のための重要な仕組み化) → **即座に`/create-sub-issue`実行**
+1. **Critical Improvements** (品質向上のための重要な仕組み化) → **即座に`/issync:create-sub-issue`実行**
    - キーワード: "lint追加"、"型定義強化"、"CI改善"、"セキュリティ"など
    - タイトルに `[Critical]` プレフィックス付与
    - 自動作成（複数可）
-   - **重複チェック**: `/create-sub-issue`のステップ4.5で既存issue検索が自動実行される
+   - **重複チェック**: `/issync:create-sub-issue`のステップ4.5で既存issue検索が自動実行される
 
-2. **Project Improvements** (プロジェクト全体の改善) → **`/create-sub-issue`実行を提案**
+2. **Project Improvements** (プロジェクト全体の改善) → **`/issync:create-sub-issue`実行を提案**
    - キーワード: "CLAUDE.md"、"テンプレート"、"標準化"など
    - タイトルに `[Improvement]` プレフィックス付与
    - 完了サマリーで提示
@@ -199,7 +199,7 @@ issync list
    - キーワード: "検討"、"調査"、"トレードオフ"など
    - フォーマット: `**Q[次の番号]: [質問タイトル]**\n- [詳細]`
 
-4. **Feature Enhancements** (機能拡張・将来タスク) → **`/create-sub-issue`実行を提案**
+4. **Feature Enhancements** (機能拡張・将来タスク) → **`/issync:create-sub-issue`実行を提案**
    - キーワード: "機能追加"、"スコープ外"、"将来的に"など
    - 完了サマリーで提示、自動作成はしない
 
@@ -271,7 +271,7 @@ EOF
 ## 出力フォーマット
 
 ```markdown
-## /complete-sub-issue 実行結果
+## /issync:complete-sub-issue 実行結果
 
 ### 完了したサブissue
 - #[サブissue番号]: [サブissueタイトル]
@@ -307,7 +307,7 @@ EOF
 - [タスク名1]
 - [タスク名2]
 
-実行例: `/create-sub-issue "[Improvement] タスク名1" "[Improvement] タスク名2"`
+実行例: `/issync:create-sub-issue "[Improvement] タスク名1" "[Improvement] タスク名2"`
 
 ---
 
@@ -316,7 +316,7 @@ EOF
 - [タスク名1]
 - [タスク名2]
 
-実行例: `/create-sub-issue "タスク名1" "タスク名2"`
+実行例: `/issync:create-sub-issue "タスク名1" "タスク名2"`
 
 ---
 
@@ -350,7 +350,7 @@ EOF
 ## 実行例
 
 ```bash
-/complete-sub-issue https://github.com/MH4GF/issync/issues/124
+/issync:complete-sub-issue https://github.com/MH4GF/issync/issues/124
 ```
 
 実行フローは冒頭のワークフロー（ステップ1-13）を参照。
@@ -359,8 +359,8 @@ EOF
 
 ## 運用フロー
 
-1. `/create-sub-issue`でサブissue作成
+1. `/issync:create-sub-issue`でサブissue作成
 2. サブissueで開発（plan → implementation → retrospective）、進捗ドキュメントに成果を記入（任意）
-3. `/complete-sub-issue`で親issueに自動反映＆サブissueclose（PR自動取得、振り返り/Follow-up Issues自動生成、Open Questions解決）
+3. `/issync:complete-sub-issue`で親issueに自動反映＆サブissueclose（PR自動取得、振り返り/Follow-up Issues自動生成、Open Questions解決）
 4. Critical Improvements（品質向上）に即座着手
 5. 必要に応じてProject Improvements/Feature Enhancementsで次のサブissue作成

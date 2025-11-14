@@ -2,14 +2,14 @@
 description: 進捗ドキュメント内のOpen Questionsを解消し、Decision LogやSpecificationセクションを自動更新。ユーザーがARGUMENTS形式で各質問への意思決定を入力し、LLMがそれを進捗ドキュメントに反映
 ---
 
-# /resolve-questions: Open Questions解消コマンド
+# /issync:resolve-questions: Open Questions解消コマンド
 
 進捗ドキュメントのOpen Questionsを解消し、Decision LogとSpecificationを自動更新します。詳細な実行ステップは後述の「実行ステップ」セクションを参照してください。
 
 ## 使用方法
 
 ```bash
-/resolve-questions
+/issync:resolve-questions
 Q1-2: 推奨案
 Q3: <ユーザーの意思決定を自然文で記載>
 Q4: 推奨案
@@ -101,10 +101,10 @@ Open Questionsの検討案から情報を抽出し、不足分はユーザー入
 ## 実行例・運用フロー
 
 ```bash
-/resolve-questions
+/issync:resolve-questions
 Q1-2: 推奨案
 Q3: コマンドのARGUMENTSとしてユーザーが意思決定を各Qごとに行う
 Q4-6: 推奨案
 ```
 
-**運用フロー**: `/issync:plan`で進捗ドキュメント作成 → 開発を進める → 回答が明確になったら`/resolve-questions`で解消 → すべて解消したら次フェーズへ
+**運用フロー**: `/issync:plan`で進捗ドキュメント作成 → 開発を進める → 回答が明確になったら`/issync:resolve-questions`で解消 → すべて解消したら次フェーズへ

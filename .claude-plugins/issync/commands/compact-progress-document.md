@@ -14,10 +14,10 @@
 
 ### 1. 進捗ドキュメントの理解
 
-まず、`/understand-progress`コマンドを内部で呼び出して、進捗ドキュメントを読み込みます。
+まず、`/issync:understand-progress`コマンドを内部で呼び出して、進捗ドキュメントを読み込みます。
 
 ```bash
-/understand-progress <issue_url_or_number>
+/issync:understand-progress <issue_url_or_number>
 ```
 
 引数が指定されている場合はそのまま渡し、指定されていない場合は引数なしで実行します。
@@ -153,7 +153,7 @@ issync push
 圧縮完了後、以下の形式でレポートを出力してください：
 
 ```markdown
-## /compact-progress-document 実行結果
+## /issync:compact-progress-document 実行結果
 
 ### バージョン情報
 - 進捗ドキュメント: Version [X] ([YYYY-MM-DD])

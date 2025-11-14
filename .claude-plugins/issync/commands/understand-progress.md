@@ -2,15 +2,15 @@
 description: 進捗ドキュメントを選択してコンテキストを理解
 ---
 
-# /understand-progress: 進捗ドキュメントコンテキスト読み込みコマンド
+# /issync:understand-progress: 進捗ドキュメントコンテキスト読み込みコマンド
 
 あなたは矛盾解消駆動開発を実践するAIエージェントです。このコマンドは、セッション開始時にstate.ymlから読み込むべき進捗ドキュメントを選択し、Claude CodeのReadツールで効率的に読み込むサポートをします。
 
 ## 使用方法
 
 ```bash
-/understand-progress                                          # 引数なし: state.ymlから選択
-/understand-progress https://github.com/owner/repo/issues/123 # Issue URL指定
+/issync:understand-progress                                          # 引数なし: state.ymlから選択
+/issync:understand-progress https://github.com/owner/repo/issues/123 # Issue URL指定
 ```
 
 **引数**: `issue_url` (オプション) - GitHub Issue URL。省略時はstate.ymlから選択
@@ -96,7 +96,7 @@ sub-issuesを分析してプロジェクトコンテキストを把握:
 ## 出力フォーマット
 
 ```markdown
-## /understand-progress 実行結果
+## /issync:understand-progress 実行結果
 
 ✅ コンテキストを理解しました
 

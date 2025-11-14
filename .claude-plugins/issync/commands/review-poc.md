@@ -2,7 +2,7 @@
 description: POC実装の結果をレビューし、人間の意思決定のための材料を整理する
 ---
 
-# /review-poc: POCレビューワークフロー
+# /issync:review-poc: POCレビューワークフロー
 
 あなたはユーザーの `.issync/docs/plan-*.md` ファイルのPOCレビューフェーズをサポートしています。このコマンドは以下の11ステップのワークフローを自動化します：
 
@@ -531,7 +531,7 @@ bash ${CLAUDE_PLUGIN_ROOT}/scripts/github-projects.sh set-stage $ISSUE_NUMBER "t
 全ステップ完了後、以下の形式でサマリーを提供：
 
 ```markdown
-## /review-poc 実行結果
+## /issync:review-poc 実行結果
 
 ### 完了したステップ
 - ✅ ステップ1: POC PR情報取得（PR #123: [PR Title]）
@@ -635,7 +635,7 @@ bash ${CLAUDE_PLUGIN_ROOT}/scripts/github-projects.sh set-stage $ISSUE_NUMBER "t
 ## 出力サマリー形式
 
 ```markdown
-## /review-poc 実行結果
+## /issync:review-poc 実行結果
 
 ### 完了したステップ
 - ✅ ステップ1-11: 全ステップ完了
@@ -665,7 +665,7 @@ POC実装 & PR作成
    ↓
 Statusを architecture-decision に変更
    ↓
-/review-poc コマンド実行 (このコマンド)
+/issync:review-poc コマンド実行 (このコマンド)
    ├─ POC PR情報取得
    ├─ Discoveries & Insights参照
    ├─ Acceptance Criteria検証

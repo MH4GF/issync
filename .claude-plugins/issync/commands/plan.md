@@ -2,7 +2,7 @@
 description: planフェーズのプロセスを標準化し、コードベース調査を強制することで高品質な進捗ドキュメント作成を実現
 ---
 
-# /plan: plan実行ワークフロー
+# /issync:plan: plan実行ワークフロー
 
 進捗ドキュメント（`.issync/docs/plan-{番号}-{slug}.md`）を初期作成するコマンドです。以下の7ステップを自動化します：
 
@@ -14,7 +14,7 @@ description: planフェーズのプロセスを標準化し、コードベース
 6. issync pushで同期 & Stage更新（To Review）
 7. GitHub Projects Status & Stage自動変更（plan → poc, Stage → To Start）
 
-**Note**: Template v7では、Tasksセクションが削除されています。タスクは `/create-sub-issue` コマンドで作成します。
+**Note**: Template v7では、Tasksセクションが削除されています。タスクは `/issync:create-sub-issue` コマンドで作成します。
 
 ## コンテキスト
 
@@ -189,7 +189,7 @@ bash ${CLAUDE_PLUGIN_ROOT}/scripts/github-projects.sh set-stage $ISSUE_NUMBER "t
 全ステップ完了後、以下を表示：
 
 ```markdown
-## /plan 実行結果
+## /issync:plan 実行結果
 
 ### 完了したステップ
 - ✅ ステップ1-7: 全ステップ完了
@@ -208,7 +208,7 @@ bash ${CLAUDE_PLUGIN_ROOT}/scripts/github-projects.sh set-stage $ISSUE_NUMBER "t
 - [ ] 進捗ドキュメントの内容をレビュー
 - [ ] Open Questionsが適切に絞り込まれているか確認
 - [ ] POC実装を開始（Devin等のAIエージェント活用）
-- [ ] architecture-decision後、必要に応じて `/create-sub-issue` でタスク作成
+- [ ] architecture-decision後、必要に応じて `/issync:create-sub-issue` でタスク作成
 ```
 
 ## 重要な注意事項
@@ -234,6 +234,6 @@ Status & Stage自動変更（Status: plan → poc, Stage: To Review → To Start
 ```
 
 **重要**:
-- `/plan`コマンド完了時に自動的にStatusが`poc`、Stageが`To Start`に変更されます
+- `/issync:plan`コマンド完了時に自動的にStatusが`poc`、Stageが`To Start`に変更されます
 - 人間による手動のStatus/Stage変更は不要です
 - Stage変更により、人間が「何をすべきか」が明確になります（To Start = Devinに指示）
