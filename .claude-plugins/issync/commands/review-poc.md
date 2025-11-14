@@ -35,7 +35,7 @@ description: POC実装の結果をレビューし、人間の意思決定のた�
 実行前に必要なものは以下です：
 - [ ] **現在のGitHub Issue Statusが `architecture-decision` であることを確認**（手動確認）
 - [ ] POC実装が完了し、PRが作成されている
-- [ ] `GITHUB_TOKEN` 環境変数が設定されている
+- [ ] `ISSYNC_GITHUB_TOKEN` 環境変数が設定されている
 - [ ] 進捗ドキュメントファイルがローカルに存在する
 
 **重要**: このコマンドは`architecture-decision`ステートで実行されることを前提としています。適切なタイミングで実行する責任はユーザーにあります。
@@ -44,11 +44,11 @@ description: POC実装の結果をレビューし、人間の意思決定のた�
 
 ### ステップ1: Stage設定（AI作業開始）
 
-`!env GITHUB_PROJECTS_NUMBER`が設定されている場合のみ、`gh project item-edit`でStage→`In Progress`に設定。失敗時も作業継続（警告のみ）。
+`!env ISSYNC_GITHUB_PROJECTS_NUMBER`が設定されている場合のみ、`gh project item-edit`でStage→`In Progress`に設定。失敗時も作業継続（警告のみ）。
 
 環境変数:
-- `GITHUB_PROJECTS_NUMBER`: プロジェクト番号（例: `1`）
-- `GITHUB_PROJECTS_OWNER_TYPE`: `user` または `org`（デフォルト: `user`）
+- `ISSYNC_GITHUB_PROJECTS_NUMBER`: プロジェクト番号（例: `1`）
+- `ISSYNC_GITHUB_PROJECTS_OWNER_TYPE`: `user` または `org`（デフォルト: `user`）
 
 **Stage 設定コマンド**:
 
@@ -513,7 +513,7 @@ issync push
 
 ### ステップ11: Stage更新（レビュー待ち）
 
-`!env GITHUB_PROJECTS_NUMBER`が設定されている場合のみ、`gh project item-edit`でStage→`To Review`に設定。失敗時も作業継続（警告のみ）。
+`!env ISSYNC_GITHUB_PROJECTS_NUMBER`が設定されている場合のみ、`gh project item-edit`でStage→`To Review`に設定。失敗時も作業継続（警告のみ）。
 
 **Stage 設定コマンド**:
 

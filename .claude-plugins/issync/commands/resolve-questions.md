@@ -27,7 +27,7 @@ Q5-6: 推奨案
 
 - 進捗ドキュメントが作成済み（`/issync:plan`実行済み）
 - Open Questionsセクションに未解決の質問が存在
-- `GITHUB_TOKEN`環境変数が設定済み
+- `ISSYNC_GITHUB_TOKEN`環境変数が設定済み
 
 ## 実行ステップ
 

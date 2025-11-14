@@ -9,14 +9,14 @@ set -euo pipefail
 
 # 環境変数チェック
 check_env() {
-  if [ -z "${GITHUB_PROJECTS_NUMBER:-}" ]; then
-    echo "⚠️  GITHUB_PROJECTS_NUMBER が設定されていないため、GitHub Projects 連携をスキップします" >&2
+  if [ -z "${ISSYNC_GITHUB_PROJECTS_NUMBER:-}" ]; then
+    echo "⚠️  ISSYNC_GITHUB_PROJECTS_NUMBER が設定されていないため、GitHub Projects 連携をスキップします" >&2
     exit 0
   fi
 }
 
 # プロジェクト情報をキャッシュ
-CACHE_FILE="${TMPDIR:-/tmp}/issync-github-projects-cache-${GITHUB_PROJECTS_NUMBER:-0}.json"
+CACHE_FILE="${TMPDIR:-/tmp}/issync-github-projects-cache-${ISSYNC_GITHUB_PROJECTS_NUMBER:-0}.json"
 CACHE_TTL=300  # 5分
 
 # プロジェクト情報を取得（キャッシュ有効期限内なら再利用）
@@ -31,13 +31,13 @@ get_project_info() {
   fi
 
   # キャッシュがないか期限切れなら取得
-  local owner_type="${GITHUB_PROJECTS_OWNER_TYPE:-user}"
+  local owner_type="${ISSYNC_GITHUB_PROJECTS_OWNER_TYPE:-user}"
   local owner_flag="@me"
   local owner_login
 
   if [ "$owner_type" = "org" ]; then
-    owner_flag="${GITHUB_PROJECTS_OWNER}"
-    owner_login="${GITHUB_PROJECTS_OWNER}"
+    owner_flag="${ISSYNC_GITHUB_PROJECTS_OWNER}"
+    owner_login="${ISSYNC_GITHUB_PROJECTS_OWNER}"
   else
     owner_login=$(gh api user --jq '.login')
   fi
@@ -52,10 +52,10 @@ get_project_info() {
   fi
 
   local project_id
-  project_id=$(echo "$project_list" | jq -r ".projects[]? | select(.number == ${GITHUB_PROJECTS_NUMBER}) | .id")
+  project_id=$(echo "$project_list" | jq -r ".projects[]? | select(.number == ${ISSYNC_GITHUB_PROJECTS_NUMBER}) | .id")
 
   if [ -z "$project_id" ] || [ "$project_id" = "null" ]; then
-    echo "⚠️  プロジェクト番号 ${GITHUB_PROJECTS_NUMBER} が見つかりません" >&2
+    echo "⚠️  プロジェクト番号 ${ISSYNC_GITHUB_PROJECTS_NUMBER} が見つかりません" >&2
     exit 1
   fi
 
@@ -69,7 +69,7 @@ get_project_info() {
   field_info=$(gh api graphql -f query="
 query {
   ${query_type}(login: \"$owner_login\") {
-    projectV2(number: ${GITHUB_PROJECTS_NUMBER}) {
+    projectV2(number: ${ISSYNC_GITHUB_PROJECTS_NUMBER}) {
       id
       fields(first: 20) {
         nodes {
@@ -104,7 +104,7 @@ get_item_id() {
   owner_flag=$(get_project_info | jq -r '.owner_flag')
 
   local item_list
-  item_list=$(gh project item-list "${GITHUB_PROJECTS_NUMBER}" --owner "$owner_flag" --format json --limit 100 2>/dev/null)
+  item_list=$(gh project item-list "${ISSYNC_GITHUB_PROJECTS_NUMBER}" --owner "$owner_flag" --format json --limit 100 2>/dev/null)
 
   if [ -z "$item_list" ] || [ "$item_list" = "null" ]; then
     echo "" >&2

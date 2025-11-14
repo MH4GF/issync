@@ -11,8 +11,8 @@
 GitHub Projects の Stage/Status フィールドを操作するヘルパースクリプト。
 
 **前提条件:**
-- 環境変数 `GITHUB_PROJECTS_NUMBER` が設定されていること（例: `4`）
-- 環境変数 `GITHUB_PROJECTS_OWNER_TYPE` が設定されていること（デフォルト: `user`）
+- 環境変数 `ISSYNC_GITHUB_PROJECTS_NUMBER` が設定されていること（例: `4`）
+- 環境変数 `ISSYNC_GITHUB_PROJECTS_OWNER_TYPE` が設定されていること（デフォルト: `user`）
 - `gh` CLI がインストールされ、認証済みであること
 - `jq` コマンドがインストールされていること
 
@@ -61,7 +61,7 @@ bash ${CLAUDE_PLUGIN_ROOT}/scripts/github-projects.sh set-status $SUB_ISSUE_NUMB
 
 **エラーハンドリング:**
 
-- 環境変数 `GITHUB_PROJECTS_NUMBER` が未設定の場合、警告を表示して exit 0（処理を継続）
+- 環境変数 `ISSYNC_GITHUB_PROJECTS_NUMBER` が未設定の場合、警告を表示して exit 0（処理を継続）
 - プロジェクトが見つからない場合、エラーメッセージを表示して exit 1
 - Issue がプロジェクトに見つからない場合、エラーメッセージを表示して exit 1
 - その他のエラーは trap で捕捉し、警告を表示して exit 0
@@ -71,7 +71,7 @@ bash ${CLAUDE_PLUGIN_ROOT}/scripts/github-projects.sh set-status $SUB_ISSUE_NUMB
 プロジェクト情報のキャッシュは以下の場所に保存されます:
 
 ```
-${TMPDIR}/issync-github-projects-cache-${GITHUB_PROJECTS_NUMBER}.json
+${TMPDIR}/issync-github-projects-cache-${ISSYNC_GITHUB_PROJECTS_NUMBER}.json
 ```
 
 キャッシュの有効期限は 5 分（300秒）です。
@@ -82,8 +82,8 @@ ${TMPDIR}/issync-github-projects-cache-${GITHUB_PROJECTS_NUMBER}.json
 
 ```bash
 # 環境変数を設定
-export GITHUB_PROJECTS_NUMBER=4
-export GITHUB_PROJECTS_OWNER_TYPE=user
+export ISSYNC_GITHUB_PROJECTS_NUMBER=4
+export ISSYNC_GITHUB_PROJECTS_OWNER_TYPE=user
 
 # スクリプトを実行
 bash .claude-plugins/issync/scripts/github-projects.sh set-stage 56 "in progress"

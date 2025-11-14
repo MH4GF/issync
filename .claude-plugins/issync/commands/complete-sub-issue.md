@@ -29,7 +29,7 @@ description: サブissue完了時に親issueの進捗ドキュメントを自動
 
 ## 前提条件
 
-- `GITHUB_TOKEN`環境変数が設定されている
+- `ISSYNC_GITHUB_TOKEN`環境変数が設定されている
 - `gh` CLIがインストール済み
 - 未初期化issueは自動初期化（詳細は「エラーハンドリング」参照）
 
@@ -226,11 +226,11 @@ issync remove --issue <サブissue URL>
 
 ### ステップ10: GitHub Projects Status変更
 
-`!env GITHUB_PROJECTS_NUMBER`が設定されている場合のみ、サブissueのStatus→`done`に変更。GraphQL APIでProject ID取得後、`gh project item-edit`で更新。
+`!env ISSYNC_GITHUB_PROJECTS_NUMBER`が設定されている場合のみ、サブissueのStatus→`done`に変更。GraphQL APIでProject ID取得後、`gh project item-edit`で更新。
 
 環境変数:
-- `GITHUB_PROJECTS_NUMBER`: プロジェクト番号（例: `1`）
-- `GITHUB_PROJECTS_OWNER_TYPE`: `user` または `org`（デフォルト: `user`）
+- `ISSYNC_GITHUB_PROJECTS_NUMBER`: プロジェクト番号（例: `1`）
+- `ISSYNC_GITHUB_PROJECTS_OWNER_TYPE`: `user` または `org`（デフォルト: `user`）
 
 **Status 変更コマンド**:
 

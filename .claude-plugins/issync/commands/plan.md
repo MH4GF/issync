@@ -27,7 +27,7 @@ description: planフェーズのプロセスを標準化し、コードベース
 ## 前提条件
 
 - GitHub Issueが作成されている
-- `GITHUB_TOKEN` 環境変数が設定されている
+- `ISSYNC_GITHUB_TOKEN` 環境変数が設定されている
 
 ## 実行ステップ
 
@@ -44,11 +44,11 @@ description: planフェーズのプロセスを標準化し、コードベース
 
 **Stage設定（AI作業開始）**:
 
-`!env GITHUB_PROJECTS_NUMBER`が設定されている場合のみ、`gh project item-edit`でStage→`In Progress`に設定。失敗時も作業継続（警告のみ）。
+`!env ISSYNC_GITHUB_PROJECTS_NUMBER`が設定されている場合のみ、`gh project item-edit`でStage→`In Progress`に設定。失敗時も作業継続（警告のみ）。
 
 環境変数:
-- `GITHUB_PROJECTS_NUMBER`: プロジェクト番号（例: `1`）
-- `GITHUB_PROJECTS_OWNER_TYPE`: `user` または `org`（デフォルト: `user`）
+- `ISSYNC_GITHUB_PROJECTS_NUMBER`: プロジェクト番号（例: `1`）
+- `ISSYNC_GITHUB_PROJECTS_OWNER_TYPE`: `user` または `org`（デフォルト: `user`）
 
 **Stage 設定コマンド**（環境変数設定時のみ実行）:
 
@@ -159,7 +159,7 @@ issync push
 
 **Stage更新（レビュー待ち）**:
 
-`!env GITHUB_PROJECTS_NUMBER`が設定されている場合のみ、`gh project item-edit`でStage→`To Review`に設定。失敗時も作業継続（警告のみ）。
+`!env ISSYNC_GITHUB_PROJECTS_NUMBER`が設定されている場合のみ、`gh project item-edit`でStage→`To Review`に設定。失敗時も作業継続（警告のみ）。
 
 ```bash
 # GitHub Projects ヘルパースクリプトを使用
@@ -168,11 +168,11 @@ bash ${CLAUDE_PLUGIN_ROOT}/scripts/github-projects.sh set-stage $ISSUE_NUMBER "t
 
 ### ステップ7: GitHub Projects Status & Stage自動変更
 
-`!env GITHUB_PROJECTS_NUMBER`が設定されている場合のみ、Status→`poc`、Stage→`To Start`に変更。GraphQL APIでProject ID取得後、`gh project item-edit`で両フィールドを更新。
+`!env ISSYNC_GITHUB_PROJECTS_NUMBER`が設定されている場合のみ、Status→`poc`、Stage→`To Start`に変更。GraphQL APIでProject ID取得後、`gh project item-edit`で両フィールドを更新。
 
 環境変数に基づいてプロジェクトを特定:
-- `GITHUB_PROJECTS_NUMBER`: プロジェクト番号（例: `1`）
-- `GITHUB_PROJECTS_OWNER_TYPE`: `user` または `org`（デフォルト: `user`）
+- `ISSYNC_GITHUB_PROJECTS_NUMBER`: プロジェクト番号（例: `1`）
+- `ISSYNC_GITHUB_PROJECTS_OWNER_TYPE`: `user` または `org`（デフォルト: `user`）
 
 **Status & Stage 変更コマンド**:
 

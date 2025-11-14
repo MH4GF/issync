@@ -36,7 +36,7 @@ description: 新規タスクをGitHub Issueとして作成し、親issueとの�
 ## 前提条件
 
 - `.issync/state.yml`存在（`issync init`完了済み）
-- `GITHUB_TOKEN`環境変数設定
+- `ISSYNC_GITHUB_TOKEN`環境変数設定
 - `gh` CLIインストール済み
 
 ## 実行ステップ
