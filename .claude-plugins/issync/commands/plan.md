@@ -82,13 +82,22 @@ Issue内容を理解し、不明点があればユーザーに確認
 - 関連ファイル・モジュール
 - ドキュメント（README、CLAUDE.md、進捗ドキュメント等）
 
-**調査方法**:
+**調査方法** (状況に応じて選択):
 ```
-Glob: **/*[関連するキーワード]*.ts
-Grep: "関連する関数名やクラス名"
-Read: README.md, CLAUDE.md, docs/
-Glob: **/*.test.*, **/*.spec.* (テストファイルパターン)
-Read: package.json (テストスクリプトとフレームワーク確認)
+ファイル・コード探索:
+  Glob: **/*[関連するキーワード]*
+  Grep: "関連する関数名やクラス名"
+  Read: README.md, CLAUDE.md, docs/
+
+設定ファイル確認:
+  Read: package.json, pyproject.toml, Cargo.toml等
+
+テストファイル確認:
+  Glob: **/*.test.*, **/*.spec.*, **/*_test.*, test/**/*
+
+実行による確認(必要に応じて):
+  Bash: [テストコマンド/リントコマンド/ビルドコマンド等]
+  ※ 実際のコマンドはプロジェクトの設定ファイルやREADMEから判断
 ```
 
 **記録**: 発見内容をDiscoveries & Insightsセクションに記録
