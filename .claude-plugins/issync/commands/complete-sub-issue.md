@@ -188,6 +188,7 @@ issync list
    - キーワード: "lint追加"、"型定義強化"、"CI改善"、"セキュリティ"など
    - タイトルに `[Critical]` プレフィックス付与
    - 自動作成（複数可）
+   - **重複チェック**: `/create-sub-issue`のステップ4.5で既存issue検索が自動実行される
 
 2. **Project Improvements** (プロジェクト全体の改善) → **`/create-sub-issue`実行を提案**
    - キーワード: "CLAUDE.md"、"テンプレート"、"標準化"など
