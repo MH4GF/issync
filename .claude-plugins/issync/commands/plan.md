@@ -186,30 +186,33 @@ bash ${CLAUDE_PLUGIN_ROOT}/scripts/github-projects.sh set-stage $ISSUE_NUMBER "t
 
 ## 出力フォーマット
 
-全ステップ完了後、以下を表示：
+全ステップ完了後、以下の形式で作業成果を要約して表示：
 
 ```markdown
-## /issync:plan 実行結果
+## Plan Phase Complete
 
-### 完了したステップ
-- ✅ ステップ1-7: 全ステップ完了
+**Progress Document**: {issue_url}
 
-### 作成されたファイル
-- ファイルパス: `.issync/docs/plan-{番号}-{slug}.md`
-- Issue番号: {番号}
-- Slug: {slug}
+### Key Discoveries
+- {ステップ3で発見した技術スタック、既存パターン、テスト戦略を2-3項目で具体的に要約}
+- {参考になる既存実装やアーキテクチャの特徴}
+- {プロジェクト固有の重要な制約や慣習}
 
-### GitHub Projects Status & Stage変更
-- Status: `plan` → `poc` ✅
-- Stage: `To Start` ✅ （人間がDevinに指示すべき）
-- Project: {project_title} (#{project_number})
+### Open Questions ({総数N}件{自信度低がある場合: " | 🔴自信度低: {M}件"})
+{Open Questionsの主要なテーマや懸念点を1-2文で要約。自信度低の項目がある場合は、POC検証が必要な理由と検証項目を明記}
 
-### 次のアクション
-- [ ] 進捗ドキュメントの内容をレビュー
-- [ ] Open Questionsが適切に絞り込まれているか確認
-- [ ] POC実装を開始（Devin等のAIエージェント活用）
-- [ ] architecture-decision後、必要に応じて `/issync:create-sub-issue` でタスク作成
+### Next Steps
+1. Review document on GitHub and resolve Open Questions
+2. {自信度低の項目がある場合} Start POC to validate {具体的な検証項目（例: "performance impact of polling approach", "feasibility of GraphQL mutation")}
+3. {自信度低の項目がない場合} Create sub-issues with `/issync:create-sub-issue` and begin implementation
+
+**Status**: plan → poc (Stage: To Start)
 ```
+
+**重要**:
+- Key Discoveriesは実際の調査結果を反映すること（定型文ではなく具体的な技術名・パターン名を記載）
+- Open Questionsの要約は、人間が優先的にレビューすべき論点を明示すること
+- Next Stepsは状況に応じて2または3を選択（両方記載しない）
 
 ## 重要な注意事項
 
