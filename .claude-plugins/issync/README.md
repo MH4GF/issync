@@ -8,12 +8,16 @@ GitHub Issue を単一の真実の情報源として、進捗ドキュメント�
 
 1. **issync CLI**: `npm install -g @mh4gf/issync`
 2. **GitHub CLI (`gh`)**: https://cli.github.com/
-3. **ISSYNC_GITHUB_TOKEN**: `export ISSYNC_GITHUB_TOKEN=$(gh auth token)` (GitHub Actionsでは自動設定)
+3. **GITHUB_TOKEN**: `export GITHUB_TOKEN=$(gh auth token)` (GitHub Actionsでは自動設定)
 4. **issync watch**: `issync watch` (推奨)
 5. **GitHub Projects統合** (オプション):
    ```bash
+   # User プロジェクトの場合（デフォルト）
    export ISSYNC_GITHUB_PROJECTS_NUMBER=1  # プロジェクト番号
-   export ISSYNC_GITHUB_PROJECTS_OWNER_TYPE=user  # 'user' または 'org' (デフォルト: user)
+
+   # Organization プロジェクトの場合
+   export ISSYNC_GITHUB_PROJECTS_NUMBER=1  # プロジェクト番号
+   export ISSYNC_GITHUB_PROJECTS_OWNER=organization-name  # 組織名
    ```
 
 ### インストール

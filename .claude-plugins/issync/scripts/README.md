@@ -12,7 +12,7 @@ GitHub Projects の Stage/Status フィールドを操作するヘルパース�
 
 **前提条件:**
 - 環境変数 `ISSYNC_GITHUB_PROJECTS_NUMBER` が設定されていること（例: `4`）
-- 環境変数 `ISSYNC_GITHUB_PROJECTS_OWNER_TYPE` が設定されていること（デフォルト: `user`）
+- Organization プロジェクトの場合は `ISSYNC_GITHUB_PROJECTS_OWNER` が必要（例: `my-org`）
 - `gh` CLI がインストールされ、認証済みであること
 - `jq` コマンドがインストールされていること
 
@@ -40,7 +40,7 @@ bash github-projects.sh clear-stage ISSUE_NUMBER
 
 - **キャッシュ機能**: プロジェクト情報を5分間キャッシュし、API呼び出しを削減
 - **自動エラーハンドリング**: 環境変数未設定時や権限不足時に警告を表示して処理を継続
-- **user/org 対応**: ユーザー/組織の両方のプロジェクトに対応
+- **自動判定**: `ISSYNC_GITHUB_PROJECTS_OWNER` の有無で user/org を自動判定
 
 **プラグインコマンドからの使用例:**
 
@@ -81,9 +81,12 @@ ${TMPDIR}/issync-github-projects-cache-${ISSYNC_GITHUB_PROJECTS_NUMBER}.json
 スクリプトを編集した場合、以下のコマンドでローカルテストできます:
 
 ```bash
-# 環境変数を設定
+# User プロジェクトの場合
 export ISSYNC_GITHUB_PROJECTS_NUMBER=4
-export ISSYNC_GITHUB_PROJECTS_OWNER_TYPE=user
+
+# Organization プロジェクトの場合
+export ISSYNC_GITHUB_PROJECTS_NUMBER=4
+export ISSYNC_GITHUB_PROJECTS_OWNER=my-org
 
 # スクリプトを実行
 bash .claude-plugins/issync/scripts/github-projects.sh set-stage 56 "in progress"

@@ -31,11 +31,13 @@ get_project_info() {
   fi
 
   # キャッシュがないか期限切れなら取得
-  local owner_type="${ISSYNC_GITHUB_PROJECTS_OWNER_TYPE:-user}"
+  # ISSYNC_GITHUB_PROJECTS_OWNER の有無で自動判定
+  local owner_type="user"
   local owner_flag="@me"
   local owner_login
 
-  if [ "$owner_type" = "org" ]; then
+  if [ -n "${ISSYNC_GITHUB_PROJECTS_OWNER:-}" ]; then
+    owner_type="org"
     owner_flag="${ISSYNC_GITHUB_PROJECTS_OWNER}"
     owner_login="${ISSYNC_GITHUB_PROJECTS_OWNER}"
   else
