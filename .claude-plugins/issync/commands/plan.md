@@ -113,6 +113,11 @@ Issue内容を理解し、不明点があればユーザーに確認
     - UI変更 → UIコンポーネント検証ツールでの検証要件
     - E2E要件 → エンドツーエンドテストでの検証要件
 
+**注意**: 以下のセクションはplanフェーズでは記入しない（テンプレートのサンプルテキストをそのまま残す）：
+- Specification / 仕様 (architecture-decisionフェーズで記入)
+- Decision Log (architecture-decisionフェーズで記入)
+- Outcomes & Retrospectives (retrospectiveフェーズで記入)
+
 ### ステップ5: Open Questionsの精査
 
 **記載基準**:
