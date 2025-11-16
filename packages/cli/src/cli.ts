@@ -132,6 +132,19 @@ program
   })
 
 program
+  .command('diff')
+  .description('Show differences between local file and remote Issue comment')
+  .option('-f, --file <path>', 'Select sync target by local file path')
+  .option('--issue <url>', 'Select sync target by issue URL')
+  .option('--no-color', 'Disable colored output')
+  .action(async (options: { file?: string; issue?: string; color?: boolean }) => {
+    const { diff } = await import('./commands/diff.js')
+    await _handleCommand(() =>
+      diff({ file: options.file, issue: options.issue, color: options.color }),
+    )
+  })
+
+program
   .command('remove')
   .description('Remove sync configuration from state.yml')
   .option('-f, --file <path>', 'Select sync target by local file path')

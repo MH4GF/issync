@@ -135,6 +135,47 @@ cat docs/plan.md
 issync push --force
 ```
 
+### `issync diff`
+
+Show differences between local file and remote Issue comment.
+
+```bash
+# Show diff (auto-select if only one sync)
+issync diff
+
+# Select specific sync target
+issync diff --file docs/plan.md
+issync diff --issue https://github.com/owner/repo/issues/123
+
+# Disable colored output
+issync diff --no-color
+```
+
+**Options:**
+- `-f, --file <path>`: Select sync target by local file path
+- `--issue <url>`: Select sync target by issue URL
+- `--no-color`: Disable colored output
+
+**Behavior:**
+- Displays unified diff format (similar to `git diff`)
+- Added lines shown in green, removed lines in red
+- Shows "No differences found" if local and remote are identical
+- Useful for reviewing changes before using `--force` options
+
+**Example workflow:**
+```bash
+# Pull fails due to local changes
+issync pull
+# Error: Local file has unsaved changes
+# Run 'issync diff' to review changes.
+
+# Review the differences
+issync diff
+
+# Decide: overwrite local or push local changes
+issync pull --force  # or issync push
+```
+
 ### `issync open`
 
 Open the GitHub Issue in your browser for a synced file.

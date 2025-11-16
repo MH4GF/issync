@@ -20,7 +20,7 @@
     "url": "https://github.com/MH4GF/issync/issues"
   },
   "scripts": {
-    "build": "bun build ./src/cli.ts --outdir ./dist --target node --format esm --external @octokit/rest --external chokidar --external commander --external js-yaml",
+    "build": "bun build ./src/cli.ts --outdir ./dist --target node --format esm --external @octokit/rest --external chalk --external chokidar --external commander --external diff --external js-yaml",
     "prepare": "bun run build",
     "dev": "bun run ./src/cli.ts",
     "type-check": "tsc --noEmit",
@@ -39,8 +39,10 @@
   "license": "MIT",
   "dependencies": {
     "@octokit/rest": "^21.0.2",
+    "chalk": "^5.3.0",
     "chokidar": "^4.0.3",
     "commander": "^12.1.0",
+    "diff": "^7.0.0",
     "js-yaml": "^4.1.0"
   },
   "engines": {

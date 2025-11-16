@@ -106,7 +106,8 @@ export class LocalChangeError extends IssyncError {
         `  Remote hash:      ${remoteHashShort}\n` +
         `  Last synced hash: ${lastSyncedHashShort}\n\n` +
         'To overwrite local changes, use: issync pull --force\n' +
-        'To keep local changes, commit them first or use: issync push',
+        'To keep local changes, commit them first or use: issync push\n' +
+        "Run 'issync diff' to review changes.",
     )
     this.name = 'LocalChangeError'
   }

@@ -72,13 +72,14 @@ This project uses **Lefthook** to automatically enforce code quality before comm
 1. **init**: Parse GitHub Issue URL → Create state.yml config → Optional initial pull
 2. **pull**: Fetch remote comment → Calculate hash → Write to local file → Update config
 3. **push**: Read local file → Verify remote hash (optimistic lock) → Update comment → Update config
-4. **list**: Display all sync configurations from state.yml in table format
-5. **open**: Open GitHub Issue in browser for synced file → Platform-specific browser command
-6. **remove**: Remove sync configuration from state.yml → Optional local file deletion
-7. **clean**: Scan state.yml → Remove stale configurations (where local file does not exist) → Optional dry-run/force modes
-8. **watch**: Background daemon that polls remote + watches local file changes → Auto pull/push
-9. **stop**: Stop watch daemon by PID
-10. **status**: Show sync state from state.yml
+4. **diff**: Fetch remote comment → Compare with local file → Display unified diff
+5. **list**: Display all sync configurations from state.yml in table format
+6. **open**: Open GitHub Issue in browser for synced file → Platform-specific browser command
+7. **remove**: Remove sync configuration from state.yml → Optional local file deletion
+8. **clean**: Scan state.yml → Remove stale configurations (where local file does not exist) → Optional dry-run/force modes
+9. **watch**: Background daemon that polls remote + watches local file changes → Auto pull/push
+10. **stop**: Stop watch daemon by PID
+11. **status**: Show sync state from state.yml
 
 ### Core Components
 
@@ -94,6 +95,10 @@ This project uses **Lefthook** to automatically enforce code quality before comm
 - `loadConfig()`, `saveConfig()`, `configExists()`: YAML read/write operations
 
 **`packages/cli/src/lib/hash.ts`**: SHA-256 hash calculation for optimistic locking.
+
+**`packages/cli/src/lib/diff-formatter.ts`**: Diff generation and formatting utilities.
+- `formatDiff()`: Generate unified diff with optional color output
+- `hasDifferences()`: Check if contents differ
 
 **`packages/cli/src/commands/watch/SessionManager.ts`**: Manages multiple watch sessions
 - `startSession()`: Start new watch session with validation

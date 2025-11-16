@@ -23,7 +23,10 @@ export interface PushOptions extends SelectorOptions {
 
 export class OptimisticLockError extends Error {
   constructor() {
-    super('Remote comment has been updated since last sync. Please run "issync pull" first.')
+    super(
+      'Remote comment has been updated since last sync. Please run "issync pull" first.\n' +
+        "Run 'issync diff' to review changes.",
+    )
     this.name = 'OptimisticLockError'
   }
 }
