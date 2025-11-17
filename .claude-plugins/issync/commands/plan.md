@@ -171,7 +171,7 @@ issync push
 bash ${CLAUDE_PLUGIN_ROOT}/scripts/github-projects.sh set-stage $ISSUE_NUMBER "to review"
 ```
 
-### ステップ7: GitHub Projects Status & Stage自動変更
+### ステップ7: GitHub Projects Status & Stage自動変更 & ラベル付与
 
 `!env ISSYNC_GITHUB_PROJECTS_NUMBER`が設定されている場合のみ、StatusとStageを自動変更します。
 
@@ -192,6 +192,14 @@ bash ${CLAUDE_PLUGIN_ROOT}/scripts/github-projects.sh set-stage $ISSUE_NUMBER "t
 # Statusは上記ロジックに従って "poc" または "implement" を設定
 bash ${CLAUDE_PLUGIN_ROOT}/scripts/github-projects.sh set-status $ISSUE_NUMBER "<poc または implement>"
 bash ${CLAUDE_PLUGIN_ROOT}/scripts/github-projects.sh set-stage $ISSUE_NUMBER "to start"
+```
+
+**ラベル自動付与（Devin自動起動）**:
+
+`!env ISSYNC_LABELS_AUTOMATION`が`true`の場合、かつStatus=`implement`の場合のみ、`issync:implement`ラベルを付与してDevin自動起動をトリガーします。
+
+```bash
+gh issue edit $ISSUE_NUMBER --add-label "issync:implement"
 ```
 
 **エラー時**: スクリプトが自動的にエラーハンドリングを行います。認証スコープ不足の場合は`gh auth refresh -s project`実行。失敗時はGitHub Projects UIで手動変更。環境変数の形式が不正、プロジェクトが見つからない、権限不足の場合は警告を表示して処理を継続。
@@ -217,6 +225,7 @@ bash ${CLAUDE_PLUGIN_ROOT}/scripts/github-projects.sh set-stage $ISSUE_NUMBER "t
 1. Review document on GitHub and resolve Open Questions
 2. {自信度低の項目がある場合} Start POC to validate {具体的な検証項目（例: "performance impact of polling approach", "feasibility of GraphQL mutation")}
 3. {自信度低の項目がない場合} Create sub-issues with `/issync:create-sub-issue` and begin implementation
+   {ISSYNC_LABELS_AUTOMATION=trueの場合} `issync:implement` label added → Devin will auto-start
 
 **Status**: plan → {自信度低あり: poc / なし: implement} (Stage: To Start)
 ```
@@ -260,7 +269,10 @@ issync push → Stage自動変更（In Progress → To Review）
    ↓
 Status & Stage自動変更（Status: plan → implement, Stage: To Review → To Start）
    ↓
-人間レビュー → サブissue作成 → 実装開始（Devin起動）
+{ISSYNC_LABELS_AUTOMATION=trueの場合} issync:implementラベル自動付与
+   ↓
+人間レビュー → {ラベルなし} サブissue作成 → 実装開始（Devin起動）
+             → {ラベルあり} Devin自動起動
 ```
 
 **重要**:
@@ -268,3 +280,4 @@ Status & Stage自動変更（Status: plan → implement, Stage: To Review → To
 - 人間による手動のStatus/Stage変更は不要です
 - Status変更により、次のフェーズが明確になります（poc = PoC検証、implement = サブissue作成・実装）
 - Stage変更により、人間が「何をすべきか」が明確になります（To Start = Devinに指示）
+- `ISSYNC_LABELS_AUTOMATION=true`かつStatus=`implement`の場合、`issync:implement`ラベル自動付与によりDevinが自動起動します
