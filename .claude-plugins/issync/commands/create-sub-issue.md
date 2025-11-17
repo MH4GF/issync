@@ -8,7 +8,7 @@ description: 新規タスクをGitHub Issueとして作成し、親issueとの�
 1. タスク概要入力（インタラクティブ: 1つ / 引数: 複数可）
 2. 親issue情報取得（`.issync/state.yml`）
 3. LLMによるタイトル・本文生成
-4. Issue作成（`issync`ラベル自動付与）
+4. Issue作成（`ISSYNC_LABELS_AUTOMATION=true`の場合、`issync:plan`ラベル自動付与）
 5. Sub-issues API連携（親issue紐づけ + 順序維持）
 
 ## コンテキスト
@@ -38,6 +38,7 @@ description: 新規タスクをGitHub Issueとして作成し、親issueとの�
 - `.issync/state.yml`存在（`issync init`完了済み）
 - `ISSYNC_GITHUB_TOKEN`環境変数設定
 - `gh` CLIインストール済み
+- `ISSYNC_LABELS_AUTOMATION=true`設定時: リポジトリに`issync:plan`ラベルが存在すること
 
 ## 実行ステップ
 
@@ -115,6 +116,10 @@ gh search issues --repo {owner}/{repo} "{キーワード1} {キーワード2}" \
 
 ### ステップ6: Issue作成とSub-issues連携
 
+**ラベル付与**:
+`!env ISSYNC_LABELS_AUTOMATION`が`true`の場合、`--label "issync:plan"`を付与してissue作成。
+未設定の場合はラベルなしで作成。
+
 **処理フロー**:
 ```bash
 PREV_SUB_ISSUE_ID=""
@@ -122,7 +127,8 @@ for i in "${!GENERATED_TITLES[@]}"; do
   TITLE="${GENERATED_TITLES[$i]}"
   BODY="${GENERATED_BODIES[$i]}"
 
-  ISSUE_URL=$(gh issue create --repo {owner}/{repo} --title "$TITLE" --body "$BODY" --label "issync")
+  # ISSYNC_LABELS_AUTOMATIONに応じてラベル付与
+  ISSUE_URL=$(gh issue create --repo {owner}/{repo} --title "$TITLE" --body "$BODY")
   ISSUE_NUMBER=$(echo $ISSUE_URL | grep -o '[0-9]*$')
   SUB_ISSUE_ID=$(gh api /repos/{owner}/{repo}/issues/$ISSUE_NUMBER --jq .id)
 
@@ -154,9 +160,12 @@ done
 完了後、以下を表示:
 - 作成されたサブissueリスト（URL、タイトル）
 - Sub-issues紐づけ結果
-- `issync`ラベル付与確認
-- **auto-planワークフロー自動実行**のため、手動`/plan`実行不要
-- GitHub Actionsタブで実行状況確認可能
+- `ISSYNC_LABELS_AUTOMATION=true`の場合:
+  - `issync:plan`ラベル付与確認
+  - **auto-planワークフロー自動実行**のため、手動`/issync:plan`実行不要
+  - GitHub Actionsタブで実行状況確認可能
+- 未設定の場合:
+  - 手動で`/issync:plan`実行が必要
 
 ## 重要な注意事項
 
@@ -164,7 +173,7 @@ done
 - 親issueの進捗ドキュメント全体読み込み（`.issync/state.yml`のlocal_fileパス使用）
 - タイトル・本文はLLM生成、ユーザー確認必須
 - gh CLI使用、内部ID使用（`gh api .../issues/{番号} --jq .id`）
-- **すべてのサブissueに`issync`ラベル付与**（`gh issue create --label "issync"`）
+- `ISSYNC_LABELS_AUTOMATION=true`の場合、`issync:plan`ラベル自動付与
   - auto-planワークフローが自動トリガーされ、進捗ドキュメントが自動作成される
 
 **Sub-issues API**:
@@ -180,10 +189,12 @@ done
 **インタラクティブモード**: `/issync:create-sub-issue`
 1. タスク概要入力: "Status変更時の自動アクション"
 2. LLMがタイトル生成（例: "Status変更時の自動アクション機能を設計"）
-3. ユーザー確認 → Issue作成（`issync`ラベル付き）→ Sub-issues紐づけ
-4. auto-planワークフロー自動実行 → 進捗ドキュメント作成
+3. ユーザー確認 → Issue作成
+4. `ISSYNC_LABELS_AUTOMATION=true`の場合:
+   - `issync:plan`ラベル付き → auto-planワークフロー自動実行 → 進捗ドキュメント作成
 
 **引数モード**: `/issync:create-sub-issue "自動アクション設計" "/issync:create-sub-issue実装"`
-1. 複数タスクを一括作成（各々`issync`ラベル付き）
+1. 複数タスクを一括作成
 2. Sub-issues順序設定で作成順序維持
-3. 各サブissueに対しauto-planワークフロー順次実行
+3. `ISSYNC_LABELS_AUTOMATION=true`の場合:
+   - 各サブissueに対しauto-planワークフロー順次実行
