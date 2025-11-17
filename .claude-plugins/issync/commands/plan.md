@@ -12,7 +12,7 @@ description: planフェーズのプロセスを標準化し、コードベース
 4. 基本セクションの記入
 5. Open Questionsの精査
 6. issync pushで同期 & Stage更新（To Review）
-7. GitHub Projects Status & Stage自動変更（plan → poc, Stage → To Start）
+7. GitHub Projects Status & Stage自動変更（自信度低あり → poc / なし → implement, Stage → To Start）
 
 **Note**: Template v7では、Tasksセクションが削除されています。タスクは `/issync:create-sub-issue` コマンドで作成します。
 
@@ -173,7 +173,13 @@ bash ${CLAUDE_PLUGIN_ROOT}/scripts/github-projects.sh set-stage $ISSUE_NUMBER "t
 
 ### ステップ7: GitHub Projects Status & Stage自動変更
 
-`!env ISSYNC_GITHUB_PROJECTS_NUMBER`が設定されている場合のみ、Status→`poc`、Stage→`To Start`に変更。GraphQL APIでProject ID取得後、`gh project item-edit`で両フィールドを更新。
+`!env ISSYNC_GITHUB_PROJECTS_NUMBER`が設定されている場合のみ、StatusとStageを自動変更します。
+
+**Status決定ロジック**:
+- **Open Questionsに自信度低(🔴)の項目がある場合** → Status: `poc`
+- **自信度低の項目がない場合** → Status: `implement`
+
+**Stage**: どちらの場合も `To Start` に設定
 
 環境変数に基づいてプロジェクトを特定:
 - `ISSYNC_GITHUB_PROJECTS_NUMBER`: プロジェクト番号（例: `1`）
@@ -183,7 +189,8 @@ bash ${CLAUDE_PLUGIN_ROOT}/scripts/github-projects.sh set-stage $ISSUE_NUMBER "t
 
 ```bash
 # GitHub Projects ヘルパースクリプトを使用
-bash ${CLAUDE_PLUGIN_ROOT}/scripts/github-projects.sh set-status $ISSUE_NUMBER "poc"
+# Statusは上記ロジックに従って "poc" または "implement" を設定
+bash ${CLAUDE_PLUGIN_ROOT}/scripts/github-projects.sh set-status $ISSUE_NUMBER "<poc または implement>"
 bash ${CLAUDE_PLUGIN_ROOT}/scripts/github-projects.sh set-stage $ISSUE_NUMBER "to start"
 ```
 
@@ -211,7 +218,7 @@ bash ${CLAUDE_PLUGIN_ROOT}/scripts/github-projects.sh set-stage $ISSUE_NUMBER "t
 2. {自信度低の項目がある場合} Start POC to validate {具体的な検証項目（例: "performance impact of polling approach", "feasibility of GraphQL mutation")}
 3. {自信度低の項目がない場合} Create sub-issues with `/issync:create-sub-issue` and begin implementation
 
-**Status**: plan → poc (Stage: To Start)
+**Status**: plan → {自信度低あり: poc / なし: implement} (Stage: To Start)
 ```
 
 **重要**:
@@ -226,13 +233,13 @@ bash ${CLAUDE_PLUGIN_ROOT}/scripts/github-projects.sh set-stage $ISSUE_NUMBER "t
 
 ## 補足: ステートマシンとの統合
 
-**ワークフロー**:
+**ワークフロー（自信度低の項目がある場合）**:
 ```
 GitHub Issue作成（Status: plan, Stage: To Start）
    ↓
 /plan実行開始 → Stage自動変更（To Start → In Progress）
    ↓
-コードベース調査 → 進捗ドキュメント作成
+コードベース調査 → 進捗ドキュメント作成 → 自信度低(🔴)の項目を検出
    ↓
 issync push → Stage自動変更（In Progress → To Review）
    ↓
@@ -241,7 +248,23 @@ Status & Stage自動変更（Status: plan → poc, Stage: To Review → To Start
 人間レビュー → POC開始（Devin起動）
 ```
 
+**ワークフロー（自信度低の項目がない場合）**:
+```
+GitHub Issue作成（Status: plan, Stage: To Start）
+   ↓
+/plan実行開始 → Stage自動変更（To Start → In Progress）
+   ↓
+コードベース調査 → 進捗ドキュメント作成 → 自信度低の項目なし
+   ↓
+issync push → Stage自動変更（In Progress → To Review）
+   ↓
+Status & Stage自動変更（Status: plan → implement, Stage: To Review → To Start）
+   ↓
+人間レビュー → サブissue作成 → 実装開始（Devin起動）
+```
+
 **重要**:
-- `/issync:plan`コマンド完了時に自動的にStatusが`poc`、Stageが`To Start`に変更されます
+- `/issync:plan`コマンド完了時に自動的にStatusが`poc`または`implement`、Stageが`To Start`に変更されます
 - 人間による手動のStatus/Stage変更は不要です
+- Status変更により、次のフェーズが明確になります（poc = PoC検証、implement = サブissue作成・実装）
 - Stage変更により、人間が「何をすべきか」が明確になります（To Start = Devinに指示）
