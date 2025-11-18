@@ -68,7 +68,6 @@ description: 進捗ドキュメントに基づいた実装を進め、作業中�
 **更新タイミング:**
 - 主要な決定時 → `Decision Log`を更新
 - 機能実装完了時 → `Discoveries & Insights`に発見を記録
-- Open Questions解消時 → 取り消し線（~テキスト~）でマーク、「✅ 解決済み (YYYY-MM-DD)」を追加
 - 新しい疑問発生時 → `Open Questions`に追加
 - Follow-up事項発生時 → `Follow-up Issues`に追加
 - 仕様明確化時 → `Specification / 仕様`を更新
@@ -127,7 +126,7 @@ issync push
 ✅ 単体テスト | 型チェック | コード品質チェック
 
 ### 進捗ドキュメント更新
-✅ Decision Log: [X]件 | Discoveries & Insights: [Y]件 | Open Questions: [Z]件解消 | GitHub Issueへの同期完了
+✅ Decision Log: [X]件 | Discoveries & Insights: [Y]件 | GitHub Issueへの同期完了
 
 ### 次のアクション
 - [ ] PRの作成とレビュー依頼
