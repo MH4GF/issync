@@ -4,15 +4,16 @@ description: planフェーズのプロセスを標準化し、コードベース
 
 # /issync:plan: plan実行ワークフロー
 
-進捗ドキュメント（`.issync/docs/plan-{番号}-{slug}.md`）を初期作成するコマンドです。以下の7ステップを自動化します：
+進捗ドキュメント（`.issync/docs/plan-{番号}-{slug}.md`）を初期作成するコマンドです。以下の8ステップを自動化します：
 
-1. 前提条件確認 & ファイル名決定 & issync init実行 & Stage設定（In Progress）
-2. GitHub Issue内容の確認
-3. コードベース調査（CRITICAL）
-4. 基本セクションの記入
-5. Open Questionsの精査
-6. issync pushで同期 & Stage更新（To Review）
-7. GitHub Projects Status & Stage自動変更（自信度低あり → poc / なし → implement, Stage → To Start）
+1. 環境変数確認 & モード決定
+2. 前提条件確認 & ファイル名決定 & issync init実行 & Stage設定（In Progress）
+3. GitHub Issue内容の確認
+4. コードベース調査（CRITICAL）
+5. 基本セクションの記入
+6. Open Questionsの精査
+7. issync pushで同期 & Stage更新（To Review）
+8. GitHub Projects Status & Stage自動変更（自信度低あり → poc / なし → implement, Stage → To Start）
 
 **Note**: Template v7では、Tasksセクションが削除されています。タスクは `/issync:create-sub-issue` コマンドで作成します。
 
@@ -31,7 +32,29 @@ description: planフェーズのプロセスを標準化し、コードベース
 
 ## 実行ステップ
 
-### ステップ1: 前提条件確認 & ファイル名決定 & issync init & Stage設定
+### ステップ1: 環境変数確認 & モード決定
+
+GitHub Projects連携とラベル自動付与の有効化状態を確認し、以降のステップで使用するモードフラグを設定。
+
+**環境変数**:
+```bash
+ISSYNC_GITHUB_PROJECTS_NUMBER         # Projects連携モード (例: "1")
+ISSYNC_GITHUB_PROJECTS_OWNER_TYPE     # "user" または "org" (デフォルト: "user")
+ISSYNC_LABELS_AUTOMATION               # ラベル自動付与モード ("true" で有効)
+```
+
+**モード決定**:
+- **GitHub Projects連携**: `ISSYNC_GITHUB_PROJECTS_NUMBER`が設定されていれば有効 (未設定時はステップ2, 7, 8をスキップ)
+- **ラベル自動付与**: `ISSYNC_LABELS_AUTOMATION="true"`で有効 (未設定時はステップ8のラベル付与をスキップ)
+
+**出力**: 設定状態をユーザーに表示
+```markdown
+## Environment Check
+**GitHub Projects Integration**: {有効/無効} - Project Number: {番号}, Owner Type: {タイプ}
+**Label Automation**: {有効/無効}
+```
+
+### ステップ2: 前提条件確認 & ファイル名決定 & issync init & Stage設定
 
 **ファイル名決定**:
 1. Issue URLを確認（例: `https://github.com/owner/repo/issues/123`）
@@ -42,32 +65,19 @@ description: planフェーズのプロセスを標準化し、コードベース
 - **ケース B**: 進捗ドキュメント不存在 → 新規sync追加または `issync pull --issue <Issue URL>`
 - **ケース C**: 準備完了 → 次へ
 
-**Stage設定（AI作業開始）**:
-
-`!env ISSYNC_GITHUB_PROJECTS_NUMBER`が設定されている場合のみ、`gh project item-edit`でStage→`In Progress`に設定。失敗時も作業継続（警告のみ）。
-
-環境変数:
-- `ISSYNC_GITHUB_PROJECTS_NUMBER`: プロジェクト番号（例: `1`）
-- `ISSYNC_GITHUB_PROJECTS_OWNER_TYPE`: `user` または `org`（デフォルト: `user`）
-
-**Stage 設定コマンド**（環境変数設定時のみ実行）:
+**Stage設定**: Projects連携モード有効時のみ、Stage→`In Progress`に設定。失敗時も処理継続。
 
 ```bash
-# GitHub Projects ヘルパースクリプトを使用
 bash ${CLAUDE_PLUGIN_ROOT}/scripts/github-projects.sh set-stage $ISSUE_NUMBER "in progress"
 ```
 
-**エラーハンドリング**:
-- スクリプトは自動的にエラーハンドリングを行います
-- 環境変数未設定: 警告を表示して処理を継続（GitHub Projects 連携をスキップ）
-- 認証スコープ不足: `gh auth refresh -s project` を実行して再試行
-- プロジェクトが見つからない: 警告を表示して処理を継続
+**エラーハンドリング**: スクリプトが自動処理。環境変数未設定・認証不足・プロジェクト未発見時は警告表示し処理継続。
 
-### ステップ2: GitHub Issue内容の確認
+### ステップ3: GitHub Issue内容の確認
 
-Issue内容を理解し、不明点があればユーザーに確認
+Issue内容を理解し、不明点をユーザーに確認。
 
-### ステップ3: コードベース調査（CRITICAL）
+### ステップ4: コードベース調査（CRITICAL）
 
 ⚠️ **最重要**: Open Questions記載前に必ず調査してください。
 
@@ -102,23 +112,19 @@ Issue内容を理解し、不明点があればユーザーに確認
 
 **記録**: 発見内容をDiscoveries & Insightsセクションに記録
 
-### ステップ4: 基本セクションの記入
+### ステップ5: 基本セクションの記入
 
-テンプレートに従い、以下を記入：
+テンプレートに従い記入：
 - Purpose/Overview
 - Context & Direction
-- Validation & Acceptance Criteria
-  - **重要**: ステップ3で調査したテスト戦略に基づき、テスト要件を含めること
-    - ロジック変更 → 該当する単体テストフレームワークでのテスト要件
-    - UI変更 → UIコンポーネント検証ツールでの検証要件
-    - E2E要件 → エンドツーエンドテストでの検証要件
+- Validation & Acceptance Criteria (ステップ4で調査したテスト戦略に基づくテスト要件を含める)
 
-**注意**: 以下のセクションはplanフェーズでは記入しない（テンプレートのサンプルテキストをそのまま残す）：
-- Specification / 仕様 (architecture-decisionフェーズで記入)
-- Decision Log (architecture-decisionフェーズで記入)
-- Outcomes & Retrospectives (retrospectiveフェーズで記入)
+**planフェーズでは記入しないセクション**（テンプレートのサンプルテキストを残す）：
+- Specification / 仕様
+- Decision Log
+- Outcomes & Retrospectives
 
-### ステップ5: Open Questionsの精査
+### ステップ6: Open Questionsの精査
 
 **記載基準**:
 
@@ -153,56 +159,39 @@ Issue内容を理解し、不明点があればユーザーに確認
   - **⚠️ PoC必須**: [検証項目]
 ```
 
-### ステップ6: GitHub Issueへの同期 & Stage更新
+### ステップ7: GitHub Issueへの同期 & Stage更新
 
-**同期**:
-進捗ドキュメントの変更をGitHub Issueに同期します。
+進捗ドキュメントをGitHub Issueに同期。
 
 ```bash
 issync push
 ```
 
-**Stage更新（レビュー待ち）**:
-
-`!env ISSYNC_GITHUB_PROJECTS_NUMBER`が設定されている場合のみ、`gh project item-edit`でStage→`To Review`に設定。失敗時も作業継続（警告のみ）。
+**Stage更新**: Projects連携モード有効時のみ、Stage→`To Review`に設定。失敗時も処理継続。
 
 ```bash
-# GitHub Projects ヘルパースクリプトを使用
 bash ${CLAUDE_PLUGIN_ROOT}/scripts/github-projects.sh set-stage $ISSUE_NUMBER "to review"
 ```
 
-### ステップ7: GitHub Projects Status & Stage自動変更 & ラベル付与
+### ステップ8: GitHub Projects Status & Stage自動変更 & ラベル付与
 
-`!env ISSYNC_GITHUB_PROJECTS_NUMBER`が設定されている場合のみ、StatusとStageを自動変更します。
+Projects連携モード有効時のみ、StatusとStageを自動変更。
 
-**Status決定ロジック**:
-- **Open Questionsに自信度低(🔴)の項目がある場合** → Status: `poc`
-- **自信度低の項目がない場合** → Status: `implement`
-
-**Stage**: どちらの場合も `To Start` に設定
-
-環境変数に基づいてプロジェクトを特定:
-- `ISSYNC_GITHUB_PROJECTS_NUMBER`: プロジェクト番号（例: `1`）
-- `ISSYNC_GITHUB_PROJECTS_OWNER_TYPE`: `user` または `org`（デフォルト: `user`）
-
-**Status & Stage 変更コマンド**:
+**Status決定**: Open Questionsに自信度低(🔴)あり → `poc` / なし → `implement`
+**Stage**: 常に `To Start`
 
 ```bash
-# GitHub Projects ヘルパースクリプトを使用
-# Statusは上記ロジックに従って "poc" または "implement" を設定
 bash ${CLAUDE_PLUGIN_ROOT}/scripts/github-projects.sh set-status $ISSUE_NUMBER "<poc または implement>"
 bash ${CLAUDE_PLUGIN_ROOT}/scripts/github-projects.sh set-stage $ISSUE_NUMBER "to start"
 ```
 
-**ラベル自動付与（Devin自動起動）**:
-
-`!env ISSYNC_LABELS_AUTOMATION`が`true`の場合、かつStatus=`implement`の場合のみ、`issync:implement`ラベルを付与してDevin自動起動をトリガーします。
+**ラベル自動付与**: ラベル自動付与モード有効かつStatus=`implement`の場合のみ実行。
 
 ```bash
 gh issue edit $ISSUE_NUMBER --add-label "issync:implement"
 ```
 
-**エラー時**: スクリプトが自動的にエラーハンドリングを行います。認証スコープ不足の場合は`gh auth refresh -s project`実行。失敗時はGitHub Projects UIで手動変更。環境変数の形式が不正、プロジェクトが見つからない、権限不足の場合は警告を表示して処理を継続。
+**エラー時**: ステップ2のエラーハンドリングと同様。
 
 ## 出力フォーマット
 
@@ -230,14 +219,12 @@ gh issue edit $ISSUE_NUMBER --add-label "issync:implement"
 **Status**: plan → {自信度低あり: poc / なし: implement} (Stage: To Start)
 ```
 
-**重要**:
-- Key Discoveriesは実際の調査結果を反映すること（定型文ではなく具体的な技術名・パターン名を記載）
-- Open Questionsの要約は、人間が優先的にレビューすべき論点を明示すること
-- Next Stepsは状況に応じて2または3を選択（両方記載しない）
+**重要**: Key Discoveriesは実際の調査結果を具体的に記載。Open Questionsは優先レビュー論点を明示。Next Stepsは状況に応じて2または3を選択。
 
 ## 重要な注意事項
 
-- **コードベース調査**: ステップ3を省略しない（省略すると不要なOpen Questionsが大量発生）
+- **環境変数確認**: ステップ1を必ず実行し、モードフラグに基づいて各ステップの処理を制御する
+- **コードベース調査**: ステップ4を省略しない（省略すると不要なOpen Questionsが大量発生）
 - **Open Questions**: コードで確認可能な情報は記載しない、5-10項目に絞る
 
 ## 補足: ステートマシンとの統合
@@ -246,13 +233,15 @@ gh issue edit $ISSUE_NUMBER --add-label "issync:implement"
 ```
 GitHub Issue作成（Status: plan, Stage: To Start）
    ↓
-/plan実行開始 → Stage自動変更（To Start → In Progress）
+/plan実行開始 → ステップ1: 環境変数確認 & モード決定
    ↓
-コードベース調査 → 進捗ドキュメント作成 → 自信度低(🔴)の項目を検出
+ステップ2: Stage自動変更（To Start → In Progress）※GitHub Projects連携モード有効時のみ
    ↓
-issync push → Stage自動変更（In Progress → To Review）
+ステップ3-6: コードベース調査 → 進捗ドキュメント作成 → 自信度低(🔴)の項目を検出
    ↓
-Status & Stage自動変更（Status: plan → poc, Stage: To Review → To Start）
+ステップ7: issync push → Stage自動変更（In Progress → To Review）※GitHub Projects連携モード有効時のみ
+   ↓
+ステップ8: Status & Stage自動変更（Status: plan → poc, Stage: To Review → To Start）※GitHub Projects連携モード有効時のみ
    ↓
 人間レビュー → POC開始（Devin起動）
 ```
@@ -261,23 +250,24 @@ Status & Stage自動変更（Status: plan → poc, Stage: To Review → To Start
 ```
 GitHub Issue作成（Status: plan, Stage: To Start）
    ↓
-/plan実行開始 → Stage自動変更（To Start → In Progress）
+/plan実行開始 → ステップ1: 環境変数確認 & モード決定
    ↓
-コードベース調査 → 進捗ドキュメント作成 → 自信度低の項目なし
+ステップ2: Stage自動変更（To Start → In Progress）※GitHub Projects連携モード有効時のみ
    ↓
-issync push → Stage自動変更（In Progress → To Review）
+ステップ3-6: コードベース調査 → 進捗ドキュメント作成 → 自信度低の項目なし
    ↓
-Status & Stage自動変更（Status: plan → implement, Stage: To Review → To Start）
+ステップ7: issync push → Stage自動変更（In Progress → To Review）※GitHub Projects連携モード有効時のみ
    ↓
-{ISSYNC_LABELS_AUTOMATION=trueの場合} issync:implementラベル自動付与
+ステップ8: Status & Stage自動変更（Status: plan → implement, Stage: To Review → To Start）※GitHub Projects連携モード有効時のみ
+   ↓
+ステップ8: issync:implementラベル自動付与 ※ラベル自動付与モード有効時のみ
    ↓
 人間レビュー → {ラベルなし} サブissue作成 → 実装開始（Devin起動）
              → {ラベルあり} Devin自動起動
 ```
 
 **重要**:
-- `/issync:plan`コマンド完了時に自動的にStatusが`poc`または`implement`、Stageが`To Start`に変更されます
-- 人間による手動のStatus/Stage変更は不要です
-- Status変更により、次のフェーズが明確になります（poc = PoC検証、implement = サブissue作成・実装）
-- Stage変更により、人間が「何をすべきか」が明確になります（To Start = Devinに指示）
-- `ISSYNC_LABELS_AUTOMATION=true`かつStatus=`implement`の場合、`issync:implement`ラベル自動付与によりDevinが自動起動します
+- ステップ1で2つのモード（Projects連携、ラベル自動付与）の有効/無効を決定
+- Projects連携モード有効時のみ、StatusとStageを自動変更（人間の手動変更不要）
+- Status変更で次フェーズを明示（poc = PoC検証、implement = サブissue作成・実装）
+- ラベル自動付与モード有効かつStatus=`implement`時、Devinが自動起動
