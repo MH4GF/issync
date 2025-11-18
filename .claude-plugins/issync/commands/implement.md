@@ -66,7 +66,6 @@ description: 進捗ドキュメントに基づいた実装を進め、作業中�
 実装を進める中で、**必ず進捗ドキュメントを継続的に更新してください**。
 
 **更新タイミング:**
-- 主要な決定時 → `Decision Log`を更新
 - 機能実装完了時 → `Discoveries & Insights`に発見を記録
 - 新しい疑問発生時 → `Open Questions`に追加
 - Follow-up事項発生時 → `Follow-up Issues`に追加
@@ -126,7 +125,7 @@ issync push
 ✅ 単体テスト | 型チェック | コード品質チェック
 
 ### 進捗ドキュメント更新
-✅ Decision Log: [X]件 | Discoveries & Insights: [Y]件 | GitHub Issueへの同期完了
+✅ Discoveries & Insights: [X]件 | GitHub Issueへの同期完了
 
 ### 次のアクション
 - [ ] PRの作成とレビュー依頼
