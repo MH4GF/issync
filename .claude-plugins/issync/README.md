@@ -62,14 +62,14 @@ GitHub Issue を単一の真実の情報源として、進捗ドキュメント�
 
 ## Workflow Overview
 
-この plugin は、矛盾解消駆動開発のワークフローをサポートする 8 つのコマンドを提供します：
+この plugin は、矛盾解消駆動開発のワークフローをサポートする 9 つのコマンドを提供します：
 
 **メインフロー:**
 
 ```
 /issync:plan (plan)
     ↓
-POC実装
+/issync:poc (poc) - 調査・検証フェーズ
     ↓
 /issync:review-poc (architecture-decision)
     ↓
@@ -97,6 +97,16 @@ GitHub Issueから全コンテキストを自動収集し、進捗ドキュメ�
 **使い方:** `/issync:plan https://github.com/owner/repo/issues/123`
 
 詳細は`commands/plan.md`を参照。
+
+---
+
+### `/issync:poc` - POC調査フェーズ自動化
+
+自信度を上げるための調査・検証を中心に行い、発見を進捗ドキュメントに記録。実装は破棄前提で、知見の獲得が目的。POC PR作成後、人間がレビュー。
+
+**使い方:** `/issync:poc` | `/issync:poc https://github.com/owner/repo/issues/123` | `/issync:poc 123`
+
+詳細は`commands/poc.md`を参照。
 
 ---
 
@@ -197,6 +207,7 @@ issync/
 │   └── plugin.json                 # Pluginメタデータ
 ├── commands/
 │   ├── plan.md                     # plan実行コマンド
+│   ├── poc.md                      # POC調査フェーズ自動化コマンド
 │   ├── review-poc.md               # POCレビューコマンド
 │   ├── compact-progress-document.md # 進捗ドキュメント圧縮コマンド
 │   ├── resolve-questions.md        # Open Questions解消コマンド
@@ -213,6 +224,7 @@ issync/
 
 1. コマンドプロンプトを編集:
    - `/issync:plan`: `commands/plan.md`
+   - `/issync:poc`: `commands/poc.md`
    - `/issync:review-poc`: `commands/review-poc.md`
    - `/issync:compact-progress-document`: `commands/compact-progress-document.md`
    - `/issync:resolve-questions`: `commands/resolve-questions.md`
