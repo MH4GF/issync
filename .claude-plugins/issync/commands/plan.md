@@ -185,9 +185,13 @@ bash ${CLAUDE_PLUGIN_ROOT}/scripts/github-projects.sh set-status $ISSUE_NUMBER "
 bash ${CLAUDE_PLUGIN_ROOT}/scripts/github-projects.sh set-stage $ISSUE_NUMBER "to start"
 ```
 
-**ラベル自動付与**: ラベル自動付与モード有効かつStatus=`implement`の場合のみ実行。
+**ラベル自動付与**: ラベル自動付与モード有効時、Statusに応じたラベルを付与。
 
 ```bash
+# Status=poc の場合
+gh issue edit $ISSUE_NUMBER --add-label "issync:poc"
+
+# Status=implement の場合
 gh issue edit $ISSUE_NUMBER --add-label "issync:implement"
 ```
 
@@ -213,6 +217,7 @@ gh issue edit $ISSUE_NUMBER --add-label "issync:implement"
 ### Next Steps
 1. Review document on GitHub and resolve Open Questions
 2. {自信度低の項目がある場合} Start POC to validate {具体的な検証項目（例: "performance impact of polling approach", "feasibility of GraphQL mutation")}
+   {ISSYNC_LABELS_AUTOMATION=trueの場合} `issync:poc` label added → Devin will auto-start
 3. {自信度低の項目がない場合} Create sub-issues with `/issync:create-sub-issue` and begin implementation
    {ISSYNC_LABELS_AUTOMATION=trueの場合} `issync:implement` label added → Devin will auto-start
 
@@ -243,7 +248,10 @@ GitHub Issue作成（Status: plan, Stage: To Start）
    ↓
 ステップ8: Status & Stage自動変更（Status: plan → poc, Stage: To Review → To Start）※GitHub Projects連携モード有効時のみ
    ↓
-人間レビュー → POC開始（Devin起動）
+ステップ8: issync:pocラベル自動付与 ※ラベル自動付与モード有効時のみ
+   ↓
+人間レビュー → {ラベルなし} POC開始（Devin起動）
+             → {ラベルあり} Devin自動起動
 ```
 
 **ワークフロー（自信度低の項目がない場合）**:
@@ -270,4 +278,4 @@ GitHub Issue作成（Status: plan, Stage: To Start）
 - ステップ1で2つのモード（Projects連携、ラベル自動付与）の有効/無効を決定
 - Projects連携モード有効時のみ、StatusとStageを自動変更（人間の手動変更不要）
 - Status変更で次フェーズを明示（poc = PoC検証、implement = サブissue作成・実装）
-- ラベル自動付与モード有効かつStatus=`implement`時、Devinが自動起動
+- ラベル自動付与モード有効時、Statusに応じたラベルを自動付与（`issync:poc` または `issync:implement`）→ Devinが自動起動
