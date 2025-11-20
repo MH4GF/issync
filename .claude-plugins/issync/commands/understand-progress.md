@@ -81,9 +81,11 @@ sub-issuesを分析してプロジェクトコンテキストを把握:
 作業開始時は**進捗ドキュメントを継続的に更新**してください。
 
 **更新タイミング:**
-- 主要な決定時/実装進捗時: `Architecture Decisions`/`Implementation Progress`を更新
+- 主要な決定時: `Decision Log`を更新
+- 実装進捗/発見時: `Discoveries & Insights`を更新(技術的制約、複雑性、新たなタスクの発見、失敗・エラー含む)
 - Open Questions解消/新規疑問時: 該当項目を更新/追加
-- フェーズ移行時: `Status`セクションを更新
+- フェーズ完了時: `Outcomes & Retrospectives`を更新
+- フェーズ移行時: `Current Status`セクションを更新
 
 **更新方法:**
 - Edit/Write/Updateツールでセクション単位更新（ファイル全体の書き換えは避ける）
