@@ -1,10 +1,10 @@
 ---
-description: サブissue完了時に親issueの進捗ドキュメントを自動更新。PRから学びを抽出し振り返りを生成・加筆、Open Questionsを解決（/resolve-questions実行）、Follow-up Issuesセクションを4分類で処理（Critical自動作成、Improvement提案、Open Questions追加、Feature Enhancements提案）。完了サマリーを親issueにコメント投稿。完了後はissync removeで同期設定を自動削除
+description: サブissue完了時に親issueの進捗ドキュメントを自動更新。PRから学びを抽出し振り返りを生成・加筆、Open Questionsを解決（/resolve-questions実行）、Follow-up Issuesセクションを4分類で処理（Critical自動作成、Improvement提案、Open Questions追加、Feature Enhancements提案）、進捗ドキュメント全体の矛盾を検出・解消。完了サマリーを親issueにコメント投稿。完了後はissync removeで同期設定を自動削除
 ---
 
 # /complete-sub-issue: サブissue完了オペレーション
 
-サブissue完了時に親issueの進捗ドキュメントを自動更新します。PRから学びを抽出し、振り返りを生成・加筆、**Open Questionsを解決**（既存情報から最大限解決）、Follow-up Issuesを優先度付きで4分類処理します。完了サマリーを親issueにコメント投稿します。詳細は「実行ステップ」参照。
+サブissue完了時に親issueの進捗ドキュメントを自動更新します。PRから学びを抽出し、振り返りを生成・加筆、**Open Questionsを解決**（既存情報から最大限解決）、Follow-up Issuesを優先度付きで4分類処理し、**進捗ドキュメント全体の矛盾を検出・解消**します。完了サマリーを親issueにコメント投稿します。詳細は「実行ステップ」参照。
 
 ## 使用方法
 
@@ -23,7 +23,7 @@ description: サブissue完了時に親issueの進捗ドキュメントを自動
 **運用フロー**:
 1. `/issync:create-sub-issue`でサブissue作成
 2. サブissueで開発（plan → implementation → retrospective）
-3. `/issync:complete-sub-issue`で親issueに自動反映＆close（PR分析、5 Whys分析、**Open Questions解決**、Follow-up Issues 4分類処理）
+3. `/issync:complete-sub-issue`で親issueに自動反映＆close（PR分析、5 Whys分析、**Open Questions解決**、Follow-up Issues 4分類処理、**矛盾検出と解消**）
 4. Critical Improvements（品質向上）に即座着手
 5. 必要に応じてProject Improvements/Feature Enhancementsで次のサブissue作成
 
@@ -103,35 +103,22 @@ GitHub Sub-issues API (`gh api /repos/{owner}/{repo}/issues/{issue_number}/paren
 
 ### ステップ4: サブissueのOpen Questions処理（最後の砦）
 
-サブissue完了時点で**既にある情報を使って可能な限り解決する**。これがOpen Questionsを解消する最後の砦。
+サブissue完了時点で**既にある情報を使って可能な限り解決する**。Open Questionsを解消する最後の砦。
 
-1. **Open Questionsの抽出**
+1. **Open Questionsの抽出**: サブissueの進捗ドキュメントから抽出
 
-   サブissueの進捗ドキュメントからOpen Questionsセクションを抽出。
+2. **既存情報からの解決試行**: 以下の情報源から回答を推論
+   - Decision Log（既に記録された意思決定）
+   - PRの実装内容（ステップ3で取得済み）
+   - 振り返り内容（ステップ3.4で生成済み）
+   - Follow-up Issues（ステップ3.5で抽出済み）
 
-2. **既存情報からの解決試行**
+3. **`/issync:resolve-questions`で自動解決**: 推論できた回答について実行
+   - 処理内容: Open Questions更新（取り消し線 + "✅ 解決済み"）、Decision Log記録、Specification更新
 
-   以下の情報源から回答を推論（例: 「どのライブラリを使うか？」→ Decision Log/PR実装から抽出）:
-   - **Decision Log**: 既に記録された意思決定
-   - **PRの実装内容**: 実装で採用した技術・アプローチ（ステップ3で取得済み）
-   - **振り返り内容**: 開発中に得られた知見（ステップ3.4で生成済み）
-   - **Follow-up Issues**: 論点への言及（ステップ3.5で抽出済み）
+4. **未解決のものはFollow-up Issuesへ**: 優先度Medium、理由を記録
 
-3. **`/issync:resolve-questions`で自動解決**
-
-   推論できた回答について、`/issync:resolve-questions`コマンドを実行:
-   ```bash
-   /issync:resolve-questions
-   Q1: <Decision Logから抽出した決定内容>
-   Q2: <PRから推論した実装方針>
-   Q3: <振り返りから得られた知見>
-   ```
-
-   **処理内容**: Open Questions更新（取り消し線 + "✅ 解決済み"）、Decision Log記録、Specification更新
-
-4. **未解決のものはFollow-up Issuesへ**: Follow-up Issuesセクションに移行（優先度Medium、理由を記録）
-
-**処理原則**: 最後の砦として既存情報を使い切る。保守的に推論（False positive回避）。部分的な解決も記録。
+**処理原則**: 保守的に推論（False positive回避）、部分的な解決も記録
 
 ### ステップ5: 親issueの進捗ドキュメントを特定
 
@@ -156,27 +143,13 @@ issync list
 
 サブissueの実装により、親issueの一部のOpen Questionsが解決されている可能性がある。保守的に推論し、解決可能なものを検出する。
 
-1. **親issueのOpen Questionsを抽出**
+1. **親issueのOpen Questionsを抽出**: 進捗ドキュメントから取得
+2. **解決可能性の推論**: サブissueの情報（実装内容、振り返り、Decision Log）から推論
+3. **`/issync:resolve-questions`で自動解決**: 親issueに対して実行
+   - 処理内容: ステップ4と同様
+   - 回答形式: `**A[番号]: [回答内容]** (サブissue #[番号]で解決)` と出典を明記
 
-   親issueの進捗ドキュメントからOpen Questionsセクションを取得。
-
-2. **解決可能性の推論**
-
-   サブissueの情報（実装内容、振り返り、Decision Log）から解決可能なOpen Questionsを推論。
-
-3. **`/issync:resolve-questions`で自動解決**
-
-   推論できた回答について、親issueに対して`/issync:resolve-questions`コマンドを実行:
-   ```bash
-   /issync:resolve-questions
-   Q1: <サブissueのDecision Logや実装から抽出した決定内容>
-   Q2: <PRから推論した実装方針>
-   Q3: <振り返りから得られた知見>
-   ```
-
-   **処理内容**: ステップ4と同様。回答形式は `**A[番号]: [回答内容]** (サブissue #[番号]で解決)` と出典を明記。
-
-**処理原則**: 保守的に推論（False positive回避）。部分的な解決も記録。
+**処理原則**: 保守的に推論（False positive回避）、部分的な解決も記録
 
 ### ステップ7: Follow-up Issuesの適切な処理
 
@@ -239,9 +212,38 @@ issync remove --issue <サブissue URL>
 bash ${CLAUDE_PLUGIN_ROOT}/scripts/github-projects.sh set-status $SUB_ISSUE_NUMBER "done"
 ```
 
-**エラー時**: スクリプトが自動的にエラーハンドリングを行います。認証エラーは`gh auth refresh -s project`、その他失敗時は警告のみで作業継続（手動変更案内）。環境変数の形式が不正、プロジェクトが見つからない、権限不足の場合は警告を表示して処理を継続。
+**エラー時**:
+- 認証エラー: `gh auth refresh -s project`で解決を試行
+- その他: 警告表示、処理継続（手動変更案内）
 
-### ステップ11: GitHub Issueへの同期
+### ステップ11: 親issue進捗ドキュメントの矛盾検出と解消
+
+親issueの更新完了後、進捗ドキュメント全体で矛盾を検出し、必要に応じて解消または報告します。
+
+**検出対象の矛盾**:
+- **Decision Logの矛盾**: 矛盾する決定（例: 「A採用」→後で「Bに変更」だが撤回理由が不明確）
+- **Work PlanとTasksの不一致**: Phase定義とタスク内容が一致しない
+- **Acceptance Criteriaの不整合**: Acceptance CriteriaとValidation & Acceptance Criteriaで基準が異なる
+- **Open QuestionsとDecision Logの重複**: 同じ質問が両方に存在（解決済みのはずなのにOpen Questionsに残っている）
+- **サブissue追加による新たな矛盾**: 今回のサブissue完了内容が既存の記述と矛盾
+
+**処理フロー**:
+
+1. **矛盾の自動検出**: 進捗ドキュメント全体を分析し、上記パターンを検出
+
+2. **自動解消可能な矛盾**:
+   - Open QuestionsとDecision Logの重複 → 削除（取り消し線 + "✅ 解決済み (Decision Log参照)"）
+   - 完了済みPhaseのタスクがTasksに残存 → 削除
+
+3. **手動確認が必要な矛盾**: Open Questionsに追加
+   - Decision Logの矛盾 → `**Q[N]: [矛盾の詳細]を整理する必要があります**`
+   - Work PlanとTasksの不一致 → `**Q[N]: Work Plan Phase [X]とTasks内容の整合性を確認してください**`
+
+**処理原則**: 保守的に実行（確実に安全な変更のみ）、矛盾解消の履歴をDecision Logに記録
+
+**出力**: 詳細は「出力フォーマット」セクションの「⚠️ 矛盾検出結果」参照
+
+### ステップ12: GitHub Issueへの同期
 
 親issueの進捗ドキュメントの変更をGitHub Issueに同期してください。
 
@@ -249,13 +251,13 @@ bash ${CLAUDE_PLUGIN_ROOT}/scripts/github-projects.sh set-status $SUB_ISSUE_NUMB
 issync push
 ```
 
-### ステップ12: 完了通知
+### ステップ13: 完了通知
 
 編集内容のサマリーを出力。出力フォーマットは次セクション参照。
 
-### ステップ13: 親issueへのコメント投稿
+### ステップ14: 親issueへのコメント投稿
 
-ステップ12の完了通知と同じ内容を、親issueのコメント欄に投稿します。フォーマットは「出力フォーマット」セクションを参照。
+ステップ13の完了通知と同じ内容を、親issueのコメント欄に投稿します。フォーマットは「出力フォーマット」セクションを参照。
 
 ```bash
 gh issue comment <親issue URL> --body "$(cat <<'EOF'
@@ -289,7 +291,20 @@ EOF
 - ✅ サブissue #[サブissue番号]: [closeした（Related PR: [PR URL]） / すでにclosed]
 - ✅ issync remove実行: [✅ 成功 / ⚠️ スキップ（未登録） / ⚠️ 失敗]
 - ✅ GitHub Projects Status: `done`に変更 [✅ 成功 / ⚠️ 失敗（手動変更推奨）]
+- ✅ **矛盾検出と解消**: [自動解消X件、要確認Y件（Open Questionsに追加） / 矛盾なし]
 - ✅ GitHub Issueへの同期: 完了（issync push）
+
+---
+
+### ⚠️ 矛盾検出結果
+[矛盾が検出された場合のみ表示]
+
+- ✅ **自動解消**: [件数]件
+  - Open Questions [X]件を削除（Decision Logで既に解決済み）
+  - 完了Phase [Y]のタスク[Z]件をTasksから削除
+- ⚠️ **要確認**: [件数]件（Open Questionsに追加済み）
+  - Q[N]: [矛盾の詳細] - 場所: [セクション名]
+  - Q[N]: [矛盾の詳細] - 場所: [セクション名]
 
 ---
 
@@ -353,14 +368,8 @@ EOF
 /issync:complete-sub-issue https://github.com/MH4GF/issync/issues/124
 ```
 
-実行フローは冒頭のワークフロー（ステップ1-13）を参照。
+実行フローは冒頭のワークフロー（ステップ1-14）を参照。
 
 ---
 
-## 運用フロー
-
-1. `/issync:create-sub-issue`でサブissue作成
-2. サブissueで開発（plan → implementation → retrospective）、進捗ドキュメントに成果を記入（任意）
-3. `/issync:complete-sub-issue`で親issueに自動反映＆サブissueclose（PR自動取得、振り返り/Follow-up Issues自動生成、Open Questions解決）
-4. Critical Improvements（品質向上）に即座着手
-5. 必要に応じてProject Improvements/Feature Enhancementsで次のサブissue作成
+**運用フローの詳細**: 冒頭の「コンテキスト」セクション参照
