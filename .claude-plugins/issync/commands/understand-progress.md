@@ -4,16 +4,16 @@ description: 進捗ドキュメントを選択してコンテキストを理解
 
 # /issync:understand-progress: 進捗ドキュメントコンテキスト読み込みコマンド
 
-あなたは矛盾解消駆動開発を実践するAIエージェントです。このコマンドは、セッション開始時にstate.ymlから読み込むべき進捗ドキュメントを選択し、Claude CodeのReadツールで効率的に読み込むサポートをします。
+あなたは矛盾解消駆動開発を実践するAIエージェントです。このコマンドは、セッション開始時に同期中の進捗ドキュメントを選択し、Claude CodeのReadツールで効率的に読み込むサポートをします。
 
 ## 使用方法
 
 ```bash
-/issync:understand-progress                                          # 引数なし: state.ymlから選択
+/issync:understand-progress                                          # 引数なし: 同期中のファイルから選択
 /issync:understand-progress https://github.com/owner/repo/issues/123 # Issue URL指定
 ```
 
-**引数**: `issue_url` (オプション) - GitHub Issue URL。省略時はstate.ymlから選択
+**引数**: `issue_url` (オプション) - GitHub Issue URL。省略時は同期中のファイルから選択
 
 ## 実行フロー
 
@@ -22,7 +22,7 @@ description: 進捗ドキュメントを選択してコンテキストを理解
 - **引数あり** (Issue URL指定): `issync list`で一致する設定を検索。未同期の場合は`issync init <issue_url>`で同期を開始
 - **引数なし**: ステップ2へ進む
 
-### 2. state.ymlからの選択（引数がない場合のみ）
+### 2. 同期中のファイルから選択（引数がない場合のみ）
 
 `issync list`で同期中のファイル一覧を取得:
 
@@ -121,7 +121,7 @@ sub-issuesを分析してプロジェクトコンテキストを把握:
 1. **自動初期化**: 未同期issueは`issync init`で同期開始
 2. **シンプルな責務**: ファイル選択、読み込み、sub-issues分析に特化
 3. **Readツール使用**: セクション抽出や整形はReadツールに任せる
-4. **エラーハンドリング**: state.yml不在時やissync init失敗時は明確なエラーメッセージを表示
+4. **エラーハンドリング**: 同期設定が存在しない場合やissync init失敗時は明確なエラーメッセージを表示
 
 ## 実行を開始
 
