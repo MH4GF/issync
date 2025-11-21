@@ -32,7 +32,9 @@ description: 進捗ドキュメントに基づいた実装を進め、作業中�
 
 ### ステップ1: 進捗ドキュメントの理解
 
-まず、`/issync:understand-progress`コマンドを内部で呼び出して、進捗ドキュメントを読み込みます。
+**既に進捗ドキュメントを理解している場合は、このステップをスキップして直接ステップ2に進んでください。**
+
+進捗ドキュメントをまだ読み込んでいない場合は、`/issync:understand-progress`コマンドを内部で呼び出して、進捗ドキュメントを読み込みます。
 
 ```bash
 /issync:understand-progress <issue_url_or_number>
