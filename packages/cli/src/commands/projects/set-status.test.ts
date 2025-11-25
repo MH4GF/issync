@@ -24,6 +24,10 @@ describe('setStatus command', () => {
     const consoleErrorSpy = spyOn(console, 'error')
     const consoleLogSpy = spyOn(console, 'log')
 
+    // Clear any previous calls from other tests
+    consoleErrorSpy.mockClear()
+    consoleLogSpy.mockClear()
+
     // Missing env vars will cause error
     delete process.env.ISSYNC_GITHUB_PROJECTS_NUMBER
 
