@@ -151,10 +151,3 @@ export class OptionNotFoundError extends IssyncError {
     this.name = 'OptionNotFoundError'
   }
 }
-
-export class InsufficientPermissionsError extends IssyncError {
-  constructor(operation: string) {
-    super(`Insufficient permissions to ${operation}. Check GitHub token scopes.`)
-    this.name = 'InsufficientPermissionsError'
-  }
-}

@@ -1,12 +1,6 @@
 import type { KnipConfig } from 'knip'
 
 const config: KnipConfig = {
-  workspaces: {
-    '.': {
-      entry: ['packages/cli/src/**/*.ts', 'apps/web/src/**/*.tsx'],
-      project: ['packages/cli/src/**/*.ts', 'apps/web/src/**/*.tsx'],
-    },
-  },
   ignore: [
     'dist/**',
     '.issync/**',
@@ -16,8 +10,6 @@ const config: KnipConfig = {
   ],
   ignoreDependencies: [
     'lucide-react', // Used in shadcn/ui components (future use)
-    'tailwindcss', // Required by @tailwindcss/postcss
-    'tw-animate-css', // TailwindCSS animation utilities
   ],
   ignoreExportsUsedInFile: true,
   // tsc: TypeScript compiler used in type-check script
