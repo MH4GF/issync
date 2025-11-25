@@ -111,3 +111,50 @@ export class LocalChangeError extends IssyncError {
     this.name = 'LocalChangeError'
   }
 }
+
+export class GitHubProjectsNotConfiguredError extends IssyncError {
+  constructor(missingVars: string[]) {
+    super(
+      `GitHub Projects environment variables not configured: ${missingVars.join(', ')}\n` +
+        'Set the following environment variables:\n' +
+        '  ISSYNC_GITHUB_PROJECTS_NUMBER - Project number\n' +
+        '  ISSYNC_GITHUB_PROJECTS_OWNER - Project owner (user or organization)',
+    )
+    this.name = 'GitHubProjectsNotConfiguredError'
+  }
+}
+
+export class ProjectNotFoundError extends IssyncError {
+  constructor(owner: string, projectNumber: number) {
+    super(`GitHub Project not found: ${owner}/projects/${projectNumber}`)
+    this.name = 'ProjectNotFoundError'
+  }
+}
+
+export class IssueNotInProjectError extends IssyncError {
+  constructor(issueUrl: string) {
+    super(`Issue is not tracked in the project: ${issueUrl}`)
+    this.name = 'IssueNotInProjectError'
+  }
+}
+
+export class FieldNotFoundError extends IssyncError {
+  constructor(fieldName: string, projectId: string) {
+    super(`Field "${fieldName}" not found in project ${projectId}`)
+    this.name = 'FieldNotFoundError'
+  }
+}
+
+export class OptionNotFoundError extends IssyncError {
+  constructor(optionName: string, fieldName: string) {
+    super(`Option "${optionName}" not found in field "${fieldName}"`)
+    this.name = 'OptionNotFoundError'
+  }
+}
+
+export class InsufficientPermissionsError extends IssyncError {
+  constructor(operation: string) {
+    super(`Insufficient permissions to ${operation}. Check GitHub token scopes.`)
+    this.name = 'InsufficientPermissionsError'
+  }
+}

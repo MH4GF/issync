@@ -197,4 +197,8 @@ program
     // TODO: implement
   })
 
+// Register projects subcommands
+const { registerProjectsCommands } = await import('./commands/projects/index.js')
+registerProjectsCommands(program)
+
 program.parse()
