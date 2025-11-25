@@ -53,8 +53,7 @@ description: POC実装の結果をレビューし、人間の意思決定のた�
 **Stage 設定コマンド**:
 
 ```bash
-# GitHub Projects ヘルパースクリプトを使用
-bash ${CLAUDE_PLUGIN_ROOT}/scripts/github-projects.sh set-stage $ISSUE_NUMBER "in progress"
+issync projects set-stage "$ISSUE_URL" "In Progress"
 ```
 
 ---
@@ -518,8 +517,7 @@ issync push
 **Stage 設定コマンド**:
 
 ```bash
-# GitHub Projects ヘルパースクリプトを使用
-bash ${CLAUDE_PLUGIN_ROOT}/scripts/github-projects.sh set-stage $ISSUE_NUMBER "to review"
+issync projects set-stage "$ISSUE_URL" "To Review"
 ```
 
 **重要**: 人間承認後、Status→`implement`、Stage→`To Start`を手動で変更。

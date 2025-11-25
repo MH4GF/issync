@@ -29,9 +29,9 @@
     "lint:eslint": "eslint .",
     "lint:fix": "eslint . --fix",
     "check": "biome check --write .",
-    "check:ci": "biome check . && eslint . && tsc --noEmit -p packages/cli && tsc --noEmit -p apps/web && bun test && knip-bun",
-    "knip": "knip-bun",
-    "knip:fix": "knip-bun --fix"
+    "check:ci": "biome check . && eslint . && tsc --noEmit -p packages/cli && tsc --noEmit -p apps/web && bun test && knip",
+    "knip": "knip",
+    "knip:fix": "knip --fix"
   },
   "keywords": [
     "github",

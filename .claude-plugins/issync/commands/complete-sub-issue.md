@@ -208,8 +208,7 @@ issync remove --issue <サブissue URL>
 **Status 変更コマンド**:
 
 ```bash
-# GitHub Projects ヘルパースクリプトを使用
-bash ${CLAUDE_PLUGIN_ROOT}/scripts/github-projects.sh set-status $SUB_ISSUE_NUMBER "done"
+issync projects set-status "$SUB_ISSUE_URL" "Done"
 ```
 
 **エラー時**:

@@ -68,7 +68,7 @@ ISSYNC_LABELS_AUTOMATION               # ラベル自動付与モード ("true" 
 **Stage設定**: Projects連携モード有効時のみ、Stage→`In Progress`に設定。失敗時も処理継続。
 
 ```bash
-bash ${CLAUDE_PLUGIN_ROOT}/scripts/github-projects.sh set-stage $ISSUE_NUMBER "in progress"
+issync projects set-stage "$ISSUE_URL" "In Progress"
 ```
 
 **エラーハンドリング**: スクリプトが自動処理。環境変数未設定・認証不足・プロジェクト未発見時は警告表示し処理継続。
@@ -170,7 +170,7 @@ issync push
 **Stage更新**: Projects連携モード有効時のみ、Stage→`To Review`に設定。失敗時も処理継続。
 
 ```bash
-bash ${CLAUDE_PLUGIN_ROOT}/scripts/github-projects.sh set-stage $ISSUE_NUMBER "to review"
+issync projects set-stage "$ISSUE_URL" "To Review"
 ```
 
 ### ステップ8: GitHub Projects Status & Stage自動変更 & ラベル付与
@@ -181,8 +181,8 @@ Projects連携モード有効時のみ、StatusとStageを自動変更。
 **Stage**: 常に `To Start`
 
 ```bash
-bash ${CLAUDE_PLUGIN_ROOT}/scripts/github-projects.sh set-status $ISSUE_NUMBER "<poc または implement>"
-bash ${CLAUDE_PLUGIN_ROOT}/scripts/github-projects.sh set-stage $ISSUE_NUMBER "to start"
+issync projects set-status "$ISSUE_URL" "<poc または implement>"
+issync projects set-stage "$ISSUE_URL" "To Start"
 ```
 
 **ラベル自動付与**: ラベル自動付与モード有効時、Statusに応じたラベルを付与。
