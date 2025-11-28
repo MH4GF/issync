@@ -9,50 +9,22 @@ description: 進捗ドキュメントを選択してコンテキストを理解
 ## 使用方法
 
 ```bash
-/issync:understand-progress                                          # 引数なし: 同期中のファイルから選択
-/issync:understand-progress https://github.com/owner/repo/issues/123 # Issue URL指定
+/issync:understand-progress https://github.com/owner/repo/issues/123 # Issue URL指定（必須）
 ```
 
-**引数**: `issue_url` (オプション) - GitHub Issue URL。省略時は同期中のファイルから選択
+**引数**: `issue_url` (必須) - GitHub Issue URL
 
 ## 実行フロー
 
-### 1. 引数の判定
+### 1. Issue URLの処理
 
-- **引数あり** (Issue URL指定): `issync list`で一致する設定を検索。未同期の場合は`issync init <issue_url>`で同期を開始
-- **引数なし**: ステップ2へ進む
+指定されたIssue URLから`issync list`で一致する設定を検索。未同期の場合は`issync init <issue_url>`で同期を開始します。
 
-### 2. 同期中のファイルから選択（引数がない場合のみ）
-
-`issync list`で同期中のファイル一覧を取得:
-
-```bash
-issync list
-```
-
-**複数ファイルがある場合**: 選択を促してください
-```
-読み込む進捗ドキュメントを選択してください:
-1. .issync/docs/plan-5829.md (最終同期: 2025-10-21T03:20:34Z, Issue: route06/liam-internal/issues/5829)
-2. .issync/docs/plan-5883-context-reader-command.md (最終同期: 2025-10-21T03:30:00Z, Issue: route06/liam-internal/issues/5883)
-
-番号を入力してください (1-2):
-```
-
-**1つのみの場合**: 確認を表示して自動選択
-```
-読み込む進捗ドキュメント: .issync/docs/plan-5883-context-reader-command.md
-  最終同期: 2025-10-21T03:30:00Z
-  Issue: route06/liam-internal/issues/5883
-
-このファイルを読み込みますか? (y/n)
-```
-
-### 3. 進捗ドキュメントの読み込み
+### 2. 進捗ドキュメントの読み込み
 
 選択されたファイルをReadツールで読み込む。
 
-### 3.5. Sub-issuesの取得と分析（AIエージェントのコンテキスト理解）
+### 3. Sub-issuesの取得と分析（AIエージェントのコンテキスト理解）
 
 **目的**: AIエージェントがプロジェクトの全体像を把握するため、親issueに紐づくsub-issuesを取得・分析します。
 
@@ -118,8 +90,8 @@ sub-issuesを分析してプロジェクトコンテキストを把握:
 
 ## 重要な注意事項
 
-1. **自動初期化**: 未同期issueは`issync init`で同期開始
-2. **シンプルな責務**: ファイル選択、読み込み、sub-issues分析に特化
+1. **自動初期化**: 指定されたIssue URLが未同期の場合は`issync init`で同期開始
+2. **シンプルな責務**: Issue URLからファイルを特定、読み込み、sub-issues分析に特化
 3. **Readツール使用**: セクション抽出や整形はReadツールに任せる
 4. **エラーハンドリング**: 同期設定が存在しない場合やissync init失敗時は明確なエラーメッセージを表示
 
