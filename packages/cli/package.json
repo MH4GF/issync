@@ -1,6 +1,6 @@
 {
   "name": "@mh4gf/issync",
-  "version": "0.15.0",
+  "version": "0.16.0",
   "description": "CLI tool to sync text between GitHub Issue comments and local files",
   "type": "module",
   "bin": {
