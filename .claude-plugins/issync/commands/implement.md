@@ -67,7 +67,7 @@ description: 進捗ドキュメントに基づいた実装を進め、作業中�
 - Follow-up事項発生時 → `Follow-up Issues`に追加
 - 仕様明確化時 → `Specification / 仕様`を更新
 
-**更新方法:** Editツールでセクション単位で更新し、`issync push`で同期。進捗ドキュメントはSingle Source of Truthであり、他のセッションや将来の作業でコンテキストを正確に把握するための唯一の情報源です。
+**更新方法:** Editツールでセクション単位で更新し、`issync push`で同期。
 
 ### ステップ5: テストの実行
 
@@ -76,19 +76,79 @@ description: 進捗ドキュメントに基づいた実装を進め、作業中�
 - 型チェックの実行
 - リンター・フォーマッターの実行
 
-テスト失敗時はエラーを修正して再実行。プロジェクト固有のコマンドは`package.json`の`scripts`セクションや、プロジェクトの`CLAUDE.md`を参照してください。
+プロジェクト固有のコマンドは`CLAUDE.md`や`package.json`を参照。テスト失敗時はエラーを修正して再実行。
 
-### ステップ6: セッション終了（クリーンな状態を維持）
+### ステップ6: 変更のコミット
 
-コンテキストが不足してきた場合や作業が一区切りついた場合、**作業途中でも**以下を実行してクリーンな状態で終了してください。
+機能の実装が完了し、全てのテストが通ったら、変更をコミットしてください。
 
-1. 進捗ドキュメントを更新:
+**Git Safety Protocol**:
+- **NEVER update the git config**
+- **NEVER run destructive/irreversible git commands** (like push --force, hard reset, etc) unless the user explicitly requests them
+- **NEVER skip hooks** (--no-verify, --no-gpg-sign, etc) unless the user explicitly requests it
+- **Avoid git commit --amend** unless user explicitly requested or adding edits from pre-commit hook
+- Before amending: ALWAYS check authorship (`git log -1 --format='%an %ae'`)
+
+**コミット手順**:
+
+1. 事前確認と変更のステージング（並列実行）:
+```bash
+git status  # 変更ファイルを確認
+git diff    # 変更内容の詳細を確認
+git log --oneline -10  # 既存のコミットメッセージスタイルを確認
+git add <変更したファイル>  # 変更をステージング
+```
+
+2. 詳細なコミットメッセージでコミット（**HEREDOC形式必須**）:
+```bash
+git commit -m "$(cat <<'EOF'
+<1行目: 変更の性質と要約（例: feat: 〜実装, fix: 〜修正）>
+
+- <変更内容1（何を・なぜを含める）>
+- <変更内容2>
+- テスト: <実行したテストの内容>
+- 進捗ドキュメント: <更新したセクション>
+
+🤖 Generated with [Claude Code](https://claude.com/claude-code)
+
+Co-Authored-By: Claude <noreply@anthropic.com>
+EOF
+)"
+```
+
+3. コミット後の確認:
+```bash
+git status  # "nothing to commit"を確認
+```
+
+**注意事項**:
+- 実行していないテストや未完了の実装を記載しない
+- 秘密情報（.env、credentials.jsonなど）をコミットしない
+
+### ステップ7: セッション終了（クリーンな状態の維持）
+
+コンテキストが不足してきた場合や作業が一区切りついた場合、**作業途中であっても**必ず以下を実行してクリーンな状態で終了してください。
+
+**終了手順**:
+
+1. **進捗ドキュメントを更新して同期**:
    - 未解決事項を`Open Questions`に記録
    - 次のセッションへの引き継ぎ事項を`Discoveries & Insights`に記録
-2. `issync push`で進捗ドキュメントを同期
-3. 変更をコミット（WIP可）してリモートにプッシュ
+   - 今セッションで実装した内容を`Specification / 仕様`または`Discoveries & Insights`に記録
+   - `issync push`で同期
 
-**原則**: 壊れた状態で終了しない。テストが通る状態を維持する。
+2. **ステップ5のテストを再実行**してパスを確認
+
+3. **ステップ6の手順で変更をコミット**（作業途中でもWIPコミット可）
+
+4. **リモートにプッシュ**: `git push`
+
+**必須要件**（全て満たすこと）:
+- ✅ 全ての変更がコミット済み（`git status`が"nothing to commit"）
+- ✅ 進捗ドキュメントがリモートと同期済み（`issync push`完了）
+- ✅ テストが全て通っている（壊れた状態で終了しない）
+- ✅ 変更がリモートにプッシュ済み
+- ✅ 引き継ぎ事項が進捗ドキュメントに記録済み
 
 ## 重要な注意事項
 
