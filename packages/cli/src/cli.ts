@@ -191,10 +191,12 @@ program
 
 program
   .command('status')
-  .description('Show sync status')
-  .action(() => {
-    console.log('status command')
-    // TODO: implement
+  .description('Show sync configuration for a specific GitHub Issue')
+  .argument('<issue-url>', 'GitHub Issue URL')
+  .option('--json', 'Output in JSON format')
+  .action(async (issueUrl: string, options: { json?: boolean }) => {
+    const { status } = await import('./commands/status.js')
+    await _handleCommand(() => status(issueUrl, options))
   })
 
 // Register projects subcommands
