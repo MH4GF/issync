@@ -18,7 +18,7 @@ description: 進捗ドキュメントを選択してコンテキストを理解
 
 ### 1. Issue URLの処理
 
-指定されたIssue URLから`issync list`で一致する設定を検索。未同期の場合は`issync init <issue_url>`で同期を開始します。
+`issync status <issue URL>`で設定を取得。未同期の場合は`issync init <issue_url>`で同期を開始します。
 
 ### 2. 進捗ドキュメントの読み込み
 

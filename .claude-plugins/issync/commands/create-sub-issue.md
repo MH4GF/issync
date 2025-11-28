@@ -67,11 +67,9 @@ ISSYNC_LABELS_AUTOMATION               # ラベル自動付与モード ("true" 
 
 ### ステップ3: 親issue情報を取得
 
-`issync list`を実行し、以下を取得:
+`issync status <親issue URL>`を実行し、以下を取得:
 - `issue_url`: 親issueのURL
 - `local_file`: 進捗ドキュメントのパス
-
-複数sync存在時はユーザー選択を促す。
 
 ### ステップ4: 親issueコンテキスト抽出
 

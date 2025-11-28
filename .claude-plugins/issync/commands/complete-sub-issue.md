@@ -32,7 +32,7 @@ GitHub Sub-issues API (`gh api /repos/{owner}/{repo}/issues/{issue_number}/paren
 
 ### ステップ2: サブissueの進捗ドキュメントを読み込み
 
-`issync list`で登録状況を確認。以下を抽出（エラーハンドリングは「エラーハンドリング」セクション参照）:
+`issync status <サブissue URL>`で登録状況を確認。以下を抽出（エラーハンドリングは「エラーハンドリング」セクション参照）:
 - **Outcomes & Retrospectives**: 実装内容、発見や学び
 - **Open Questions**: 未解決の論点
 - **Follow-up Issues**: 将来対応事項
@@ -86,7 +86,7 @@ PR/コミットから未対応事項を抽出し、優先度を自動分類（�
 
 ### ステップ5: 親issueの進捗ドキュメントを特定
 
-`issync list`で親issue番号に一致するエントリを取得。未登録時は自動初期化。初期化失敗時は処理中断。
+`issync status <親issue URL>`で進捗ドキュメント情報を取得。未登録時は自動初期化。初期化失敗時は処理中断。
 
 ### ステップ6: 親issueのOutcomes & Retrospectivesを更新
 
