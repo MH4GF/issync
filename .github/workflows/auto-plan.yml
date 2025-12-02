@@ -6,7 +6,7 @@ on:
 
 jobs:
   auto-plan:
-    if: github.event.action == 'labeled' && github.event.label.name == 'issync'
+    if: github.event.action == 'labeled' && github.event.label.name == 'issync:plan'
     runs-on: ubuntu-latest
     timeout-minutes: 30
     permissions:
