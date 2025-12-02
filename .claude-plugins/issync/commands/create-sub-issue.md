@@ -5,7 +5,7 @@ description: 新規タスクをGitHub Issueとして作成し、親issueとの�
 # /issync:create-sub-issue: サブissue作成オペレーション
 
 新規タスクをGitHub Issueとして作成し、以下を自動化：
-1. タスク概要入力（インタラクティブ: 1つ / 引数: 複数可）
+1. タスク概要決定（会話コンテキストから自動抽出 / 引数指定 / 対話入力）
 2. 親issue情報取得（`.issync/state.yml`）
 3. LLMによるタイトル・本文生成
 4. Issue作成（`ISSYNC_LABELS_AUTOMATION=true`の場合、`issync:plan`ラベル自動付与）
@@ -17,21 +17,20 @@ description: 新規タスクをGitHub Issueとして作成し、親issueとの�
 
 **設計原則**:
 - GitHub Sub-issuesを完全なSSOTとする（進捗ドキュメントのTasksセクション不使用）
-- ユーザー入力は簡潔な概要のみ（LLMが適切なタイトル・本文を自動生成）
+- 会話コンテキストから自動的にタスクを抽出し、シームレスなissue作成体験を提供
+- LLMが適切なタイトル・本文を自動生成
 - Sub-issues APIで親issueと自動リンク、順序維持
 
 ## 使用方法
 
 ```bash
-/issync:create-sub-issue                             # インタラクティブモード（1つ）
-/issync:create-sub-issue "概要1" "概要2"            # 引数モード（複数可）
+/issync:create-sub-issue                             # 会話から自動抽出（推奨）
+/issync:create-sub-issue "概要1" "概要2"            # 引数で明示指定
 ```
 
-**入力例**: "Status変更時の自動アクション" "コマンド実装" など簡潔でOK
-
-**推奨ワークフロー**:
-- 基本: 1つずつ作成 → `/issync:plan`で詳細化 → 必要に応じて孫issue作成
-- 複数の独立タスクが明確な場合のみ引数モードで一括作成
+**入力モード**:
+- **会話コンテキスト**: 引数なし時、会話からタスクを自動抽出（フォールバック: プロンプト入力）
+- **引数**: 明示的に複数指定
 
 ## 前提条件
 
@@ -60,10 +59,11 @@ ISSYNC_LABELS_AUTOMATION               # ラベル自動付与モード ("true" 
 **Label Automation**: {有効/無効}
 ```
 
-### ステップ2: タスク概要の入力
+### ステップ2: タスク概要の決定
 
-- **インタラクティブモード**: プロンプトでタスク概要を1つ入力
+- **会話コンテキストモード**: 引数なし時、LLMが会話から1つ以上のタスク概要を抽出し、プレビュー表示
 - **引数モード**: コマンドライン引数から複数取得
+- **対話入力モード（フォールバック）**: 会話コンテキストがない場合、プロンプトで概要を1つ入力
 
 ### ステップ3: 親issue情報を取得
 
@@ -203,15 +203,12 @@ done
 
 ## 実行例
 
-**インタラクティブモード**: `/issync:create-sub-issue`
-1. タスク概要入力: "Status変更時の自動アクション"
-2. LLMがタイトル生成（例: "Status変更時の自動アクション機能を設計"）
+**会話コンテキストモード**: `/issync:create-sub-issue`
+1. LLMが会話から"Status変更時の自動アクション"を抽出
+2. タイトル生成（例: "Status変更時の自動アクション機能を設計"）
 3. ユーザー確認 → Issue作成
-4. `ISSYNC_LABELS_AUTOMATION=true`の場合:
-   - `issync:plan`ラベル付き → auto-planワークフロー自動実行 → 進捗ドキュメント作成
+4. `ISSYNC_LABELS_AUTOMATION=true`: auto-planワークフロー自動実行
 
-**引数モード**: `/issync:create-sub-issue "自動アクション設計" "/issync:create-sub-issue実装"`
-1. 複数タスクを一括作成
-2. Sub-issues順序設定で作成順序維持
-3. `ISSYNC_LABELS_AUTOMATION=true`の場合:
-   - 各サブissueに対しauto-planワークフロー順次実行
+**引数モード**: `/issync:create-sub-issue "自動アクション設計" "コマンド実装"`
+1. 複数タスク一括作成、Sub-issues順序維持
+2. `ISSYNC_LABELS_AUTOMATION=true`: 各サブissueで自動実行
