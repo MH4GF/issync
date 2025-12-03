@@ -44,11 +44,7 @@ description: POC実装の結果をレビューし、人間の意思決定のた�
 
 ### ステップ1: Stage設定（AI作業開始）
 
-`!env ISSYNC_GITHUB_PROJECTS_NUMBER`が設定されている場合のみ、`gh project item-edit`でStage→`In Progress`に設定。失敗時も作業継続（警告のみ）。
-
-環境変数:
-- `ISSYNC_GITHUB_PROJECTS_NUMBER`: プロジェクト番号（例: `1`）
-- `ISSYNC_GITHUB_PROJECTS_OWNER_TYPE`: `user` または `org`（デフォルト: `user`）
+Stage→`In Progress`に設定。
 
 **Stage 設定コマンド**:
 
@@ -512,7 +508,7 @@ issync push
 
 ### ステップ11: Stage更新（レビュー待ち）
 
-`!env ISSYNC_GITHUB_PROJECTS_NUMBER`が設定されている場合のみ、`gh project item-edit`でStage→`To Review`に設定。失敗時も作業継続（警告のみ）。
+Stage→`To Review`に設定。
 
 **Stage 設定コマンド**:
 

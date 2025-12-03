@@ -34,23 +34,19 @@ description: planフェーズのプロセスを標準化し、コードベース
 
 ### ステップ1: 環境変数確認 & モード決定
 
-GitHub Projects連携とラベル自動付与の有効化状態を確認し、以降のステップで使用するモードフラグを設定。
+ラベル自動付与の有効化状態を確認し、以降のステップで使用するモードフラグを設定。
 
 **環境変数**:
 ```bash
-ISSYNC_GITHUB_PROJECTS_NUMBER         # Projects連携モード (例: "1")
-ISSYNC_GITHUB_PROJECTS_OWNER_TYPE     # "user" または "org" (デフォルト: "user")
 ISSYNC_LABELS_AUTOMATION               # ラベル自動付与モード ("true" で有効)
 ```
 
 **モード決定**:
-- **GitHub Projects連携**: `ISSYNC_GITHUB_PROJECTS_NUMBER`が設定されていれば有効 (未設定時はステップ2, 7, 8をスキップ)
 - **ラベル自動付与**: `ISSYNC_LABELS_AUTOMATION="true"`で有効 (未設定時はステップ8のラベル付与をスキップ)
 
 **出力**: 設定状態をユーザーに表示
 ```markdown
 ## Environment Check
-**GitHub Projects Integration**: {有効/無効} - Project Number: {番号}, Owner Type: {タイプ}
 **Label Automation**: {有効/無効}
 ```
 

@@ -123,13 +123,13 @@ openの場合のみ実行。コメントにPR/コミット情報を含める。
 
 ### ステップ10: GitHub Projects Status変更
 
-`ISSYNC_GITHUB_PROJECTS_NUMBER`環境変数が設定されている場合のみ実行:
+サブissueのStatusを"Done"に更新:
 
 ```bash
 issync projects set-status "$SUB_ISSUE_URL" "Done"
 ```
 
-認証エラー時は`gh auth refresh -s project`を案内。
+環境変数未設定時は警告メッセージが出力されるが、処理は継続される。
 
 ### ステップ11: 親issue進捗ドキュメントの矛盾検出と解消
 
