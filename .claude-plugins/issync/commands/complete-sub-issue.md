@@ -20,7 +20,6 @@ description: サブissue完了時に親issueの進捗ドキュメントを自動
 
 - `ISSYNC_GITHUB_TOKEN`環境変数が設定されている
 - `gh` CLIがインストール済み
-- 未初期化issueは自動初期化（詳細は「エラーハンドリング」参照）
 
 **運用フロー**: `create-sub-issue` → 開発 → `complete-sub-issue` → Critical着手 → 次のサブissue作成
 
@@ -32,7 +31,7 @@ GitHub Sub-issues API (`gh api /repos/{owner}/{repo}/issues/{issue_number}/paren
 
 ### ステップ2: サブissueの進捗ドキュメントを読み込み
 
-`issync status <サブissue URL>`で登録状況を確認。以下を抽出（エラーハンドリングは「エラーハンドリング」セクション参照）:
+`issync status <サブissue URL>`でローカルファイルパスを取得。**未登録エラー時は即座に`issync init <サブissue URL>`実行**（確認不要）。以下を抽出:
 - **Outcomes & Retrospectives**: 実装内容、発見や学び
 - **Open Questions**: 未解決の論点
 - **Follow-up Issues**: 将来対応事項
@@ -86,7 +85,7 @@ PR/コミットから未対応事項を抽出し、優先度を自動分類（�
 
 ### ステップ5: 親issueの進捗ドキュメントを特定
 
-`issync status <親issue URL>`で進捗ドキュメント情報を取得。未登録時は自動初期化。初期化失敗時は処理中断。
+`issync status <親issue URL>`でローカルファイルパスを取得。**未登録エラー時は即座に`issync init <親issue URL>`実行**（確認不要）。
 
 ### ステップ6: 親issueのOutcomes & Retrospectivesを更新
 
@@ -175,16 +174,6 @@ issync projects set-status "$SUB_ISSUE_URL" "Done"
 ### 次のアクション
 1. 🎯 Critical着手 → 2. 💡 Recommended検討 → 3. 親issue確認 → 4. Feature検討
 ```
-
-## エラーハンドリング
-
-| 状況 | 処理 |
-|------|------|
-| 未登録issue | `issync init`で自動初期化 |
-| 親issue初期化失敗 | 処理中断 |
-| サブissue初期化失敗 | 「記載なし」として続行 |
-| 無効URL/親issue不在 | エラー表示 |
-| すでにclosed | close処理スキップ |
 
 ## 実行例
 

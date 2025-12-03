@@ -175,10 +175,14 @@ export function selectSync(
 
   if (matches.length === 0) {
     if (normalizedFile) {
-      throw new SyncNotFoundError(`No sync entry found for local file: ${file}`)
+      throw new SyncNotFoundError(
+        `No sync entry found for local file: ${file}\nRun: issync init <issue-url>`,
+      )
     }
     if (normalizedIssue) {
-      throw new SyncNotFoundError(`No sync entry found for issue: ${normalizedIssue}`)
+      throw new SyncNotFoundError(
+        `No sync entry found for issue: ${normalizedIssue}\nRun: issync init ${normalizedIssue}`,
+      )
     }
     throw new SyncNotFoundError()
   }
