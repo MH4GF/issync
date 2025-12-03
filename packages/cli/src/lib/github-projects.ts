@@ -69,9 +69,35 @@ interface GraphQLResponse {
   }
 }
 
+interface ProjectV2ItemsResponse {
+  items: {
+    nodes: Array<{
+      content?: {
+        number?: number
+      }
+      fieldValues: {
+        nodes: Array<{
+          __typename?: string
+          name?: string
+          field?: {
+            name?: string
+          }
+        }>
+      }
+    }>
+  }
+}
+
+interface GetIssuesByStatusResponse {
+  user?: { projectV2?: ProjectV2ItemsResponse }
+  organization?: { projectV2?: ProjectV2ItemsResponse }
+}
+
 export class GitHubProjectsClient {
   private static readonly MAX_FIELDS_TO_FETCH = 20
   private static readonly MAX_PROJECT_ITEMS_TO_FETCH = 10
+  private static readonly MAX_ITEMS_TO_FETCH = 100
+  private static readonly MAX_FIELD_VALUES_TO_FETCH = 10
 
   private graphqlWithAuth: typeof graphql
   private projectNumber: number
@@ -80,13 +106,13 @@ export class GitHubProjectsClient {
   private cacheTimestamp: number | null = null
   private readonly CACHE_TTL_MS = 5 * 60 * 1000 // 5 minutes
 
-  constructor(token?: string) {
+  constructor(token?: string, graphqlFn?: typeof graphql) {
     const authToken = token ?? process.env.ISSYNC_GITHUB_TOKEN ?? process.env.GITHUB_TOKEN
     if (!authToken) {
       throw new GitHubTokenMissingError()
     }
 
-    this.graphqlWithAuth = graphql.defaults({
+    this.graphqlWithAuth = (graphqlFn ?? graphql).defaults({
       headers: {
         authorization: `token ${authToken}`,
       },
@@ -358,5 +384,74 @@ export class GitHubProjectsClient {
       itemId,
       fieldId,
     })
+  }
+
+  async getIssuesByStatus(statusValue: string): Promise<number[]> {
+    const query = (entityType: 'user' | 'organization') => `
+      query($owner: String!, $projectNumber: Int!) {
+        ${entityType}(login: $owner) {
+          projectV2(number: $projectNumber) {
+            items(first: ${GitHubProjectsClient.MAX_ITEMS_TO_FETCH}) {
+              nodes {
+                content {
+                  ... on Issue {
+                    number
+                  }
+                }
+                fieldValues(first: ${GitHubProjectsClient.MAX_FIELD_VALUES_TO_FETCH}) {
+                  nodes {
+                    __typename
+                    ... on ProjectV2ItemFieldSingleSelectValue {
+                      name
+                      field {
+                        ... on ProjectV2SingleSelectField {
+                          name
+                        }
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    `
+
+    const tryQuery = async (entityType: 'user' | 'organization') => {
+      const response = await this.graphqlWithAuth<GetIssuesByStatusResponse>({
+        query: query(entityType),
+        owner: this.projectOwner,
+        projectNumber: this.projectNumber,
+      })
+
+      const projectV2 = response[entityType]?.projectV2
+      if (!projectV2) {
+        throw new Error(`${entityType} has no projectV2`)
+      }
+
+      return projectV2.items.nodes
+        .filter((item) =>
+          item.fieldValues.nodes.some(
+            (fieldValue) =>
+              fieldValue.__typename === 'ProjectV2ItemFieldSingleSelectValue' &&
+              fieldValue.field?.name === 'Status' &&
+              fieldValue.name === statusValue,
+          ),
+        )
+        .map((item) => item.content?.number)
+        .filter((n): n is number => n !== undefined)
+    }
+
+    try {
+      return await tryQuery('user')
+    } catch (userError) {
+      console.debug('User project query failed, trying organization:', userError)
+      try {
+        return await tryQuery('organization')
+      } catch {
+        throw new ProjectNotFoundError(this.projectOwner, this.projectNumber)
+      }
+    }
   }
 }

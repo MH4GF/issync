@@ -26,4 +26,13 @@ export function registerProjectsCommands(program: Command): void {
       const { clearStage } = await import('./clear-stage.js')
       await clearStage({ issueUrl })
     })
+
+  projects
+    .command('list-issues')
+    .description('List issue numbers by Status field value')
+    .requiredOption('--status <status>', 'Status field value to filter by')
+    .action(async (options: { status: string }) => {
+      const { listIssues } = await import('./list-issues.js')
+      await listIssues({ status: options.status })
+    })
 }

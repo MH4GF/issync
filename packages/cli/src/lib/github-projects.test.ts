@@ -1,4 +1,5 @@
 import { afterEach, beforeEach, describe, expect, mock, test } from 'bun:test'
+import type { graphql } from '@octokit/graphql'
 import {
   FieldNotFoundError,
   GitHubProjectsNotConfiguredError,
@@ -319,5 +320,229 @@ describe('GitHubProjectsClient.getOptionId', () => {
     await expect(client.getOptionId('Stage', 'NonExistentOption')).rejects.toThrow(
       OptionNotFoundError,
     )
+  })
+})
+
+describe('GitHubProjectsClient.getIssuesByStatus', () => {
+  const originalEnv = {
+    GITHUB_TOKEN: process.env.GITHUB_TOKEN,
+    ISSYNC_GITHUB_PROJECTS_NUMBER: process.env.ISSYNC_GITHUB_PROJECTS_NUMBER,
+    ISSYNC_GITHUB_PROJECTS_OWNER: process.env.ISSYNC_GITHUB_PROJECTS_OWNER,
+  }
+
+  beforeEach(() => {
+    process.env.GITHUB_TOKEN = 'ghp_test_token_123456789012345678901234'
+    process.env.ISSYNC_GITHUB_PROJECTS_NUMBER = '42'
+    process.env.ISSYNC_GITHUB_PROJECTS_OWNER = 'test-owner'
+  })
+
+  afterEach(() => {
+    process.env.GITHUB_TOKEN = originalEnv.GITHUB_TOKEN
+    process.env.ISSYNC_GITHUB_PROJECTS_NUMBER = originalEnv.ISSYNC_GITHUB_PROJECTS_NUMBER
+    process.env.ISSYNC_GITHUB_PROJECTS_OWNER = originalEnv.ISSYNC_GITHUB_PROJECTS_OWNER
+    mock.restore()
+  })
+
+  test('returns issue numbers with matching status', async () => {
+    const mockGraphqlFn = mock().mockResolvedValueOnce({
+      user: {
+        projectV2: {
+          items: {
+            nodes: [
+              {
+                content: { number: 56 },
+                fieldValues: {
+                  nodes: [
+                    {
+                      __typename: 'ProjectV2ItemFieldSingleSelectValue',
+                      name: 'retrospective',
+                      field: { name: 'Status' },
+                    },
+                  ],
+                },
+              },
+              {
+                content: { number: 62 },
+                fieldValues: {
+                  nodes: [
+                    {
+                      __typename: 'ProjectV2ItemFieldSingleSelectValue',
+                      name: 'retrospective',
+                      field: { name: 'Status' },
+                    },
+                  ],
+                },
+              },
+              {
+                content: { number: 70 },
+                fieldValues: {
+                  nodes: [
+                    {
+                      __typename: 'ProjectV2ItemFieldSingleSelectValue',
+                      name: 'done',
+                      field: { name: 'Status' },
+                    },
+                  ],
+                },
+              },
+            ],
+          },
+        },
+      },
+    })
+
+    const mockGraphql = { defaults: () => mockGraphqlFn } as unknown as typeof graphql
+    const client = new GitHubProjectsClient('ghp_test_token_123456789012345678901234', mockGraphql)
+
+    const result = await client.getIssuesByStatus('retrospective')
+
+    expect(result).toEqual([56, 62])
+  })
+
+  test('returns empty array when no issues match status', async () => {
+    const mockGraphqlFn = mock().mockResolvedValueOnce({
+      user: {
+        projectV2: {
+          items: {
+            nodes: [
+              {
+                content: { number: 70 },
+                fieldValues: {
+                  nodes: [
+                    {
+                      __typename: 'ProjectV2ItemFieldSingleSelectValue',
+                      name: 'done',
+                      field: { name: 'Status' },
+                    },
+                  ],
+                },
+              },
+            ],
+          },
+        },
+      },
+    })
+
+    const mockGraphql = { defaults: () => mockGraphqlFn } as unknown as typeof graphql
+    const client = new GitHubProjectsClient('ghp_test_token_123456789012345678901234', mockGraphql)
+
+    const result = await client.getIssuesByStatus('retrospective')
+
+    expect(result).toEqual([])
+  })
+
+  test('throws ProjectNotFoundError when both user and organization queries fail', async () => {
+    const mockGraphqlFn = mock()
+      .mockRejectedValueOnce(new Error('User query failed'))
+      .mockRejectedValueOnce(new Error('Organization query failed'))
+
+    const mockGraphql = { defaults: () => mockGraphqlFn } as unknown as typeof graphql
+    const client = new GitHubProjectsClient('ghp_test_token_123456789012345678901234', mockGraphql)
+
+    // eslint-disable-next-line @typescript-eslint/await-thenable
+    await expect(client.getIssuesByStatus('retrospective')).rejects.toThrow(ProjectNotFoundError)
+  })
+
+  test('handles empty project (no items)', async () => {
+    const mockGraphqlFn = mock().mockResolvedValueOnce({
+      user: {
+        projectV2: {
+          items: {
+            nodes: [],
+          },
+        },
+      },
+    })
+
+    const mockGraphql = { defaults: () => mockGraphqlFn } as unknown as typeof graphql
+    const client = new GitHubProjectsClient('ghp_test_token_123456789012345678901234', mockGraphql)
+
+    const result = await client.getIssuesByStatus('retrospective')
+
+    expect(result).toEqual([])
+  })
+
+  test('handles issues without fieldValues', async () => {
+    const mockGraphqlFn = mock().mockResolvedValueOnce({
+      user: {
+        projectV2: {
+          items: {
+            nodes: [
+              {
+                content: { number: 56 },
+                fieldValues: {
+                  nodes: [],
+                },
+              },
+            ],
+          },
+        },
+      },
+    })
+
+    const mockGraphql = { defaults: () => mockGraphqlFn } as unknown as typeof graphql
+    const client = new GitHubProjectsClient('ghp_test_token_123456789012345678901234', mockGraphql)
+
+    const result = await client.getIssuesByStatus('retrospective')
+
+    expect(result).toEqual([])
+  })
+
+  test('finds project in organization when user query fails', async () => {
+    const mockGraphqlFn = mock()
+      .mockRejectedValueOnce(new Error('User not found'))
+      .mockResolvedValueOnce({
+        organization: {
+          projectV2: {
+            items: {
+              nodes: [
+                {
+                  content: { number: 78 },
+                  fieldValues: {
+                    nodes: [
+                      {
+                        __typename: 'ProjectV2ItemFieldSingleSelectValue',
+                        name: 'retrospective',
+                        field: { name: 'Status' },
+                      },
+                    ],
+                  },
+                },
+              ],
+            },
+          },
+        },
+      })
+
+    const mockGraphql = { defaults: () => mockGraphqlFn } as unknown as typeof graphql
+    const client = new GitHubProjectsClient('ghp_test_token_123456789012345678901234', mockGraphql)
+
+    const result = await client.getIssuesByStatus('retrospective')
+
+    expect(result).toEqual([78])
+  })
+
+  test('throws ProjectNotFoundError when user succeeds but projectV2 is null and organization fails', async () => {
+    const mockGraphqlFn = mock()
+      .mockResolvedValueOnce({ user: { projectV2: null } })
+      .mockRejectedValueOnce(new Error('Organization query failed'))
+
+    const mockGraphql = { defaults: () => mockGraphqlFn } as unknown as typeof graphql
+    const client = new GitHubProjectsClient('ghp_test_token_123456789012345678901234', mockGraphql)
+
+    // eslint-disable-next-line @typescript-eslint/await-thenable
+    await expect(client.getIssuesByStatus('retrospective')).rejects.toThrow(ProjectNotFoundError)
+  })
+
+  test('throws ProjectNotFoundError when both queries succeed but projectV2 is null', async () => {
+    const mockGraphqlFn = mock()
+      .mockResolvedValueOnce({ user: { projectV2: null } })
+      .mockResolvedValueOnce({ organization: { projectV2: null } })
+
+    const mockGraphql = { defaults: () => mockGraphqlFn } as unknown as typeof graphql
+    const client = new GitHubProjectsClient('ghp_test_token_123456789012345678901234', mockGraphql)
+
+    // eslint-disable-next-line @typescript-eslint/await-thenable
+    await expect(client.getIssuesByStatus('retrospective')).rejects.toThrow(ProjectNotFoundError)
   })
 })
