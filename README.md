@@ -78,7 +78,7 @@ issync init https://github.com/owner/repo/issues/123 --file docs/plan.md
 **Behavior:**
 - Detects existing issync-managed comments on the Issue and pulls the content
 - Creates a new file from template if no existing comment is found
-- Config is stored in `~/.issync/state.yml` (global configuration)
+- Config is stored in your home directory (global configuration)
 
 ### `issync pull`
 
@@ -218,7 +218,7 @@ issync remove --file docs/plan.md --delete-file
 
 ### Config File Location
 
-issync stores its configuration in `~/.issync/state.yml` (global configuration in your home directory). This allows tracking issues across multiple repositories from a single location.
+issync stores its configuration in your home directory (global configuration). This allows tracking issues across multiple repositories from a single location.
 
 ### Config File Format
 
@@ -247,7 +247,7 @@ Add `.issync/` to your project's `.gitignore` to exclude progress documents:
 
 **Note**:
 - Progress documents (`.issync/docs/`) are synced via GitHub Issues and should not be tracked by git
-- The global config file (`~/.issync/state.yml`) is in your home directory and doesn't need to be git-ignored
+- The configuration file is in your home directory and doesn't need to be git-ignored
 
 ## Workflow for AI Agents
 

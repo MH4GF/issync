@@ -281,7 +281,7 @@ describe('config', () => {
   describe('loadConfig', () => {
     test('throws ConfigNotFoundError when state file does not exist', () => {
       // Act & Assert: Should throw custom error
-      expect(() => loadConfig(testDir)).toThrow('.issync/state.yml not found')
+      expect(() => loadConfig(testDir)).toThrow('Configuration not found')
     })
 
     test('loads config from state file', () => {

@@ -6,7 +6,7 @@ description: 新規タスクをGitHub Issueとして作成し、親issueとの�
 
 新規タスクをGitHub Issueとして作成し、以下を自動化：
 1. タスク概要決定（会話コンテキストから自動抽出 / 引数指定 / 対話入力）
-2. 親issue情報取得（`.issync/state.yml`）
+2. 親issue情報取得（設定ファイル）
 3. LLMによるタイトル・本文生成
 4. Issue作成（`ISSYNC_LABELS_AUTOMATION=true`の場合、`issync:plan`ラベル自動付与）
 5. Sub-issues API連携（親issue紐づけ + 順序維持）
@@ -34,7 +34,7 @@ description: 新規タスクをGitHub Issueとして作成し、親issueとの�
 
 ## 前提条件
 
-- `.issync/state.yml`存在（`issync init`完了済み）
+- issync設定が存在（`issync init`完了済み）
 - `ISSYNC_GITHUB_TOKEN`環境変数設定
 - `gh` CLIインストール済み
 - `ISSYNC_LABELS_AUTOMATION=true`設定時: リポジトリに`issync:plan`ラベルが存在すること
@@ -187,7 +187,7 @@ done
 
 **必須要件**:
 - ステップ1で環境変数を確認し、モードフラグを設定（以降のステップで参照）
-- 親issueの進捗ドキュメント全体読み込み（`.issync/state.yml`のlocal_fileパス使用）
+- 親issueの進捗ドキュメント全体読み込み（設定ファイルのlocal_fileパス使用）
 - タイトル・本文はLLM生成、ユーザー確認必須
 - gh CLI使用、内部ID使用（`gh api .../issues/{番号} --jq .id`）
 - `ISSYNC_LABELS_AUTOMATION=true`の場合、`issync:plan`ラベル自動付与

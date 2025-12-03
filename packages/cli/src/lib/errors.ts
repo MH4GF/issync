@@ -7,7 +7,7 @@ class IssyncError extends Error {
 
 export class ConfigNotFoundError extends IssyncError {
   constructor() {
-    super('.issync/state.yml not found. Run `issync init` first.')
+    super('Configuration not found. Run `issync init` first.')
     this.name = 'ConfigNotFoundError'
   }
 }
