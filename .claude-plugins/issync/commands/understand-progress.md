@@ -82,11 +82,15 @@ git log --oneline -20
 
 ✅ コンテキストを理解しました
 
-**ファイル**: <file_path>
+**ファイル**: <file_path> (<total_lines>行)
 **Issue**: <issue_url>
 **最終同期**: <last_synced_at>
 **Sub-issues**: <total_count>件（OPEN: <open_count>, CLOSED: <closed_count>）
 **プロジェクト状態**: <phase_and_progress_summary>
+
+[500行を超えている場合のみ表示]
+⚠️ **ドキュメントサイズ警告**: 500行を超えています
+`/compact-progress-document`で圧縮を推奨（テンプレート準拠、重複削減、完了タスク整理）
 
 次のアクション:
 - Open Questionsを確認し、必要に応じて解消
