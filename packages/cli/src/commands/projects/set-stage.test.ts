@@ -33,7 +33,7 @@ describe('setStage command', () => {
 
     await setStage({
       issueUrl: 'https://github.com/owner/repo/issues/123',
-      stage: 'In Progress',
+      stage: 'in_progress',
     })
 
     // Should log warning, not throw

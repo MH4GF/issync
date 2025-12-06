@@ -95,8 +95,8 @@ describe('GitHubProjectsClient.getProjectInfo', () => {
                   id: 'field-id-1',
                   name: 'Stage',
                   options: [
-                    { id: 'option-id-1', name: 'To Start' },
-                    { id: 'option-id-2', name: 'In Progress' },
+                    { id: 'option-id-1', name: 'to_start' },
+                    { id: 'option-id-2', name: 'in_progress' },
                   ],
                 },
               ],
@@ -119,8 +119,8 @@ describe('GitHubProjectsClient.getProjectInfo', () => {
           id: 'field-id-1',
           name: 'Stage',
           options: [
-            { id: 'option-id-1', name: 'To Start' },
-            { id: 'option-id-2', name: 'In Progress' },
+            { id: 'option-id-1', name: 'to_start' },
+            { id: 'option-id-2', name: 'in_progress' },
           ],
         },
       ],
@@ -175,7 +175,7 @@ describe('GitHubProjectsClient.getFieldId', () => {
                 {
                   id: 'field-id-stage',
                   name: 'Stage',
-                  options: [{ id: 'option-id-1', name: 'To Start' }],
+                  options: [{ id: 'option-id-1', name: 'to_start' }],
                 },
               ],
             },
@@ -248,8 +248,8 @@ describe('GitHubProjectsClient.getOptionId', () => {
                   id: 'field-id-stage',
                   name: 'Stage',
                   options: [
-                    { id: 'option-id-to-start', name: 'To Start' },
-                    { id: 'option-id-in-progress', name: 'In Progress' },
+                    { id: 'option-id-to-start', name: 'to_start' },
+                    { id: 'option-id-in-progress', name: 'in_progress' },
                   ],
                 },
               ],
@@ -263,7 +263,7 @@ describe('GitHubProjectsClient.getOptionId', () => {
     // @ts-expect-error - private field access for testing
     client.graphqlWithAuth = mockGraphql
 
-    const result = await client.getOptionId('Stage', 'In Progress')
+    const result = await client.getOptionId('Stage', 'in_progress')
 
     expect(result).toBe('option-id-in-progress')
   })
@@ -303,7 +303,7 @@ describe('GitHubProjectsClient.getOptionId', () => {
                 {
                   id: 'field-id-stage',
                   name: 'Stage',
-                  options: [{ id: 'option-id-to-start', name: 'To Start' }],
+                  options: [{ id: 'option-id-to-start', name: 'to_start' }],
                 },
               ],
             },

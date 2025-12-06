@@ -49,7 +49,7 @@ Stage→`In Progress`に設定。
 **Stage 設定コマンド**:
 
 ```bash
-issync projects set-stage "$ISSUE_URL" "In Progress"
+issync projects set-stage "$ISSUE_URL" "in_progress"
 ```
 
 ---
@@ -508,15 +508,15 @@ issync push
 
 ### ステップ11: Stage更新（レビュー待ち）
 
-Stage→`To Review`に設定。
+Stage→`to_review`に設定。
 
 **Stage 設定コマンド**:
 
 ```bash
-issync projects set-stage "$ISSUE_URL" "To Review"
+issync projects set-stage "$ISSUE_URL" "to_review"
 ```
 
-**重要**: 人間承認後、Status→`implement`、Stage→`To Start`を手動で変更。
+**重要**: 人間承認後、Status→`implement`、Stage→`to_start`を手動で変更。
 
 ---
 

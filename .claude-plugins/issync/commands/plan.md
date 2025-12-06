@@ -61,10 +61,10 @@ ISSYNC_LABELS_AUTOMATION               # ラベル自動付与モード ("true" 
 - **ケース B**: 進捗ドキュメント不存在 → 新規sync追加または `issync pull --issue <Issue URL>`
 - **ケース C**: 準備完了 → 次へ
 
-**Stage設定**: Projects連携モード有効時のみ、Stage→`In Progress`に設定。失敗時も処理継続。
+**Stage設定**: Projects連携モード有効時のみ、Stage→`in_progress`に設定。失敗時も処理継続。
 
 ```bash
-issync projects set-stage "$ISSUE_URL" "In Progress"
+issync projects set-stage "$ISSUE_URL" "in_progress"
 ```
 
 **エラーハンドリング**: スクリプトが自動処理。環境変数未設定・認証不足・プロジェクト未発見時は警告表示し処理継続。
@@ -174,10 +174,10 @@ Issue内容を理解し、不明点をユーザーに確認。
 issync push
 ```
 
-**Stage更新**: Projects連携モード有効時のみ、Stage→`To Review`に設定。失敗時も処理継続。
+**Stage更新**: Projects連携モード有効時のみ、Stage→`to_review`に設定。失敗時も処理継続。
 
 ```bash
-issync projects set-stage "$ISSUE_URL" "To Review"
+issync projects set-stage "$ISSUE_URL" "to_review"
 ```
 
 ### ステップ8: GitHub Projects Status & Stage自動変更 & ラベル付与
@@ -185,11 +185,11 @@ issync projects set-stage "$ISSUE_URL" "To Review"
 Projects連携モード有効時のみ、StatusとStageを自動変更。
 
 **Status決定**: Open Questionsに自信度低(🔴)あり → `poc` / なし → `implement`
-**Stage**: 常に `To Start`
+**Stage**: 常に `to_start`
 
 ```bash
 issync projects set-status "$ISSUE_URL" "<poc または implement>"
-issync projects set-stage "$ISSUE_URL" "To Start"
+issync projects set-stage "$ISSUE_URL" "to_start"
 ```
 
 **ラベル自動付与**: ラベル自動付与モード有効時、Statusに応じたラベルを付与。

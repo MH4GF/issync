@@ -125,7 +125,7 @@ openの場合のみ実行。コメントにPR/コミット情報を含める。
 サブissueのStatusを"Done"に更新:
 
 ```bash
-issync projects set-status "$SUB_ISSUE_URL" "Done"
+issync projects set-status "$SUB_ISSUE_URL" "done"
 ```
 
 環境変数未設定時は警告メッセージが出力されるが、処理は継続される。
