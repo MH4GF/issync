@@ -189,6 +189,8 @@ Open Questionsを解消し、Decision LogとSpecificationを自動更新。ユ�
 issync/
 ├── .claude-plugin/
 │   └── plugin.json                 # Pluginメタデータ
+├── agents/
+│   └── codebase-explorer.md        # コードベース調査エージェント
 ├── commands/
 │   ├── plan.md                     # plan実行コマンド
 │   ├── poc.md                      # POC調査フェーズ自動化コマンド
@@ -200,6 +202,28 @@ issync/
 │   └── complete-sub-issue.md       # サブissue完了コマンド
 └── README.md                       # このファイル
 ```
+
+### Agent Architecture
+
+この plugin は内部で再利用可能な agent を使用して、複雑なタスクを分解します。
+
+**Commands と Agents の関係:**
+- **Commands**: ユーザー向けワークフローを定義（`/issync:plan` など）
+- **Agents**: Commands が Task tool で呼び出す専門エージェント
+
+**現在の Agent:**
+
+| Agent | 用途 | 呼び出し元 |
+|-------|------|-----------|
+| `codebase-explorer` | 実装パターン、アーキテクチャ、依存関係を調査 | `/issync:plan` ステップ3 |
+
+**Agent の設計原則:**
+- **汎用的なフレームワーク**: 4つの分析観点（Feature Discovery, Code Flow Tracing, Architecture Analysis, Implementation Details）を常に適用
+- **柔軟な調査対象**: 親コマンドが調査対象を指示し、エージェントが適切なフォーカスを判断
+- **並列実行**: 単一メッセージで複数の Task tool 呼び出しにより並列調査が可能
+- **構造化された出力**: 進捗ドキュメントの「Discoveries & Insights」に直接貼り付け可能
+
+Agent は直接呼び出すものではなく、コマンドが内部で Task tool 経由で使用します。
 
 ### Plugin 開発
 

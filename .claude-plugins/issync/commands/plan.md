@@ -58,36 +58,99 @@ Issue内容を理解し、不明点をユーザーに確認。
 
 ⚠️ **最重要**: Open Questions記載前に必ず調査してください。
 
-**調査項目**:
-- 類似機能・既存の実装パターン
-- 使用している技術スタック・ライブラリ
-- テストコードの存在と構造
-  - **プロジェクトのテスト戦略を理解する**:
-    - 使用しているテストフレームワーク（単体テスト、統合テスト、E2E）
-    - 既存のテストパターン（ファイル配置、命名規則、カバレッジ）
-    - UIコンポーネントの検証方法（Storybook等の有無）
-- 関連ファイル・モジュール
-- ドキュメント（README、CLAUDE.md、進捗ドキュメント等）
+**調査アプローチの決定**:
 
-**調査方法** (状況に応じて選択):
+Issue内容を分析し、調査の複雑度と必要な調査対象を判定:
+- **Simple (1 agent)**: 既存機能の小さな拡張 → 類似機能の実装パターンのみ調査
+- **Moderate (2 agents)**: 新機能追加 → 類似機能 + テスト戦略を調査
+- **Complex (3 agents)**: アーキテクチャ変更 → 類似機能 + テスト戦略 + 技術スタックを調査
+
+**調査実行（Task toolによる並列実行）**:
+
+**重要**: 必ず**単一メッセージで複数のTask tool呼び出し**を行うこと。
+
+各エージェントに異なる調査対象を指示（フォーカスエリアはエージェントが柔軟に判断）:
+
 ```
-ファイル・コード探索:
-  Glob: **/*[関連するキーワード]*
-  Grep: "関連する関数名やクラス名"
-  Read: README.md, CLAUDE.md, docs/
+# Agent 1: 類似機能の実装パターンを調査
+Task(
+  subagent_type="general-purpose",
+  description="Find similar features and trace implementation patterns",
+  prompt="""You are executing the codebase-explorer agent.
+Read and follow: .claude-plugins/issync/agents/codebase-explorer.md
 
-設定ファイル確認:
-  Read: package.json, pyproject.toml, Cargo.toml等
+**調査対象**: [Issue機能]に類似する既存機能を見つけ、その実装パターンを包括的にトレースしてください。
 
-テストファイル確認:
-  Glob: **/*.test.*, **/*.spec.*, **/*_test.*, test/**/*
+**Investigation Context**:
+- Issue: [Issue URL]
+- Issue Title: [タイトル]
+- Issue Description: [要約]
 
-実行による確認(必要に応じて):
-  Bash: [テストコマンド/リントコマンド/ビルドコマンド等]
-  ※ 実際のコマンドはプロジェクトの設定ファイルやREADMEから判断
+コードを包括的にトレースし、アーキテクチャ、抽象化、制御フローの理解に集中してください。
+必ず5-10個の重要なファイルリストを含めてください。"""
+)
+
+# Agent 2: アーキテクチャと抽象化をマッピング（Moderate以上）
+Task(
+  subagent_type="general-purpose",
+  description="Map architecture and abstractions for the feature area",
+  prompt="""You are executing the codebase-explorer agent.
+Read and follow: .claude-plugins/issync/agents/codebase-explorer.md
+
+**調査対象**: [関連領域]のアーキテクチャと抽象化をマッピングし、コードを包括的にトレースしてください。
+
+**Investigation Context**:
+- Issue: [Issue URL]
+- Issue Title: [タイトル]
+
+テスト戦略、UIパターン、拡張ポイントなど、[Issue機能]に関連するパターンを特定してください。
+必ず5-10個の重要なファイルリストを含めてください。"""
+)
+
+# Agent 3: 現在の実装を分析（Complexのみ）
+Task(
+  subagent_type="general-purpose",
+  description="Analyze current implementation of related area",
+  prompt="""You are executing the codebase-explorer agent.
+Read and follow: .claude-plugins/issync/agents/codebase-explorer.md
+
+**調査対象**: [既存機能/領域]の現在の実装を分析し、コードを包括的にトレースしてください。
+
+**Investigation Context**:
+- Issue: [Issue URL]
+- Issue Title: [タイトル]
+
+依存関係、技術スタック、制約などを特定してください。
+必ず5-10個の重要なファイルリストを含めてください。"""
+)
 ```
 
-**記録**: 発見内容をDiscoveries & Insightsセクションに記録
+**調査結果の集約**:
+
+1. 各エージェントの調査結果を確認
+2. **エージェントが特定した全ファイルを読んで深い理解を構築**
+3. 重複する発見を統合、矛盾があれば優先順位付け
+4. 統合結果を「Discoveries & Insights」セクションに記録:
+
+```markdown
+## Discoveries & Insights
+
+### Investigation Summary (YYYY-MM-DD)
+
+**調査した観点**: [調査対象1] / [調査対象2] / [調査対象3]
+
+[Agent 1の調査結果をペースト]
+
+[Agent 2の調査結果をペースト（存在する場合）]
+
+[Agent 3の調査結果をペースト（存在する場合）]
+
+### Synthesis & Key Takeaways
+
+**Primary Pattern to Follow**: [最も重要なパターン]
+**Test Strategy**: [テスト戦略のサマリー]
+**Constraints**: [実装上の制約]
+```
 
 ### ステップ4: 基本セクションの記入
 
