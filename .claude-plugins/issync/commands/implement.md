@@ -78,6 +78,31 @@ description: 進捗ドキュメントに基づいた実装を進め、作業中�
 
 プロジェクト固有のコマンドは`CLAUDE.md`や`package.json`を参照。テスト失敗時はエラーを修正して再実行。
 
+### ステップ5.5: コードレビュー（品質ゲート）
+
+全テストが通った後、変更をステージングし、3つの観点で並列レビュー:
+
+```bash
+git add <実装ファイル>
+```
+
+**3つのTask toolを単一メッセージで並列呼び出し**:
+
+| subagent_type | description | prompt（観点） |
+|---------------|-------------|----------------|
+| code-reviewer | Review for simplicity | 【観点: コードの簡潔性】'Less is More' 原則、DRY違反、不要な複雑さ |
+| code-reviewer | Review for bugs/security | 【観点: バグ・セキュリティ】Null/undefined処理、エラーハンドリング、脆弱性 |
+| code-reviewer | Review for conventions | 【観点: プロジェクト規約】Biomeルール、テストカバレッジ、命名規則 |
+
+エージェントはJSON形式で信頼度80+の問題のみ報告（詳細は`code-reviewer`エージェント定義参照）。
+
+**結果に基づくアクション**:
+- **Fix Now**: 指摘事項を修正 → ステップ5に戻る
+- **Defer to Follow-up**: `Follow-up Issues`に追加 → ステップ6へ
+- **Skip Review**: 無視 → ステップ6へ（Critical Issues時は警告）
+
+**エッジケース**: 変更なし/全パス → ステップ6へ、エージェントエラー → リトライ or スキップ
+
 ### ステップ6: 変更のコミット
 
 機能の実装が完了し、全てのテストが通ったら、変更をコミットしてください。
