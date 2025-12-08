@@ -115,7 +115,15 @@ Issue内容を理解し、不明点をユーザーに確認。
 - Context & Direction
 - Validation & Acceptance Criteria
   - **シナリオ形式で記述**（実装軸NG: 「関数実装」→ OK: 「操作すると結果表示」）
-  - **各ACに必ずテスト方法記載**（ステップ4調査結果に基づく）
+  - **各ACに必ず検証方法を記載**（ステップ4調査結果に基づく）
+  - **CRITICAL: 検証方法は必ずBashツールで実行可能なコマンドとして定義**
+    - AIエージェントが自動実行できる形式にする
+    - exit code 0 = 成功、非0 = 失敗で判定可能にする
+  - **検証方法の優先順位**:
+    1. 既存テストフレームワーク（Vitest/Jest/Bun Test等）- `bun test watch.test.ts`
+    2. E2Eフレームワーク（Playwright等）- `pnpm test:e2e` - ブラウザ検証が必要な場合
+    3. シェルスクリプト - `tsx scripts/verify.ts` - 継続的テスト化が困難な場合のみ（最終手段）
+  - **目的**: 実装完了の明確な基準を設ける。全検証コマンドが成功 = 実装完了
   - **テスト困難な場合**: メモし、ステップ6でOpen Questionsへ
 
 **記入不要**（サンプル維持）: Specification, Decision Log, Outcomes & Retrospectives
