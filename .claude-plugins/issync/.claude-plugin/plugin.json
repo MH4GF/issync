@@ -1,6 +1,6 @@
 {
   "name": "issync",
-  "description": "矛盾解消駆動開発のためのツール群: plan実行(/plan)、POC調査(/poc)、進捗ドキュメント圧縮(/compact-progress-document)、Open Questions解消(/resolve-questions)、実装フェーズ(/implement)、タスクのサブissue化と順序管理(/create-sub-issue)、サブissue完了(/complete-sub-issue)、進捗ドキュメント読み込み(/understand-progress)",
+  "description": "矛盾解消駆動開発のためのツール群: 全フェーズ統合実行(/develop)、plan実行(/plan)、POC調査(/poc)、進捗ドキュメント圧縮(/compact-progress-document)、Open Questions解消(/resolve-questions)、実装フェーズ(/implement)、タスクのサブissue化と順序管理(/create-sub-issue)、サブissue完了(/complete-sub-issue)、進捗ドキュメント読み込み(/understand-progress)",
   "version": "0.10.0",
   "author": {
     "name": "MH4GF"
