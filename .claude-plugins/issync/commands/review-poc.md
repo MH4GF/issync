@@ -472,7 +472,7 @@ graph TD
 - Grace period: pullから10秒間はpushを抑制（ループ防止）
 
 **実装方針**:
-- Daemon processとして実行、PIDを.issync/state.ymlに記録
+- Daemon processとして実行、PIDを設定ファイルに記録
 - Graceful shutdown（SIGTERM/SIGINT）に対応
 - エラーリトライ: 3回まで、指数バックオフ（POCでは未実装、本実装で追加）
 ```
