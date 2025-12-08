@@ -71,8 +71,6 @@ GitHub Issue を単一の真実の情報源として、進捗ドキュメント�
     ↓
 /issync:poc (poc) - 調査・検証フェーズ
     ↓
-/issync:review-poc (architecture-decision)
-    ↓
 人間のレビュー・承認
     ↓
 /issync:implement (implement)
@@ -107,16 +105,6 @@ GitHub Issueから全コンテキストを自動収集し、進捗ドキュメ�
 **使い方:** `/issync:poc` | `/issync:poc https://github.com/owner/repo/issues/123` | `/issync:poc 123`
 
 詳細は`commands/poc.md`を参照。
-
----
-
-### `/issync:review-poc` - POC レビュー
-
-POC完了後、得た知見を分析し、意思決定のための材料を整理（POC PR情報取得、Acceptance Criteria検証、Discoveries & Insights追記、Open Questions強化、Decision Log推奨案記入、POC PRクローズを一括実行）。
-
-**使い方:** `/issync:review-poc https://github.com/owner/repo/pull/123`
-
-詳細は`commands/review-poc.md`を参照。
 
 ---
 
@@ -208,7 +196,6 @@ issync/
 ├── commands/
 │   ├── plan.md                     # plan実行コマンド
 │   ├── poc.md                      # POC調査フェーズ自動化コマンド
-│   ├── review-poc.md               # POCレビューコマンド
 │   ├── compact-progress-document.md # 進捗ドキュメント圧縮コマンド
 │   ├── resolve-questions.md        # Open Questions解消コマンド
 │   ├── implement.md                # 実装フェーズ自動化コマンド
@@ -225,7 +212,6 @@ issync/
 1. コマンドプロンプトを編集:
    - `/issync:plan`: `commands/plan.md`
    - `/issync:poc`: `commands/poc.md`
-   - `/issync:review-poc`: `commands/review-poc.md`
    - `/issync:compact-progress-document`: `commands/compact-progress-document.md`
    - `/issync:resolve-questions`: `commands/resolve-questions.md`
    - `/issync:implement`: `commands/implement.md`

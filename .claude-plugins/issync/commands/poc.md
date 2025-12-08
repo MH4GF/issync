@@ -21,7 +21,7 @@ description: 自信度を上げるための調査・検証を中心に行い、�
 - 進捗ドキュメントの`Open Questions`や`Context & Direction`に基づいて調査・検証を進める
 - **実装は破棄される前提** - コードよりも知見の獲得が目的
 - 調査中の発見や疑問を常に進捗ドキュメントに記録（Single Source of Truth維持）
-- 最終的にPOC PRを作成し、人間がレビュー後に`/issync:review-poc`で知見を整理
+- 最終的にPOC PRを作成し、人間がレビュー
 
 ## 前提条件
 
@@ -133,7 +133,7 @@ gh pr create --title "POC: <検証内容>" --body "$(cat <<'EOF'
 <Discoveries & Insightsのサマリー>
 
 ## 次のステップ
-- [ ] PRレビュー後、`/issync:review-poc`で知見を整理
+- [ ] PRレビュー後、知見を整理
 - [ ] アーキテクチャ決定後、このPRはクローズされます
 
 🤖 Generated with [Claude Code](https://claude.com/claude-code)
@@ -160,7 +160,7 @@ EOF
 
 ### 次のアクション
 - [ ] POC PR (<PR URL>) をレビュー
-- [ ] `/issync:review-poc <PR URL>`で知見を整理
+- [ ] 知見を整理
 - [ ] アーキテクチャ決定後、PRをクローズ
 ```
 
@@ -179,11 +179,9 @@ EOF
 ```
 /issync:poc → 調査・検証 → ドキュメント更新 → POC PR作成
    ↓
-人間がPRレビュー
+人間がPRレビュー → 知見整理 → 意思決定・承認
    ↓
-/issync:review-poc → 知見整理 → Decision Log推奨案
-   ↓
-人間が意思決定・承認 → PRクローズ → Status変更(`implement`)
+PRクローズ → Status変更(`implement`)
    ↓
 /issync:implement（本実装）
 ```
