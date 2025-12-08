@@ -43,9 +43,9 @@ create-sub-issue → plan → resolve-questions → implement の開発ワーク
 **目標**: 進捗ドキュメント内のすべてのOpen Questionsをユーザーと協力して解決する
 
 **アクション**:
-- `/issync:resolve-questions` を実行してください
-- このコマンドは自動的にAskUserQuestionを使用して各質問に対するユーザーの意思決定を収集します
-- すべての質問が解決されるまで待機してください
+- 進捗ドキュメントのOpen Questionsセクションから未解決の質問を抽出してユーザーに提示してください
+- AskUserQuestionを使用して各質問に対するユーザーの意思決定を収集してください
+- 収集した回答を引数として `/issync:resolve-questions` を実行してください
 
 **出力**: 解消した質問の数と更新されたセクションを表示してください
 
