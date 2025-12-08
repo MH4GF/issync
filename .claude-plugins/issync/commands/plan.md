@@ -4,16 +4,15 @@ description: planフェーズのプロセスを標準化し、コードベース
 
 # /issync:plan: plan実行ワークフロー
 
-進捗ドキュメント（`.issync/docs/plan-{番号}-{slug}.md`）を初期作成するコマンドです。以下の8ステップを自動化します：
+進捗ドキュメント（`.issync/docs/plan-{番号}-{slug}.md`）を初期作成するコマンドです。以下の7ステップを自動化します：
 
-1. 環境変数確認 & モード決定
-2. 前提条件確認 & ファイル名決定 & issync init実行 & Stage設定（In Progress）
-3. GitHub Issue内容の確認
-4. コードベース調査（CRITICAL）
-5. 基本セクションの記入
-6. Open Questionsの精査
-7. issync pushで同期 & Stage更新（To Review）
-8. GitHub Projects Status & Stage自動変更（自信度低あり → poc / なし → implement, Stage → To Start）
+1. 前提条件確認 & ファイル名決定 & issync init実行 & Stage設定（In Progress）
+2. GitHub Issue内容の確認
+3. コードベース調査（CRITICAL）
+4. 基本セクションの記入
+5. Open Questionsの精査
+6. issync pushで同期 & Stage更新（To Review）
+7. GitHub Projects Status & Stage自動変更 & ラベル付与（自信度低あり → poc / なし → implement, Stage → To Start）
 
 **Note**: Template v7では、Tasksセクションが削除されています。タスクは `/issync:create-sub-issue` コマンドで作成します。
 
@@ -32,25 +31,7 @@ description: planフェーズのプロセスを標準化し、コードベース
 
 ## 実行ステップ
 
-### ステップ1: 環境変数確認 & モード決定
-
-ラベル自動付与の有効化状態を確認し、以降のステップで使用するモードフラグを設定。
-
-**環境変数**:
-```bash
-ISSYNC_LABELS_AUTOMATION               # ラベル自動付与モード ("true" で有効)
-```
-
-**モード決定**:
-- **ラベル自動付与**: `ISSYNC_LABELS_AUTOMATION="true"`で有効 (未設定時はステップ8のラベル付与をスキップ)
-
-**出力**: 設定状態をユーザーに表示
-```markdown
-## Environment Check
-**Label Automation**: {有効/無効}
-```
-
-### ステップ2: 前提条件確認 & ファイル名決定 & issync init & Stage設定
+### ステップ1: 前提条件確認 & ファイル名決定 & issync init & Stage設定
 
 **ファイル名決定**:
 1. Issue URLを確認（例: `https://github.com/owner/repo/issues/123`）
@@ -69,11 +50,11 @@ issync projects set-stage "$ISSUE_URL" "in_progress"
 
 **エラーハンドリング**: スクリプトが自動処理。環境変数未設定・認証不足・プロジェクト未発見時は警告表示し処理継続。
 
-### ステップ3: GitHub Issue内容の確認
+### ステップ2: GitHub Issue内容の確認
 
 Issue内容を理解し、不明点をユーザーに確認。
 
-### ステップ4: コードベース調査（CRITICAL）
+### ステップ3: コードベース調査（CRITICAL）
 
 ⚠️ **最重要**: Open Questions記載前に必ず調査してください。
 
@@ -108,7 +89,7 @@ Issue内容を理解し、不明点をユーザーに確認。
 
 **記録**: 発見内容をDiscoveries & Insightsセクションに記録
 
-### ステップ5: 基本セクションの記入
+### ステップ4: 基本セクションの記入
 
 テンプレートに従い記入：
 - Purpose/Overview
@@ -124,11 +105,11 @@ Issue内容を理解し、不明点をユーザーに確認。
     2. E2Eフレームワーク（Playwright等）- `pnpm test:e2e` - ブラウザ検証が必要な場合
     3. シェルスクリプト - `tsx scripts/verify.ts` - 継続的テスト化が困難な場合のみ（最終手段）
   - **目的**: 実装完了の明確な基準を設ける。全検証コマンドが成功 = 実装完了
-  - **テスト困難な場合**: メモし、ステップ6でOpen Questionsへ
+  - **テスト困難な場合**: メモし、ステップ5でOpen Questionsへ
 
 **記入不要**（サンプル維持）: Specification, Decision Log, Outcomes & Retrospectives
 
-### ステップ6: Open Questionsの精査
+### ステップ5: Open Questionsの精査
 
 **記載基準**:
 
@@ -174,7 +155,7 @@ Issue内容を理解し、不明点をユーザーに確認。
   - トレードオフ: [実行時間やメンテナンス性の問題]
 ```
 
-### ステップ7: GitHub Issueへの同期 & Stage更新
+### ステップ6: GitHub Issueへの同期 & Stage更新
 
 進捗ドキュメントをGitHub Issueに同期。
 
@@ -188,7 +169,7 @@ issync push
 issync projects set-stage "$ISSUE_URL" "to_review"
 ```
 
-### ステップ8: GitHub Projects Status & Stage自動変更 & ラベル付与
+### ステップ7: GitHub Projects Status & Stage自動変更 & ラベル付与
 
 Projects連携モード有効時のみ、StatusとStageを自動変更。
 
@@ -200,7 +181,7 @@ issync projects set-status "$ISSUE_URL" "<poc または implement>"
 issync projects set-stage "$ISSUE_URL" "to_start"
 ```
 
-**ラベル自動付与**: ラベル自動付与モード有効時、Statusに応じたラベルを付与。
+**ラベル自動付与**: Statusに応じたラベルを常に付与。
 
 ```bash
 # Status=poc の場合
@@ -210,7 +191,7 @@ gh issue edit $ISSUE_NUMBER --add-label "issync:poc"
 gh issue edit $ISSUE_NUMBER --add-label "issync:implement"
 ```
 
-**エラー時**: ステップ2のエラーハンドリングと同様。
+**エラー時**: ステップ1のエラーハンドリングと同様。
 
 ## 出力フォーマット
 
@@ -232,9 +213,9 @@ gh issue edit $ISSUE_NUMBER --add-label "issync:implement"
 ### Next Steps
 1. Review document on GitHub and resolve Open Questions
 2. {自信度低の項目がある場合} Start POC to validate {具体的な検証項目（例: "performance impact of polling approach", "feasibility of GraphQL mutation")}
-   {ISSYNC_LABELS_AUTOMATION=trueの場合} `issync:poc` label added → Devin will auto-start
+   `issync:poc` label added → Auto-plan workflow triggered
 3. {自信度低の項目がない場合} Create sub-issues with `/issync:create-sub-issue` and begin implementation
-   {ISSYNC_LABELS_AUTOMATION=trueの場合} `issync:implement` label added → Devin will auto-start
+   `issync:implement` label added → Auto-plan workflow triggered
 
 **Status**: plan → {自信度低あり: poc / なし: implement} (Stage: To Start)
 ```
@@ -243,8 +224,7 @@ gh issue edit $ISSUE_NUMBER --add-label "issync:implement"
 
 ## 重要な注意事項
 
-- **環境変数確認**: ステップ1を必ず実行し、モードフラグに基づいて各ステップの処理を制御する
-- **コードベース調査**: ステップ4を省略しない（省略すると不要なOpen Questionsが大量発生）
+- **コードベース調査**: ステップ3を省略しない（省略すると不要なOpen Questionsが大量発生）
 - **Open Questions**: コードで確認可能な情報は記載しない、5-10項目に絞る
 
 ## 補足: ステートマシンとの統合
@@ -253,44 +233,41 @@ gh issue edit $ISSUE_NUMBER --add-label "issync:implement"
 ```
 GitHub Issue作成（Status: plan, Stage: To Start）
    ↓
-/plan実行開始 → ステップ1: 環境変数確認 & モード決定
+/plan実行開始
    ↓
-ステップ2: Stage自動変更（To Start → In Progress）※GitHub Projects連携モード有効時のみ
+ステップ1: Stage自動変更（To Start → In Progress）※GitHub Projects連携モード有効時のみ
    ↓
-ステップ3-6: コードベース調査 → 進捗ドキュメント作成 → 自信度低(🔴)の項目を検出
+ステップ2-5: コードベース調査 → 進捗ドキュメント作成 → 自信度低(🔴)の項目を検出
    ↓
-ステップ7: issync push → Stage自動変更（In Progress → To Review）※GitHub Projects連携モード有効時のみ
+ステップ6: issync push → Stage自動変更（In Progress → To Review）※GitHub Projects連携モード有効時のみ
    ↓
-ステップ8: Status & Stage自動変更（Status: plan → poc, Stage: To Review → To Start）※GitHub Projects連携モード有効時のみ
+ステップ7: Status & Stage自動変更（Status: plan → poc, Stage: To Review → To Start）※GitHub Projects連携モード有効時のみ
    ↓
-ステップ8: issync:pocラベル自動付与 ※ラベル自動付与モード有効時のみ
+ステップ7: issync:pocラベル自動付与
    ↓
-人間レビュー → {ラベルなし} POC開始（Devin起動）
-             → {ラベルあり} Devin自動起動
+人間レビュー → POC開始（Devin起動） または Devin自動起動
 ```
 
 **ワークフロー（自信度低の項目がない場合）**:
 ```
 GitHub Issue作成（Status: plan, Stage: To Start）
    ↓
-/plan実行開始 → ステップ1: 環境変数確認 & モード決定
+/plan実行開始
    ↓
-ステップ2: Stage自動変更（To Start → In Progress）※GitHub Projects連携モード有効時のみ
+ステップ1: Stage自動変更（To Start → In Progress）※GitHub Projects連携モード有効時のみ
    ↓
-ステップ3-6: コードベース調査 → 進捗ドキュメント作成 → 自信度低の項目なし
+ステップ2-5: コードベース調査 → 進捗ドキュメント作成 → 自信度低の項目なし
    ↓
-ステップ7: issync push → Stage自動変更（In Progress → To Review）※GitHub Projects連携モード有効時のみ
+ステップ6: issync push → Stage自動変更（In Progress → To Review）※GitHub Projects連携モード有効時のみ
    ↓
-ステップ8: Status & Stage自動変更（Status: plan → implement, Stage: To Review → To Start）※GitHub Projects連携モード有効時のみ
+ステップ7: Status & Stage自動変更（Status: plan → implement, Stage: To Review → To Start）※GitHub Projects連携モード有効時のみ
    ↓
-ステップ8: issync:implementラベル自動付与 ※ラベル自動付与モード有効時のみ
+ステップ7: issync:implementラベル自動付与
    ↓
-人間レビュー → {ラベルなし} サブissue作成 → 実装開始（Devin起動）
-             → {ラベルあり} Devin自動起動
+人間レビュー → サブissue作成 → 実装開始（Devin起動） または Devin自動起動
 ```
 
 **重要**:
-- ステップ1で2つのモード（Projects連携、ラベル自動付与）の有効/無効を決定
 - Projects連携モード有効時のみ、StatusとStageを自動変更（人間の手動変更不要）
 - Status変更で次フェーズを明示（poc = PoC検証、implement = サブissue作成・実装）
-- ラベル自動付与モード有効時、Statusに応じたラベルを自動付与（`issync:poc` または `issync:implement`）→ Devinが自動起動
+- Statusに応じたラベルを常に自動付与（`issync:poc` または `issync:implement`）→ Devinが自動起動

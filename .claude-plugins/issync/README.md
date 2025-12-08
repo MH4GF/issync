@@ -19,13 +19,9 @@ GitHub Issue を単一の真実の情報源として、進捗ドキュメント�
    export ISSYNC_GITHUB_PROJECTS_NUMBER=1  # プロジェクト番号
    export ISSYNC_GITHUB_PROJECTS_OWNER=organization-name  # 組織名
    ```
-6. **ラベル自動化** (オプション):
-   ```bash
-   export ISSYNC_LABELS_AUTOMATION=true
-   ```
-   - サブissue作成時に`issync:plan`ラベルを自動付与
+6. **ラベル自動付与**:
+   - サブissue作成時に`issync:plan`ラベルを常に自動付与
    - auto-planワークフローが自動実行され、進捗ドキュメントが自動作成される
-   - リポジトリに`issync:plan`ラベルを事前作成すること
 
 ### インストール
 

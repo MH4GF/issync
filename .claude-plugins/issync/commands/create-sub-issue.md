@@ -8,7 +8,7 @@ description: 新規タスクをGitHub Issueとして作成し、親issueとの�
 1. タスク概要決定（会話コンテキストから自動抽出 / 引数指定 / 対話入力）
 2. 親issue情報取得（設定ファイル）
 3. LLMによるタイトル・本文生成
-4. Issue作成（`ISSYNC_LABELS_AUTOMATION=true`の場合、`issync:plan`ラベル自動付与）
+4. Issue作成（`issync:plan`ラベル自動付与）
 5. Sub-issues API連携（親issue紐づけ + 順序維持）
 
 ## コンテキスト
@@ -37,48 +37,29 @@ description: 新規タスクをGitHub Issueとして作成し、親issueとの�
 - issync設定が存在（`issync init`完了済み）
 - `ISSYNC_GITHUB_TOKEN`環境変数設定
 - `gh` CLIインストール済み
-- `ISSYNC_LABELS_AUTOMATION=true`設定時: リポジトリに`issync:plan`ラベルが存在すること
 
 ## 実行ステップ
 
-### ステップ1: 環境変数確認 & モード決定
-
-ラベル自動付与の有効化状態を確認し、以降のステップで使用するモードフラグを設定。
-
-**環境変数**:
-```bash
-ISSYNC_LABELS_AUTOMATION               # ラベル自動付与モード ("true" で有効)
-```
-
-**モード決定**:
-- **ラベル自動付与**: `ISSYNC_LABELS_AUTOMATION="true"`で有効 (未設定時はステップ6のラベル付与をスキップ)
-
-**出力**: 設定状態をユーザーに表示
-```markdown
-## Environment Check
-**Label Automation**: {有効/無効}
-```
-
-### ステップ2: タスク概要の決定
+### ステップ1: タスク概要の決定
 
 - **会話コンテキストモード**: 引数なし時、LLMが会話から1つ以上のタスク概要を抽出し、プレビュー表示
 - **引数モード**: コマンドライン引数から複数取得
 - **対話入力モード（フォールバック）**: 会話コンテキストがない場合、プロンプトで概要を1つ入力
 
-### ステップ3: 親issue情報を取得
+### ステップ2: 親issue情報を取得
 
 `issync status <親issue URL>`を実行し、以下を取得:
 - `issue_url`: 親issueのURL
 - `local_file`: 進捗ドキュメントのパス
 
-### ステップ4: 親issueコンテキスト抽出
+### ステップ3: 親issueコンテキスト抽出
 
 進捗ドキュメント全体を読み込み、LLMが以下を理解:
 - Purpose/Overview: 目的、コアバリュー
 - Context & Direction: 背景、設計哲学
 - Specification: 仕様、アーキテクチャ（存在時）
 
-### ステップ5: タイトル・本文生成
+### ステップ4: タイトル・本文生成
 
 **タイトル**: 「{動詞} + {対象}」形式、10-30文字、親issueのスタイルに合わせる
 
@@ -102,7 +83,7 @@ Part of #{親issue番号}
 - 詳細: [親issueを見る]({親issueのURL})
 ```
 
-### ステップ5.5: 既存issueの重複チェック
+### ステップ4.5: 既存issueの重複チェック
 
 類似タスクが既に存在しないか検索し、重複作成を防ぐ。
 
@@ -126,15 +107,14 @@ gh search issues --repo {owner}/{repo} "{キーワード1} {キーワード2}" \
 
 **エラー時**: 警告表示後、検索スキップして続行
 
-### ステップ6: ユーザー確認
+### ステップ5: ユーザー確認
 
 生成したタイトル・本文プレビューを提示し、承認後に作成（`y`/`n`）
 
-### ステップ7: Issue作成とSub-issues連携
+### ステップ6: Issue作成とSub-issues連携
 
 **ラベル付与**:
-ステップ1で確認したラベル自動付与モードが有効な場合、`--label "issync:plan"`を付与してissue作成。
-未設定の場合はラベルなしで作成。
+`--label "issync:plan"`を付与してissue作成。
 
 **処理フロー**:
 ```bash
@@ -143,8 +123,8 @@ for i in "${!GENERATED_TITLES[@]}"; do
   TITLE="${GENERATED_TITLES[$i]}"
   BODY="${GENERATED_BODIES[$i]}"
 
-  # ISSYNC_LABELS_AUTOMATIONに応じてラベル付与
-  ISSUE_URL=$(gh issue create --repo {owner}/{repo} --title "$TITLE" --body "$BODY")
+  # issync:planラベル付与
+  ISSUE_URL=$(gh issue create --repo {owner}/{repo} --title "$TITLE" --body "$BODY" --label "issync:plan")
   ISSUE_NUMBER=$(echo $ISSUE_URL | grep -o '[0-9]*$')
   SUB_ISSUE_ID=$(gh api /repos/{owner}/{repo}/issues/$ISSUE_NUMBER --jq .id)
 
@@ -167,7 +147,7 @@ EOF
 done
 ```
 
-### ステップ8: GitHub Projects Status設定（オプション）
+### ステップ7: GitHub Projects Status設定（オプション）
 
 `gh issue edit`でStatus=planを設定（利用不可時は手動設定を案内）
 
@@ -176,21 +156,17 @@ done
 完了後、以下を表示:
 - 作成されたサブissueリスト（URL、タイトル）
 - Sub-issues紐づけ結果
-- `ISSYNC_LABELS_AUTOMATION=true`の場合:
-  - `issync:plan`ラベル付与確認
-  - **auto-planワークフロー自動実行**のため、手動`/issync:plan`実行不要
-  - GitHub Actionsタブで実行状況確認可能
-- 未設定の場合:
-  - 手動で`/issync:plan`実行が必要
+- `issync:plan`ラベル付与確認
+- **auto-planワークフロー自動実行**のため、手動`/issync:plan`実行不要
+- GitHub Actionsタブで実行状況確認可能
 
 ## 重要な注意事項
 
 **必須要件**:
-- ステップ1で環境変数を確認し、モードフラグを設定（以降のステップで参照）
 - 親issueの進捗ドキュメント全体読み込み（設定ファイルのlocal_fileパス使用）
 - タイトル・本文はLLM生成、ユーザー確認必須
 - gh CLI使用、内部ID使用（`gh api .../issues/{番号} --jq .id`）
-- `ISSYNC_LABELS_AUTOMATION=true`の場合、`issync:plan`ラベル自動付与
+- `issync:plan`ラベルを常に自動付与
   - auto-planワークフローが自動トリガーされ、進捗ドキュメントが自動作成される
 
 **Sub-issues API**:
@@ -206,9 +182,9 @@ done
 **会話コンテキストモード**: `/issync:create-sub-issue`
 1. LLMが会話から"Status変更時の自動アクション"を抽出
 2. タイトル生成（例: "Status変更時の自動アクション機能を設計"）
-3. ユーザー確認 → Issue作成
-4. `ISSYNC_LABELS_AUTOMATION=true`: auto-planワークフロー自動実行
+3. ユーザー確認 → Issue作成（`issync:plan`ラベル付与）
+4. auto-planワークフロー自動実行
 
 **引数モード**: `/issync:create-sub-issue "自動アクション設計" "コマンド実装"`
 1. 複数タスク一括作成、Sub-issues順序維持
-2. `ISSYNC_LABELS_AUTOMATION=true`: 各サブissueで自動実行
+2. 各サブissueでauto-planワークフロー自動実行
