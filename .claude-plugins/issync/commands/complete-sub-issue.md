@@ -32,9 +32,22 @@ GitHub Sub-issues API (`gh api /repos/{owner}/{repo}/issues/{issue_number}/paren
 ### ステップ2: サブissueの進捗ドキュメントを読み込み
 
 `issync status <サブissue URL>`でローカルファイルパスを取得。**未登録エラー時は即座に`issync init <サブissue URL>`実行**（確認不要）。以下を抽出:
+- **Validation & Acceptance Criteria**: 受け入れ条件と検証コマンド
 - **Outcomes & Retrospectives**: 実装内容、発見や学び
 - **Open Questions**: 未解決の論点
 - **Follow-up Issues**: 将来対応事項
+
+### ステップ2.5: 受け入れ条件の検証
+
+進捗ドキュメントの「Validation & Acceptance Criteria」から検証コマンドを抽出し実行。
+
+**判定**: exit code 0 = 成功、非0 = 失敗
+
+| 結果 | 処理 |
+|------|------|
+| 全件成功 | 次のステップへ |
+| 1件以上失敗 | 失敗AC一覧をユーザーに報告し、継続するか確認 |
+| 検証コマンド未定義 | 警告表示、処理継続 |
 
 ### ステップ3: コード変更の取得と深い分析
 
@@ -157,6 +170,7 @@ issync projects set-status "$SUB_ISSUE_URL" "done"
 - #[サブissue番号]: [サブissueタイトル] / 親: #[親issue番号]
 
 ### 更新内容
+- ✅ 受け入れ条件: [X]件成功/[Y]件失敗/[Z]件スキップ
 - ✅ コード変更: [PR/コミット]分析、改善機会[X]件検出
 - ✅ 振り返り: 5 Whys分析完了、Follow-up Issues[Y]件抽出
 - ✅ Open Questions: サブissue[X]件解決/[Y]件移行、親issue[Z]件解決/[W]件追加
