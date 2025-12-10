@@ -30,11 +30,25 @@ create-sub-issue → plan → resolve-questions → implement の開発ワーク
 **目標**: コードベース調査を通じて実装方針を固め、真に人間判断が必要な論点を洗い出す
 
 **アクション**:
-- フェーズ1で取得したissue URLを使って `/issync:plan <issue URL>` を実行してください
-- plan完了まで待機してください
-- 進捗ドキュメントが作成されたことを確認してください
+Task ツールでサブエージェントを起動し、plan を実行:
 
-**出力**: 進捗ドキュメントのパスとplan完了を表示してください
+```
+Task(
+  subagent_type="general-purpose",
+  description="Execute /issync:plan for issue",
+  prompt="""
+  SlashCommand ツールで以下を実行:
+  /issync:plan <issue URL>
+
+  完了後、以下を報告:
+  - 進捗ドキュメントのファイルパス
+  - Open Questions の数と概要
+  - 自信度低(🔴)の項目があるか
+  """
+)
+```
+
+**出力**: サブエージェントの報告を元に、進捗ドキュメントのパスとplan完了を表示
 
 ---
 
