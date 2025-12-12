@@ -60,10 +60,20 @@ Issue内容を理解し、不明点をユーザーに確認。
 
 **調査アプローチの決定**:
 
-Issue内容を分析し、調査の複雑度と必要な調査対象を判定:
-- **Simple (1 agent)**: 既存機能の小さな拡張 → 類似機能の実装パターンのみ調査
-- **Moderate (2 agents)**: 新機能追加 → 類似機能 + テスト戦略を調査
-- **Complex (3 agents)**: アーキテクチャ変更 → 類似機能 + テスト戦略 + 技術スタックを調査
+Issue内容を分析し、以下2点を判定:
+
+**1. コードベース調査の複雑度**:
+| 複雑度 | エージェント数 | 対象 |
+|--------|--------------|------|
+| Simple | 1 | 類似機能の実装パターン |
+| Moderate | 2 | + テスト戦略 |
+| Complex | 3 | + 技術スタック分析 |
+
+**2. 外部調査の必要性（Agent W追加条件）**:
+- 外部ライブラリの新規導入 or APIの深い利用
+- 新技術パターン（WebSocket、GraphQL等）の採用
+- セキュリティ・パフォーマンスが重要な領域
+- プロジェクト内に参考実装がない
 
 **調査実行（Task toolによる並列実行）**:
 
@@ -123,6 +133,27 @@ Read and follow: .claude-plugins/issync/agents/codebase-explorer.md
 依存関係、技術スタック、制約などを特定してください。
 必ず5-10個の重要なファイルリストを含めてください。"""
 )
+
+# Agent 4: 外部ベストプラクティス調査（条件付き）
+Task(
+  subagent_type="general-purpose",
+  description="Research external best practices and documentation",
+  prompt="""**調査対象**: [ライブラリ/技術名]の公式ドキュメントとベストプラクティス
+
+**Context**:
+- Issue: [Issue URL]
+- 調査理由: [例: "Chokidar v4のAPI変更点", "GitHub APIレート制限対策"]
+
+**調査方法**:
+1. WebSearchで公式ドキュメント・技術記事を検索
+2. Context7ツール（mcp__context7__resolve-library-id → mcp__context7__get-library-docs）でライブラリドキュメント取得
+
+**出力**:
+- 公式推奨パターン（コード例）
+- アンチパターン
+- パフォーマンス/セキュリティ注意点
+- 参照URL一覧"""
+)
 ```
 
 **調査結果の集約**:
@@ -137,7 +168,7 @@ Read and follow: .claude-plugins/issync/agents/codebase-explorer.md
 
 ### Investigation Summary (YYYY-MM-DD)
 
-**調査した観点**: [調査対象1] / [調査対象2] / [調査対象3]
+**調査した観点**: [調査対象1] / [調査対象2] / [調査対象3] / [外部調査（該当時）]
 
 [Agent 1の調査結果をペースト]
 
@@ -145,11 +176,14 @@ Read and follow: .claude-plugins/issync/agents/codebase-explorer.md
 
 [Agent 3の調査結果をペースト（存在する場合）]
 
+[Agent 4の調査結果をペースト（存在する場合）]
+
 ### Synthesis & Key Takeaways
 
 **Primary Pattern to Follow**: [最も重要なパターン]
 **Test Strategy**: [テスト戦略のサマリー]
 **Constraints**: [実装上の制約]
+**External Best Practices**: [外部調査からの知見（該当時）]
 ```
 
 ### ステップ4: 基本セクションの記入
