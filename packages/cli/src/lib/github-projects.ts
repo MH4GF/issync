@@ -180,9 +180,8 @@ export class GitHubProjectsClient {
         owner: this.projectOwner,
         projectNumber: this.projectNumber,
       })
-    } catch (error) {
-      // User query failed, try organization
-      console.debug('User project query failed, trying organization:', error)
+    } catch {
+      // User query failed, try organization (silent fallback - expected behavior)
       response = await this.graphqlWithAuth<GraphQLResponse>({
         query: `
           query($owner: String!, $projectNumber: Int!) {
@@ -445,8 +444,8 @@ export class GitHubProjectsClient {
 
     try {
       return await tryQuery('user')
-    } catch (userError) {
-      console.debug('User project query failed, trying organization:', userError)
+    } catch {
+      // User query failed, try organization (silent fallback - expected behavior)
       try {
         return await tryQuery('organization')
       } catch {
