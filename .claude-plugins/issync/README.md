@@ -76,6 +76,7 @@ retrospective
 
 **横断的オペレーション（どのフェーズでも使用可能）:**
 
+- `/issync:exec`: 「〇〇がしたい」から適切なコマンドを自動選択・実行
 - `/issync:understand-progress`: セッション開始時に進捗ドキュメントを選択・読み込み
 - `/issync:resolve-questions`: Open Questions を解消し Decision Log と Specification を更新
 - `/issync:create-sub-issue`: タスクをサブ issue 化
@@ -131,6 +132,16 @@ Open Questionsを解消し、Decision LogとSpecificationを自動更新。ユ�
 **使い方:** `/issync:implement` | `/issync:implement https://github.com/owner/repo/issues/123` | `/issync:implement 123`
 
 詳細は`commands/implement.md`を参照。
+
+---
+
+### `/issync:exec` - コマンドルーター
+
+「〇〇がしたい」という要望から適切な `/issync:*` コマンドを自動選択・実行。
+
+**使い方:** `/issync:exec 新規タスクを進めたい` | `/issync:exec 既存issueの状況を把握したい`
+
+詳細は`commands/exec.md`を参照。
 
 ---
 
@@ -197,6 +208,7 @@ issync/
 │   ├── compact-progress-document.md # 進捗ドキュメント圧縮コマンド
 │   ├── resolve-questions.md        # Open Questions解消コマンド
 │   ├── implement.md                # 実装フェーズ自動化コマンド
+│   ├── exec.md                     # コマンドルーター
 │   ├── understand-progress.md      # 進捗ドキュメント読み込みコマンド
 │   ├── create-sub-issue.md         # タスクのサブissue化コマンド
 │   └── complete-sub-issue.md       # サブissue完了コマンド
@@ -235,6 +247,7 @@ Agent は直接呼び出すものではなく、コマンドが内部で Task to
    - `/issync:compact-progress-document`: `commands/compact-progress-document.md`
    - `/issync:resolve-questions`: `commands/resolve-questions.md`
    - `/issync:implement`: `commands/implement.md`
+   - `/issync:exec`: `commands/exec.md`
    - `/issync:understand-progress`: `commands/understand-progress.md`
    - `/issync:create-sub-issue`: `commands/create-sub-issue.md`
    - `/issync:complete-sub-issue`: `commands/complete-sub-issue.md`
