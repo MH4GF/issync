@@ -1,6 +1,6 @@
 {
   "name": "issync",
-  "description": "矛盾解消駆動開発のためのツール群",
+  "description": "論点駆動開発のためのツール群",
   "version": "0.11.0",
   "author": {
     "name": "MH4GF"
