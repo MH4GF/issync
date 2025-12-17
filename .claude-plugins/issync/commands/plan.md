@@ -12,7 +12,7 @@ description: planフェーズのプロセスを標準化し、コードベース
 4. 基本セクションの記入
 5. Open Questionsの精査
 6. issync pushで同期 & Stage更新（To Review）
-7. GitHub Projects Status & Stage自動変更 & ラベル付与（自信度低あり → poc / なし → implement, Stage → To Start）
+7. GitHub Projects Status & Stage自動変更 & ラベル付与（implement, Stage → To Start）
 
 **Note**: Template v7では、Tasksセクションが削除されています。タスクは `/issync:create-sub-issue` コマンドで作成します。
 
@@ -225,7 +225,7 @@ Task(
 
 - 🟢 **自信度:高** - 既存パターン確認済み、実装実績あり
 - 🟡 **自信度:中** - 類似パターンあり、慎重に実装
-- 🔴 **自信度:低** - 新アプローチ/外部連携/性能影響不明 → **pocフェーズで検証必須**
+- 🔴 **自信度:低** - 新アプローチ/外部連携/性能影響不明 → 実装時に慎重な検証が必要
 
 **フォーマット例**:
 ```markdown
@@ -240,7 +240,7 @@ Task(
 **Q2: [別の質問（自信度低の場合）]**
 **検討案:**
 - **[選択肢C]（推奨 自信度:低🔴）**: [説明]
-  - **⚠️ PoC必須**: [検証項目]
+  - **⚠️ 実装時に慎重な検証が必要**: [検証項目]
 
 **Q3: AC2のテスト方法**
 - [受け入れ条件の内容]を自動テストで検証する方法が不明
@@ -270,21 +270,17 @@ issync projects set-stage "$ISSUE_URL" "to_review"
 
 Projects連携モード有効時のみ、StatusとStageを自動変更。
 
-**Status決定**: Open Questionsに自信度低(🔴)あり → `poc` / なし → `implement`
+**Status決定**: 常に `implement`
 **Stage**: 常に `to_start`
 
 ```bash
-issync projects set-status "$ISSUE_URL" "<poc または implement>"
+issync projects set-status "$ISSUE_URL" "implement"
 issync projects set-stage "$ISSUE_URL" "to_start"
 ```
 
-**ラベル自動付与**: Statusに応じたラベルを常に付与。
+**ラベル自動付与**: `issync:implement`ラベルを常に付与。
 
 ```bash
-# Status=poc の場合
-gh issue edit $ISSUE_NUMBER --add-label "issync:poc"
-
-# Status=implement の場合
 gh issue edit $ISSUE_NUMBER --add-label "issync:implement"
 ```
 
@@ -305,16 +301,14 @@ gh issue edit $ISSUE_NUMBER --add-label "issync:implement"
 - {プロジェクト固有の重要な制約や慣習}
 
 ### Open Questions ({総数N}件{自信度低がある場合: " | 🔴自信度低: {M}件"})
-{Open Questionsの主要なテーマや懸念点を1-2文で要約。自信度低の項目がある場合は、POC検証が必要な理由と検証項目を明記}
+{Open Questionsの主要なテーマや懸念点を1-2文で要約。自信度低の項目がある場合は、実装時に慎重な検証が必要な理由を明記}
 
 ### Next Steps
 1. Review document on GitHub and resolve Open Questions
-2. {自信度低の項目がある場合} Start POC to validate {具体的な検証項目（例: "performance impact of polling approach", "feasibility of GraphQL mutation")}
-   `issync:poc` label added → Auto-plan workflow triggered
-3. {自信度低の項目がない場合} Create sub-issues with `/issync:create-sub-issue` and begin implementation
+2. Create sub-issues with `/issync:create-sub-issue` and begin implementation
    `issync:implement` label added → Auto-plan workflow triggered
 
-**Status**: plan → {自信度低あり: poc / なし: implement} (Stage: To Start)
+**Status**: plan → implement (Stage: To Start)
 ```
 
 **重要**: Key Discoveriesは実際の調査結果を具体的に記載。Open Questionsは優先レビュー論点を明示。Next Stepsは状況に応じて2または3を選択。
@@ -326,7 +320,7 @@ gh issue edit $ISSUE_NUMBER --add-label "issync:implement"
 
 ## 補足: ステートマシンとの統合
 
-**ワークフロー（自信度低の項目がある場合）**:
+**ワークフロー**:
 ```
 GitHub Issue作成（Status: plan, Stage: To Start）
    ↓
@@ -334,26 +328,7 @@ GitHub Issue作成（Status: plan, Stage: To Start）
    ↓
 ステップ1: Stage自動変更（To Start → In Progress）※GitHub Projects連携モード有効時のみ
    ↓
-ステップ2-5: コードベース調査 → 進捗ドキュメント作成 → 自信度低(🔴)の項目を検出
-   ↓
-ステップ6: issync push → Stage自動変更（In Progress → To Review）※GitHub Projects連携モード有効時のみ
-   ↓
-ステップ7: Status & Stage自動変更（Status: plan → poc, Stage: To Review → To Start）※GitHub Projects連携モード有効時のみ
-   ↓
-ステップ7: issync:pocラベル自動付与
-   ↓
-人間レビュー → POC開始（Devin起動） または Devin自動起動
-```
-
-**ワークフロー（自信度低の項目がない場合）**:
-```
-GitHub Issue作成（Status: plan, Stage: To Start）
-   ↓
-/plan実行開始
-   ↓
-ステップ1: Stage自動変更（To Start → In Progress）※GitHub Projects連携モード有効時のみ
-   ↓
-ステップ2-5: コードベース調査 → 進捗ドキュメント作成 → 自信度低の項目なし
+ステップ2-5: コードベース調査 → 進捗ドキュメント作成
    ↓
 ステップ6: issync push → Stage自動変更（In Progress → To Review）※GitHub Projects連携モード有効時のみ
    ↓
@@ -366,5 +341,5 @@ GitHub Issue作成（Status: plan, Stage: To Start）
 
 **重要**:
 - Projects連携モード有効時のみ、StatusとStageを自動変更（人間の手動変更不要）
-- Status変更で次フェーズを明示（poc = PoC検証、implement = サブissue作成・実装）
-- Statusに応じたラベルを常に自動付与（`issync:poc` または `issync:implement`）→ Devinが自動起動
+- Status変更で次フェーズを明示（implement = サブissue作成・実装）
+- `issync:implement`ラベルを自動付与 → Devinが自動起動

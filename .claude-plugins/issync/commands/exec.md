@@ -26,7 +26,6 @@ $ARGUMENTS
 |------------|------------|
 | 新規タスクを全自動で進めたい | `/issync:develop` |
 | 既存issueの続き・状況把握 | `/issync:understand-progress` |
-| 調査・検証を行いたい | `/issync:poc` |
 | 実装を進めたい | `/issync:implement` |
 | 質問を解決したい | `/issync:resolve-questions` |
 | サブissueを完了させたい | `/issync:complete-sub-issue` |

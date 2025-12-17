@@ -1,6 +1,6 @@
 # issync Plugin
 
-GitHub Issue を単一の真実の情報源として、進捗ドキュメントをローカルファイルと双方向同期しながら、AI 駆動開発のワークフロー（plan → POC → architecture-decision → implement）を自動化する Claude Code plugin。issync と連携し、矛盾解消駆動開発における進捗ドキュメントの作成・更新・レビュー・圧縮を効率化します。
+GitHub Issue を単一の真実の情報源として、進捗ドキュメントをローカルファイルと双方向同期しながら、AI 駆動開発のワークフロー（plan → architecture-decision → implement → retrospective）を自動化する Claude Code plugin。issync と連携し、矛盾解消駆動開発における進捗ドキュメントの作成・更新・レビュー・圧縮を効率化します。
 
 ## Quick Start
 
@@ -58,16 +58,14 @@ GitHub Issue を単一の真実の情報源として、進捗ドキュメント�
 
 ## Workflow Overview
 
-この plugin は、矛盾解消駆動開発のワークフローをサポートする 9 つのコマンドを提供します：
+この plugin は、矛盾解消駆動開発のワークフローをサポートする 8 つのコマンドを提供します：
 
 **メインフロー:**
 
 ```
 /issync:plan (plan)
     ↓
-/issync:poc (poc) - 調査・検証フェーズ
-    ↓
-人間のレビュー・承認
+人間のレビュー・承認 (architecture-decision)
     ↓
 /issync:implement (implement)
     ↓
@@ -92,16 +90,6 @@ GitHub Issueから全コンテキストを自動収集し、進捗ドキュメ�
 **使い方:** `/issync:plan https://github.com/owner/repo/issues/123`
 
 詳細は`commands/plan.md`を参照。
-
----
-
-### `/issync:poc` - POC調査フェーズ自動化
-
-自信度を上げるための調査・検証を中心に行い、発見を進捗ドキュメントに記録。実装は破棄前提で、知見の獲得が目的。POC PR作成後、人間がレビュー。
-
-**使い方:** `/issync:poc` | `/issync:poc https://github.com/owner/repo/issues/123` | `/issync:poc 123`
-
-詳細は`commands/poc.md`を参照。
 
 ---
 
@@ -204,7 +192,6 @@ issync/
 │   └── codebase-explorer.md        # コードベース調査エージェント
 ├── commands/
 │   ├── plan.md                     # plan実行コマンド
-│   ├── poc.md                      # POC調査フェーズ自動化コマンド
 │   ├── compact-progress-document.md # 進捗ドキュメント圧縮コマンド
 │   ├── resolve-questions.md        # Open Questions解消コマンド
 │   ├── implement.md                # 実装フェーズ自動化コマンド
@@ -243,7 +230,6 @@ Agent は直接呼び出すものではなく、コマンドが内部で Task to
 
 1. コマンドプロンプトを編集:
    - `/issync:plan`: `commands/plan.md`
-   - `/issync:poc`: `commands/poc.md`
    - `/issync:compact-progress-document`: `commands/compact-progress-document.md`
    - `/issync:resolve-questions`: `commands/resolve-questions.md`
    - `/issync:implement`: `commands/implement.md`

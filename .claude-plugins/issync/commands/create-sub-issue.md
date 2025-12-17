@@ -13,7 +13,7 @@ description: 新規タスクをGitHub Issueとして作成し、親issueとの�
 
 ## コンテキスト
 
-**横断的オペレーション** - どのステートでも実行可能（plan、poc、architecture-decision、implement）
+**横断的オペレーション** - どのステートでも実行可能（plan、implement）
 
 **設計原則**:
 - GitHub Sub-issuesを完全なSSOTとする（進捗ドキュメントのTasksセクション不使用）
