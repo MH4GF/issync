@@ -2,7 +2,7 @@
 description: "ユーザーの要望を受け取り、適切なissyncコマンドを自動選択・実行するルーター"
 ---
 
-# /issync:exec: コマンドルーター
+# /issync:run: コマンドルーター
 
 ユーザーの意図から適切な `/issync:*` コマンドを選択し、SlashCommand ツールで実行する。
 
