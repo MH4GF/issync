@@ -33,9 +33,16 @@ description: planフェーズのプロセスを標準化し、コードベース
 
 ### ステップ1: 前提条件確認 & ファイル名決定 & issync init & Stage設定
 
-**ファイル名決定**:
-1. Issue URLを確認（例: `https://github.com/owner/repo/issues/123`）
-2. 番号とslugを抽出・生成
+**同期状態の確認**:
+```bash
+issync status <Issue URL>
+```
+→ 設定あり（`local_file`パス取得）→ ケースC
+→ 設定なし → ケースA/B
+
+**ファイル名決定**（ケースA/Bのみ）:
+1. Issue URLから番号を抽出（例: `https://github.com/owner/repo/issues/123` → `123`）
+2. Issueタイトルからslugを生成（小文字・ハイフン区切り・2-4単語）
 
 **初期化**:
 - **ケース A**: issync未初期化 → `issync init <Issue URL> --file .issync/docs/plan-{番号}-{slug}.md`
