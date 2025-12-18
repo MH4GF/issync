@@ -13,12 +13,12 @@ const STAGE_PRIORITY: Record<string, number> = {
   'To Review': 2,
 }
 
-function getStagePriority(stage: string | null): number {
+export function getStagePriority(stage: string | null): number {
   if (stage === null) return 999
   return STAGE_PRIORITY[stage] ?? 998
 }
 
-function sortByStage(issues: IssueWithDetails[]): IssueWithDetails[] {
+export function sortByStage(issues: IssueWithDetails[]): IssueWithDetails[] {
   return [...issues].sort((a, b) => getStagePriority(a.stage) - getStagePriority(b.stage))
 }
 
