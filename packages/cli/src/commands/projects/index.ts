@@ -29,10 +29,11 @@ export function registerProjectsCommands(program: Command): void {
 
   projects
     .command('list-issues')
-    .description('List issue numbers by Status field value')
-    .requiredOption('--status <status>', 'Status field value to filter by')
-    .action(async (options: { status: string }) => {
+    .description('List issue numbers by Status field value, sorted by Stage priority')
+    .requiredOption('--status <status>', 'Status field value(s) to filter by (comma-separated)')
+    .option('--limit <n>', 'Limit the number of results', Number.parseInt)
+    .action(async (options: { status: string; limit?: number }) => {
       const { listIssues } = await import('./list-issues.js')
-      await listIssues({ status: options.status })
+      await listIssues({ status: options.status, limit: options.limit })
     })
 }

@@ -93,6 +93,35 @@ interface GetIssuesByStatusResponse {
   organization?: { projectV2?: ProjectV2ItemsResponse }
 }
 
+export interface IssueWithDetails {
+  number: number
+  status: string | null
+  stage: string | null
+}
+
+type FieldValueNode = {
+  __typename?: string
+  name?: string
+  field?: { name?: string }
+}
+
+function extractFieldValues(nodes: FieldValueNode[]): {
+  status: string | null
+  stage: string | null
+} {
+  let status: string | null = null
+  let stage: string | null = null
+
+  for (const node of nodes) {
+    if (node.__typename !== 'ProjectV2ItemFieldSingleSelectValue') continue
+    const fieldName = node.field?.name
+    if (fieldName === 'Status') status = node.name ?? null
+    else if (fieldName === 'Stage') stage = node.name ?? null
+  }
+
+  return { status, stage }
+}
+
 export class GitHubProjectsClient {
   private static readonly MAX_FIELDS_TO_FETCH = 20
   private static readonly MAX_PROJECT_ITEMS_TO_FETCH = 10
@@ -383,6 +412,72 @@ export class GitHubProjectsClient {
       itemId,
       fieldId,
     })
+  }
+
+  async getIssuesWithDetails(statusValues: string[]): Promise<IssueWithDetails[]> {
+    const query = (entityType: 'user' | 'organization') => `
+      query($owner: String!, $projectNumber: Int!) {
+        ${entityType}(login: $owner) {
+          projectV2(number: $projectNumber) {
+            items(first: ${GitHubProjectsClient.MAX_ITEMS_TO_FETCH}) {
+              nodes {
+                content {
+                  ... on Issue {
+                    number
+                  }
+                }
+                fieldValues(first: ${GitHubProjectsClient.MAX_FIELD_VALUES_TO_FETCH}) {
+                  nodes {
+                    __typename
+                    ... on ProjectV2ItemFieldSingleSelectValue {
+                      name
+                      field {
+                        ... on ProjectV2SingleSelectField {
+                          name
+                        }
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    `
+
+    const tryQuery = async (entityType: 'user' | 'organization') => {
+      const response = await this.graphqlWithAuth<GetIssuesByStatusResponse>({
+        query: query(entityType),
+        owner: this.projectOwner,
+        projectNumber: this.projectNumber,
+      })
+
+      const projectV2 = response[entityType]?.projectV2
+      if (!projectV2) {
+        throw new Error(`${entityType} has no projectV2`)
+      }
+
+      return projectV2.items.nodes
+        .map((item) => {
+          const number = item.content?.number
+          if (number === undefined) return null
+          const { status, stage } = extractFieldValues(item.fieldValues.nodes)
+          return { number, status, stage }
+        })
+        .filter((item): item is IssueWithDetails => item !== null)
+        .filter((item) => statusValues.length === 0 || statusValues.includes(item.status ?? ''))
+    }
+
+    try {
+      return await tryQuery('user')
+    } catch {
+      try {
+        return await tryQuery('organization')
+      } catch {
+        throw new ProjectNotFoundError(this.projectOwner, this.projectNumber)
+      }
+    }
   }
 
   async getIssuesByStatus(statusValue: string): Promise<number[]> {

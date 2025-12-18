@@ -546,3 +546,214 @@ describe('GitHubProjectsClient.getIssuesByStatus', () => {
     await expect(client.getIssuesByStatus('retrospective')).rejects.toThrow(ProjectNotFoundError)
   })
 })
+
+describe('GitHubProjectsClient.getIssuesWithDetails', () => {
+  const originalEnv = {
+    GITHUB_TOKEN: process.env.GITHUB_TOKEN,
+    ISSYNC_GITHUB_PROJECTS_NUMBER: process.env.ISSYNC_GITHUB_PROJECTS_NUMBER,
+    ISSYNC_GITHUB_PROJECTS_OWNER: process.env.ISSYNC_GITHUB_PROJECTS_OWNER,
+  }
+
+  beforeEach(() => {
+    process.env.GITHUB_TOKEN = 'ghp_test_token_123456789012345678901234'
+    process.env.ISSYNC_GITHUB_PROJECTS_NUMBER = '42'
+    process.env.ISSYNC_GITHUB_PROJECTS_OWNER = 'test-owner'
+  })
+
+  afterEach(() => {
+    process.env.GITHUB_TOKEN = originalEnv.GITHUB_TOKEN
+    process.env.ISSYNC_GITHUB_PROJECTS_NUMBER = originalEnv.ISSYNC_GITHUB_PROJECTS_NUMBER
+    process.env.ISSYNC_GITHUB_PROJECTS_OWNER = originalEnv.ISSYNC_GITHUB_PROJECTS_OWNER
+    mock.restore()
+  })
+
+  test('returns issues with status and stage', async () => {
+    const mockGraphqlFn = mock().mockResolvedValueOnce({
+      user: {
+        projectV2: {
+          items: {
+            nodes: [
+              {
+                content: { number: 97 },
+                fieldValues: {
+                  nodes: [
+                    {
+                      __typename: 'ProjectV2ItemFieldSingleSelectValue',
+                      name: 'implement',
+                      field: { name: 'Status' },
+                    },
+                    {
+                      __typename: 'ProjectV2ItemFieldSingleSelectValue',
+                      name: 'To Start',
+                      field: { name: 'Stage' },
+                    },
+                  ],
+                },
+              },
+              {
+                content: { number: 98 },
+                fieldValues: {
+                  nodes: [
+                    {
+                      __typename: 'ProjectV2ItemFieldSingleSelectValue',
+                      name: 'plan',
+                      field: { name: 'Status' },
+                    },
+                    {
+                      __typename: 'ProjectV2ItemFieldSingleSelectValue',
+                      name: 'In Progress',
+                      field: { name: 'Stage' },
+                    },
+                  ],
+                },
+              },
+            ],
+          },
+        },
+      },
+    })
+
+    const mockGraphql = { defaults: () => mockGraphqlFn } as unknown as typeof graphql
+    const client = new GitHubProjectsClient('ghp_test_token_123456789012345678901234', mockGraphql)
+
+    const result = await client.getIssuesWithDetails(['implement', 'plan'])
+
+    expect(result).toEqual([
+      { number: 97, status: 'implement', stage: 'To Start' },
+      { number: 98, status: 'plan', stage: 'In Progress' },
+    ])
+  })
+
+  test('filters by multiple status values', async () => {
+    const mockGraphqlFn = mock().mockResolvedValueOnce({
+      user: {
+        projectV2: {
+          items: {
+            nodes: [
+              {
+                content: { number: 1 },
+                fieldValues: {
+                  nodes: [
+                    {
+                      __typename: 'ProjectV2ItemFieldSingleSelectValue',
+                      name: 'plan',
+                      field: { name: 'Status' },
+                    },
+                  ],
+                },
+              },
+              {
+                content: { number: 2 },
+                fieldValues: {
+                  nodes: [
+                    {
+                      __typename: 'ProjectV2ItemFieldSingleSelectValue',
+                      name: 'done',
+                      field: { name: 'Status' },
+                    },
+                  ],
+                },
+              },
+              {
+                content: { number: 3 },
+                fieldValues: {
+                  nodes: [
+                    {
+                      __typename: 'ProjectV2ItemFieldSingleSelectValue',
+                      name: 'implement',
+                      field: { name: 'Status' },
+                    },
+                  ],
+                },
+              },
+            ],
+          },
+        },
+      },
+    })
+
+    const mockGraphql = { defaults: () => mockGraphqlFn } as unknown as typeof graphql
+    const client = new GitHubProjectsClient('ghp_test_token_123456789012345678901234', mockGraphql)
+
+    const result = await client.getIssuesWithDetails(['plan', 'implement'])
+
+    expect(result).toHaveLength(2)
+    expect(result.map((i) => i.number)).toEqual([1, 3])
+  })
+
+  test('handles issues with null stage', async () => {
+    const mockGraphqlFn = mock().mockResolvedValueOnce({
+      user: {
+        projectV2: {
+          items: {
+            nodes: [
+              {
+                content: { number: 50 },
+                fieldValues: {
+                  nodes: [
+                    {
+                      __typename: 'ProjectV2ItemFieldSingleSelectValue',
+                      name: 'implement',
+                      field: { name: 'Status' },
+                    },
+                  ],
+                },
+              },
+            ],
+          },
+        },
+      },
+    })
+
+    const mockGraphql = { defaults: () => mockGraphqlFn } as unknown as typeof graphql
+    const client = new GitHubProjectsClient('ghp_test_token_123456789012345678901234', mockGraphql)
+
+    const result = await client.getIssuesWithDetails(['implement'])
+
+    expect(result).toEqual([{ number: 50, status: 'implement', stage: null }])
+  })
+
+  test('returns all issues when statusValues is empty', async () => {
+    const mockGraphqlFn = mock().mockResolvedValueOnce({
+      user: {
+        projectV2: {
+          items: {
+            nodes: [
+              {
+                content: { number: 1 },
+                fieldValues: {
+                  nodes: [
+                    {
+                      __typename: 'ProjectV2ItemFieldSingleSelectValue',
+                      name: 'plan',
+                      field: { name: 'Status' },
+                    },
+                  ],
+                },
+              },
+              {
+                content: { number: 2 },
+                fieldValues: {
+                  nodes: [
+                    {
+                      __typename: 'ProjectV2ItemFieldSingleSelectValue',
+                      name: 'done',
+                      field: { name: 'Status' },
+                    },
+                  ],
+                },
+              },
+            ],
+          },
+        },
+      },
+    })
+
+    const mockGraphql = { defaults: () => mockGraphqlFn } as unknown as typeof graphql
+    const client = new GitHubProjectsClient('ghp_test_token_123456789012345678901234', mockGraphql)
+
+    const result = await client.getIssuesWithDetails([])
+
+    expect(result).toHaveLength(2)
+  })
+})
