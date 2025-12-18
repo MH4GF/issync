@@ -26,7 +26,7 @@ Task(
   subagent_type="general-purpose",
   description="Triage #<number>",
   prompt="Issue #<number>を分析:
-    1. gh issue view <number> --json url
+    1. gh issue view <number> --json url,title
     2. issync status <url> でパス取得
     3. 進捗ドキュメント読み込み
 
@@ -37,7 +37,7 @@ Task(
     - implement + sub全完 or retrospective → complete-sub-issue
     - 進捗ドキュメントなし → /issync:plan
 
-    出力: Summary|Status|Recommended|Reason"
+    出力: Title|Status|Recommended|Reason"
 )
 ```
 
@@ -46,10 +46,16 @@ Task(
 <output_format>
 ## /issync:triage 結果
 
-| Issue | Status | 推奨コマンド | 理由 |
-|-------|--------|-------------|------|
-| #123 | plan | `/issync:resolve-questions 123` | 未解決の質問2件 |
-| #456 | implement | `/issync:implement 456` | AC2未完了 |
+### #123 認証機能の実装
+- **Status**: plan
+- **推奨**: `/issync:resolve-questions 123`
+- **理由**: Open Questionsに未解決の質問が2件あり、実装方針が確定していない。「JWT vs Session」「リフレッシュトークンの有効期限」の決定が必要。
 
+### #456 ダッシュボード画面の作成
+- **Status**: implement
+- **推奨**: `/issync:implement 456`
+- **理由**: AC2「グラフ表示」が未完了。残りタスクはChart.jsの統合のみ。
+
+---
 **次のステップ**: 実行したいコマンドを選択してください。
 </output_format>
