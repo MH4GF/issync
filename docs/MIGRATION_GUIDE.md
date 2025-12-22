@@ -239,6 +239,49 @@ plan → poc → architecture-decision → implement → retrospective → done
 
 ---
 
+## Version 22 (2025-12-22)
+
+**スケルトンテスト駆動の受け入れ条件定義**
+
+受け入れ条件をスケルトンテスト（`test.todo()`）として定義し、テストから Open Questions を導出する新ワークフロー。
+
+**変更内容**:
+- Validation & Acceptance Criteria: シナリオ形式 → テストファイル参照形式
+- Open Questions: テストから導出、`/issync:align-spec` で解消
+- 自信度表記簡素化: `自信度:高🟢` → `🟢高`
+- 関連テストへの参照を追加
+
+**マイグレーション**:
+
+1. **Validation & Acceptance Criteria を置換**
+
+```markdown
+**テストファイル**: `[テストファイルパス]`
+
+**検証コマンド**:
+```bash
+bun test [テストファイルパス]
+```
+
+**テストケース一覧**:
+- [シナリオ1]
+  - [テストケース1]
+```
+
+2. **Open Questions に関連テストを追加**（任意）
+
+```markdown
+**Q1: [質問]**
+[テストを書けなかった理由]
+
+**関連テスト**: `path/to/test.ts` の `test.todo("...")`
+```
+
+3. **自信度表記を更新**（任意）
+   - `（推奨 自信度:高🟢）` → `（推奨 🟢）`
+
+---
+
 ## マイグレーションツール
 
 **`/compact-progress-document`コマンド:**
