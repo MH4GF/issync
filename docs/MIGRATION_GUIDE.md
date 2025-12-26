@@ -208,8 +208,8 @@ Outcomes & Retrospectivesの直後、Confidence Assessmentの直前に移動。
 この進捗ドキュメントは生きた文書。新情報が出るたびに該当セクションのみを更新する。
 このファイルはgitにコミットしない（issyncでGitHub Issueと同期される）。
 
-**ワークフロー（6ステート）:**
-plan → poc → architecture-decision → implement → retrospective → done
+**ワークフロー（4ステート）:**
+plan → implement → retrospective → done
 
 **MUST:**
 - 変更は該当セクションのみ、最小限に
@@ -279,6 +279,37 @@ bun test [テストファイルパス]
 
 3. **自信度表記を更新**（任意）
    - `（推奨 自信度:高🟢）` → `（推奨 🟢）`
+
+---
+
+## Version 23 (2025-12-26)
+
+**4ステートワークフローへの簡素化**
+
+poc/architecture-decisionフェーズを削除し、シンプルな4ステートワークフローに変更。
+
+**変更内容**:
+- 6ステート → 4ステート（poc/architecture-decision削除）
+- pocが必要な場合はsub-issueに分離して対応
+- HTMLコメント内の参照を更新
+
+**マイグレーション**:
+
+1. **冒頭ガイドラインを置換**
+
+```markdown
+**ワークフロー（4ステート）:**
+plan → implement → retrospective → done
+```
+
+2. **Current Statusの選択肢を更新**
+
+```markdown
+**Status**: [plan / implement / retrospective / done]
+```
+
+3. **GitHub Projectsラベル更新**（任意）
+   - `poc`/`architecture-decision`ラベルを削除
 
 ---
 

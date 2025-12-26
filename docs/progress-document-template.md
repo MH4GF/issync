@@ -9,8 +9,8 @@
 この進捗ドキュメントは生きた文書。新情報が出るたびに該当セクションのみを更新する。
 このファイルはgitにコミットしない（issyncでGitHub Issueと同期される）。
 
-**ワークフロー（6ステート）:**
-plan → poc → architecture-decision → implement → retrospective → done
+**ワークフロー（4ステート）:**
+plan → implement → retrospective → done
 
 **MUST:**
 - 変更は該当セクションのみ、最小限に
@@ -79,7 +79,7 @@ bun test [テストファイルパス]
 
 ## Specification / 仕様
 
-<!-- When: architecture-decision | Do: POC知見を基にシステム仕様・アーキテクチャを具体化 -->
+<!-- When: plan | implement | Do: システム仕様・アーキテクチャを具体化 -->
 
 ### [仕様項目1]
 
@@ -121,7 +121,7 @@ Do: テストを書く過程で浮かんだ疑問。implementまでに全て解�
 
 ## Discoveries & Insights
 
-<!-- When: poc以降、継続的 | Do: 技術的制約・複雑性・失敗原因を記録 -->
+<!-- When: plan以降、継続的 | Do: 技術的制約・複雑性・失敗原因を記録 -->
 
 **YYYY-MM-DD: [タイトル]**
 - [発見内容]
@@ -131,7 +131,7 @@ Do: テストを書く過程で浮かんだ疑問。implementまでに全て解�
 
 ## Decision Log
 
-<!-- When: architecture-decision | Do: 技術選定、アーキテクチャ決定、トレードオフを記録 -->
+<!-- When: plan | implement | Do: 技術選定、アーキテクチャ決定、トレードオフを記録 -->
 
 **YYYY-MM-DD: [決定事項]**
 - **採用**: [技術・手法]
@@ -179,11 +179,11 @@ Do: プロジェクト全体の実装確信度を評価（前回を置き換え�
 
 <!--
 When: フェーズ開始/完了時に自動更新
-- Status: plan/poc/architecture-decision/implement/retrospective/done
+- Status: plan/implement/retrospective/done
 - Stage: To Start/In Progress/To Review
 -->
 
-**Status**: [plan / poc / architecture-decision / implement / retrospective / done]
+**Status**: [plan / implement / retrospective / done]
 **Stage**: [To Start / In Progress / To Review]
 **最終更新**: YYYY-MM-DD HH:MM:SS
 **ネクストアクション**: [人間が取るべき次のアクション]

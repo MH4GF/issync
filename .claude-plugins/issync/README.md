@@ -1,6 +1,6 @@
 # issync Plugin
 
-GitHub Issue を単一の真実の情報源として、進捗ドキュメントをローカルファイルと双方向同期しながら、AI 駆動開発のワークフロー（plan → architecture-decision → implement → retrospective）を自動化する Claude Code plugin。issync と連携し、論点駆動開発における進捗ドキュメントの作成・更新・レビュー・圧縮を効率化します。
+GitHub Issue を単一の真実の情報源として、進捗ドキュメントをローカルファイルと双方向同期しながら、AI 駆動開発のワークフロー（plan → implement → retrospective → done）を自動化する Claude Code plugin。issync と連携し、論点駆動開発における進捗ドキュメントの作成・更新・レビュー・圧縮を効率化します。
 
 ## Quick Start
 
@@ -65,11 +65,11 @@ GitHub Issue を単一の真実の情報源として、進捗ドキュメント�
 ```
 /issync:plan (plan)
     ↓
-人間のレビュー・承認 (architecture-decision)
+人間のレビュー・承認
     ↓
 /issync:implement (implement)
     ↓
-retrospective
+retrospective → done
 ```
 
 **横断的オペレーション（どのフェーズでも使用可能）:**

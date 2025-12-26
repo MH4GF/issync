@@ -33,7 +33,7 @@ describe('setStatus command', () => {
 
     await setStatus({
       issueUrl: 'https://github.com/owner/repo/issues/123',
-      status: 'poc',
+      status: 'plan',
     })
 
     // Should log warning, not throw
