@@ -29,15 +29,16 @@ Task(
     1. gh issue view <number> --json url,title
     2. issync status <url> でパス取得
     3. 進捗ドキュメント読み込み
+    4. 進行中sub-issue(plan/implement)があれば、そのsub-issueも同様に読み込み
 
-    判定:
+    判定（上から順に評価）:
+    - 進行中sub-issueあり → sub-issueの状態に基づき推奨コマンドを提示
     - Open Questions未解決 → resolve-questions
     - plan + 質問解決済 → implement
-    - implement + sub未完 → implement
     - implement + sub全完 or retrospective → complete-sub-issue
     - 進捗ドキュメントなし → /issync:plan
 
-    出力: Title|Status|Recommended|Reason"
+    出力: Title|Status|SubIssue(あれば)|Recommended|Reason"
 )
 ```
 
@@ -53,8 +54,9 @@ Task(
 
 ### #456 ダッシュボード画面の作成
 - **Status**: implement
-- **推奨**: `/issync:implement 456`
-- **理由**: AC2「グラフ表示」が未完了。残りタスクはChart.jsの統合のみ。
+- **進行中sub-issue**: #789 グラフコンポーネント実装 (implement)
+- **推奨**: `/issync:implement 789`
+- **理由**: sub-issue #789 のAC1「棒グラフ表示」が未完了。親issueは子の完了待ち。
 
 ---
 **次のステップ**: 実行したいコマンドを選択してください。
