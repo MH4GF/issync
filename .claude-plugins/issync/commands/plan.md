@@ -4,17 +4,18 @@ description: コードベース調査→受け入れ条件明確化→Open Quest
 
 # /issync:plan
 
-進捗ドキュメント（`.issync/docs/plan-{番号}-{slug}.md`）を作成。9ステップ：
+進捗ドキュメント（`.issync/docs/plan-{番号}-{slug}.md`）を作成。10ステップ：
 
 1. 前提確認 & issync init & Stage設定（In Progress）
 2. Issue内容確認
 3. **タスク種別判定**
 4. コードベース調査
 5. **受け入れ条件の明確化**（種別に応じた検証戦略）
-6. **Open Questions精査**
+6. **Open Questions精査 & 分割判断**
 7. 基本セクション記入
 8. 成果物をコミット & issync push & Stage更新（To Review）
 9. Status/Stage変更 & ラベル付与（implement, To Start）
+10. 分割対応（該当時のみ）
 
 ## 前提条件
 
@@ -130,9 +131,11 @@ describe("watch command", () => {
 - [ ] コード例・スクリーンショットが最新
 ```
 
-### 6. Open Questions精査
+### 6. Open Questions精査 & 分割判断
 
-受け入れ条件を定義する過程で浮かんだ疑問を整理。
+受け入れ条件を定義する過程で浮かんだ疑問を整理し、分割要否を判断。
+
+#### 6a. Open Questions導出
 
 **判断フロー**:
 ```
@@ -155,7 +158,33 @@ describe("watch command", () => {
 - **[B]**: [説明] / トレードオフ: [制約]
 ```
 
-自信度: 🟢高（同一パターン確認済）/ 🟡中（類似あり）/ 🔴低（前例なし→⚠️検証項目併記）
+**自信度**: 🟢高（同一パターン確認済）/ 🟡中（類似あり）/ 🔴低（前例なし→検証必要）
+
+#### 6b. 分割判断
+
+Open Questionsの自信度から分割要否を判定。
+
+**分割トリガー**（いずれか該当で分割検討）:
+- 自信度🔴低が2件以上
+- 1論点の調査に1セッション以上かかる見込み
+- 独立した技術検証が必要（PoC、ベンチマーク等）
+
+**分割時の処理**:
+1. 親の進捗ドキュメントは**完成させる**（中断しない）
+2. 該当Open Questionに参照を追記:
+   ```markdown
+   **Q3: [質問]** 🔴
+   [書けなかった理由]
+
+   → **調査中**: #xxx で検証予定
+   ```
+3. ステップ9完了後、`/issync:create-sub-issue` で調査タスクを作成
+4. sub-issueの完了条件 = 親のOpen Question解消
+
+**分割しないケース**:
+- 自信度🟢🟡のみ
+- 実装しながら解消できる
+- 調査より実装した方が早い
 
 ### 7. 基本セクション記入
 
@@ -203,6 +232,16 @@ issync projects set-stage "$ISSUE_URL" "to_start"
 gh issue edit $ISSUE_NUMBER --add-label "issync:implement"
 ```
 
+### 10. 分割対応（該当時のみ）
+
+ステップ6bで分割トリガーに該当した場合のみ実行。
+
+```bash
+/issync:create-sub-issue "Q3の調査: [質問の要約]"
+```
+
+作成後、親のOpen Questionを更新（`#xxx で検証予定` → 実際のissue番号）。
+
 ## 出力フォーマット
 
 ```markdown
@@ -235,10 +274,18 @@ gh issue edit $ISSUE_NUMBER --add-label "issync:implement"
 ### Open Questions ({N}件)
 {主要テーマ要約}
 
+<!-- 分割が発生した場合のみ -->
+### Sub-issues Created
+| Issue | 対象Open Question | 目的 |
+|-------|-------------------|------|
+| #xxx | Q3 | [調査内容] |
+
 ### Next Steps
 1. Review Acceptance Criteria and Open Questions
 2. Run `/issync:align-spec` to finalize
 3. Begin `/issync:implement`
+<!-- 分割時は追加 -->
+4. Sub-issues完了後、親のOpen Questionsを更新
 
 **Status**: plan → implement (Stage: To Start)
 ```
