@@ -313,6 +313,79 @@ plan → implement → retrospective → done
 
 ---
 
+## Version 24 (2025-12-28)
+
+**目次セクション追加**
+
+AIが必要な情報を素早く見つけられるように、ドキュメント上部に目次を追加。
+
+**変更内容**:
+- タイトル直後に目次セクションを追加
+- 全11セクションへのアンカーリンクを含む
+- AI向け更新ルールのコメントの前に配置
+
+**理由**:
+- 長文になることが多いドキュメントで、AIが必要な情報を必要なだけ取り出せるようにするため
+- セクションへの直接アクセスを可能にする
+
+**マイグレーション**:
+
+1. **タイトル直後に目次セクションを追加**
+
+タイトル行（`# [Project Name] Progress Document`）の直後、AI向け更新ルールのコメント（`<!--`）の前に以下を挿入：
+
+```markdown
+## 目次
+
+- [Purpose / Overview](#purpose--overview)
+- [Context & Direction](#context--direction)
+- [Validation & Acceptance Criteria](#validation--acceptance-criteria)
+- [Specification / 仕様](#specification--仕様)
+- [Open Questions / 残論点](#open-questions--残論点)
+- [Discoveries & Insights](#discoveries--insights)
+- [Decision Log](#decision-log)
+- [Outcomes & Retrospectives](#outcomes--retrospectives)
+- [Follow-up Issues](#follow-up-issues)
+- [Confidence Assessment](#confidence-assessment)
+- [Current Status](#current-status)
+```
+
+**変更前:**
+```markdown
+# [Project Name] Progress Document
+
+<!--
+## AI向け更新ルール
+```
+
+**変更後:**
+```markdown
+# [Project Name] Progress Document
+
+## 目次
+
+- [Purpose / Overview](#purpose--overview)
+- [Context & Direction](#context--direction)
+- [Validation & Acceptance Criteria](#validation--acceptance-criteria)
+- [Specification / 仕様](#specification--仕様)
+- [Open Questions / 残論点](#open-questions--残論点)
+- [Discoveries & Insights](#discoveries--insights)
+- [Decision Log](#decision-log)
+- [Outcomes & Retrospectives](#outcomes--retrospectives)
+- [Follow-up Issues](#follow-up-issues)
+- [Confidence Assessment](#confidence-assessment)
+- [Current Status](#current-status)
+
+<!--
+## AI向け更新ルール
+```
+
+**注意事項**:
+- 目次は既存のセクション構造に影響を与えない
+- セクション名が変更された場合は、目次のリンクも更新が必要
+
+---
+
 ## マイグレーションツール
 
 **`/compact-progress-document`コマンド:**
