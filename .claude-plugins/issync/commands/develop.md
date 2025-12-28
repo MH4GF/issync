@@ -1,5 +1,5 @@
 ---
-description: あらゆる開発タスクを引数として受け取り、create-sub-issue → plan → resolve-questions → implement の全フェーズを人間承認ポイントを挟みながら自動実行
+description: あらゆる開発タスクを引数として受け取り、create-sub-issue → plan → align-spec → implement の全フェーズを人間承認ポイントを挟みながら自動実行
 ---
 
 # /issync:develop: 全フェーズ開発自動化
@@ -8,7 +8,7 @@ description: あらゆる開発タスクを引数として受け取り、create-
 
 ## あなたの役割
 
-create-sub-issue → plan → resolve-questions → implement の開発ワークフロー全体を実行し、重要な意思決定ポイントでユーザーと明確にコミュニケーションを取ってください。
+create-sub-issue → plan → align-spec → implement の開発ワークフロー全体を実行し、重要な意思決定ポイントでユーザーと明確にコミュニケーションを取ってください。
 
 ## ワークフロー
 
@@ -52,18 +52,25 @@ Task(
 
 ---
 
-### フェーズ3: Open Questions解決
+### フェーズ3: 仕様確定 (align-spec)
 
-**目標**: 進捗ドキュメント内のすべてのOpen Questionsをユーザーと協力して解決する
+**目標**: テストケースと仕様の認識齟齬を完全に解消し、implement準備完了状態にする
 
 **アクション**:
-- 進捗ドキュメントのOpen Questionsセクションから未解決の質問を抽出してユーザーに提示してください
-- AskUserQuestionを使用して各質問に対するユーザーの意思決定を収集してください
-- 収集した回答を引数として `/issync:resolve-questions` を実行してください
 
-**出力**: 解消した質問の数と更新されたセクションを表示してください
+1. 進捗ドキュメントのOpen Questionsセクションから未解決の質問を抽出してユーザーに提示してください
+2. AskUserQuestionを使用して各質問に対するユーザーの意思決定を収集してください
+3. 収集した回答を引数として `/issync:align-spec` を実行してください
+4. align-spec実行後、Remaining Questionsを確認してください:
+   - **Remaining > 0**: 新たな質問をユーザーに提示し、ステップ2-4を繰り返す
+   - **Remaining = 0**: フェーズ4へ進む
 
-**人間承認ポイント1**: ユーザーがAskUserQuestionプロンプトを通じて各質問に回答します
+**出力**: 各イテレーションで以下を表示してください
+- 解消した質問の数
+- 更新されたテストケースの概要
+- 残りの質問数（あれば一覧）
+
+**人間承認ポイント**: ユーザーがAskUserQuestionを通じて各質問に回答します。新たな疑問が発生した場合は繰り返し確認します
 
 ---
 
