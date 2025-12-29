@@ -1,9 +1,10 @@
 <!-- issync:v1:start -->
-<!-- Template Version: 24 (2025-12-28) -->
+<!-- Template Version: 25 (2025-12-29) -->
 
 # [Project Name] Progress Document
 
-## 目次
+<details>
+<summary>目次</summary>
 
 - [Purpose / Overview](#purpose--overview)
 - [Context & Direction](#context--direction)
@@ -16,6 +17,8 @@
 - [Follow-up Issues](#follow-up-issues)
 - [Confidence Assessment](#confidence-assessment)
 - [Current Status](#current-status)
+
+</details>
 
 <!--
 ## AI向け更新ルール
